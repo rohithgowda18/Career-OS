@@ -2,6 +2,7 @@
   "buildCommand": "pnpm run build",
   "devCommand": "pnpm run dev",
   "installCommand": "pnpm install --no-frozen-lockfile",
+  "startCommand": "node dist/index.js",
   "env": {
     "NODE_ENV": "production"
   }
