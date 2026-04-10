@@ -1,15 +1,8 @@
 {
   "buildCommand": "pnpm run build",
-  "devCommand": "pnpm run dev",
   "installCommand": "pnpm install --no-frozen-lockfile",
   "env": {
     "NODE_ENV": "production"
-  },
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/"
-    }
-  ]
+  }
 }
 
