@@ -5,11 +5,6 @@
   "env": {
     "NODE_ENV": "production"
   },
-  "functions": {
-    "api/**": {
-      "runtime": "nodejs20.x"
-    }
-  },
   "rewrites": [
     {
       "source": "/api/(.*)",
