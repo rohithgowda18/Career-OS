@@ -9,6 +9,11 @@ build/
 
 # Debug logs
 .manus-logs/
+.manus/
+
+# Documentation (except README)
+*.md
+!README.md
 
 # Environment variables
 .env
