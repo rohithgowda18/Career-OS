@@ -50,7 +50,7 @@ async function initializeDatabase() {
     console.log("✅ Database connected");
 
     // Read the SQL initialization script
-    const sqlPath = path.join(__dirname, "../db-init.sql");
+    const sqlPath = path.join(__dirname, "../server/db-init.sql");
     const sql = fs.readFileSync(sqlPath, "utf8");
 
     // Execute the SQL
