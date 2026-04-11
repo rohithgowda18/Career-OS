@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
 import { vitePluginManusRuntime } from "vite-plugin-manus-runtime";
+import path from "node:path";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -95,16 +96,16 @@ export default defineConfig({
   plugins,
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "client", "src"),
+      "@": path.resolve("src"),
       "@shared": path.resolve(__dirname, "shared"),
       "@assets": path.resolve(__dirname, "attached_assets"),
     },
   },
-  envDir: __dirname,
-  root: path.resolve(__dirname, "client"),
-  publicDir: path.resolve(__dirname, "client", "public"),
+  envDir: "../",
+  root: "client",
+  publicDir: "public",
   build: {
-    outDir: path.join(__dirname, "dist/public"),
+    outDir: "../dist/public",
     emptyOutDir: true,
   },
   server: {
