@@ -8,6 +8,20 @@ import App from "./App";
 import { getLoginUrl } from "./const";
 import "./index.css";
 
+const apiBaseUrl = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, "") ?? "";
+const trpcUrl = apiBaseUrl ? `${apiBaseUrl}/api/trpc` : "/api/trpc";
+
+const analyticsEndpoint = (import.meta.env.VITE_ANALYTICS_ENDPOINT as string | undefined)?.replace(/\/$/, "");
+const analyticsWebsiteId = import.meta.env.VITE_ANALYTICS_WEBSITE_ID as string | undefined;
+
+if (analyticsEndpoint && analyticsWebsiteId) {
+  const script = document.createElement("script");
+  script.src = `${analyticsEndpoint}/umami`;
+  script.dataset.websiteId = analyticsWebsiteId;
+  script.defer = true;
+  document.body.appendChild(script);
+}
+
 // Register service worker for PWA
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
@@ -54,7 +68,7 @@ queryClient.getMutationCache().subscribe(event => {
 const trpcClient = trpc.createClient({
   links: [
     httpBatchLink({
-      url: "/api/trpc",
+      url: trpcUrl,
       transformer: superjson,
       fetch(input, init) {
         return globalThis.fetch(input, {
