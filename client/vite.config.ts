@@ -77,7 +77,7 @@ const plugins = [
             cacheName: "api-cache",
             expiration: {
               maxEntries: 50,
-              maxAgeSeconds: 300, // 5 minutes
+              maxAgeSeconds: 300,
             },
           },
         },
@@ -95,16 +95,15 @@ export default defineConfig({
   plugins,
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "client/src"),
-      "@shared": path.resolve(__dirname, "shared"),
-      "@assets": path.resolve(__dirname, "attached_assets"),
+      "@": path.resolve(__dirname, "src"),
+      "@shared": path.resolve(__dirname, "../shared"),
+      "@assets": path.resolve(__dirname, "../attached_assets"),
     },
   },
   envDir: "../",
-  root: "client",
-  publicDir: "public",
+  publicDir: path.resolve(__dirname, "public"),
   build: {
-    outDir: "../dist/public",
+    outDir: path.resolve(__dirname, "dist/public"),
     emptyOutDir: true,
   },
   server: {
