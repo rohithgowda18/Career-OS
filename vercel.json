@@ -1,0 +1,13 @@
+{
+  "buildCommand": "cd client && vite build",
+  "outputDirectory": "client/dist/public"
+}
+{
+  "installCommand": "pnpm install --no-frozen-lockfile",
+  "buildCommand": "pnpm run build",
+  "outputDirectory": "dist/public",
+  "env": {
+    "NODE_ENV": "production"
+  }
+}
+
