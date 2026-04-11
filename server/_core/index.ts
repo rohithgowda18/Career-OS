@@ -2,6 +2,7 @@ import "dotenv/config";
 import express from "express";
 import { createServer } from "http";
 import net from "net";
+import cors from "cors";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
 import { registerMockAuthRoutes } from "./mockAuth";
@@ -36,6 +37,25 @@ async function startServer() {
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
+  
+  // Configure CORS to accept requests from the frontend
+  const allowedOrigins = [
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "https://eventpulse-phi.vercel.app",
+    process.env.FRONTEND_URL, // Allow custom frontend URL from env var
+  ].filter(Boolean);
+
+  app.use(
+    cors({
+      origin: allowedOrigins,
+      credentials: true,
+      methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+      allowedHeaders: ["Content-Type", "Authorization"],
+    })
+  );
+  
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
   // Mock Auth Portal and endpoints
