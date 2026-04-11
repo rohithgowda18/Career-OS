@@ -35,6 +35,9 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 }
 
 async function initializeDatabase() {
+  console.log("🔍 Starting database initialization...");
+  console.log("Current __dirname:", __dirname);
+  
   if (!process.env.DATABASE_URL) {
     console.warn("⚠️  DATABASE_URL not set, skipping database initialization");
     return;
@@ -51,7 +54,16 @@ async function initializeDatabase() {
 
     // Read the SQL initialization script
     const sqlPath = path.join(__dirname, "../server/db-init.sql");
+    console.log("📂 Looking for SQL file at:", sqlPath);
+    
+    if (!fs.existsSync(sqlPath)) {
+      console.error("❌ SQL file not found at:", sqlPath);
+      console.log("Files in __dirname:", fs.readdirSync(__dirname));
+      return;
+    }
+
     const sql = fs.readFileSync(sqlPath, "utf8");
+    console.log("📖 SQL file loaded, size:", sql.length, "bytes");
 
     // Execute the SQL
     await client.query(sql);
