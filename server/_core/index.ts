@@ -5,6 +5,7 @@ import net from "net";
 import cors from "cors";
 import fs from "fs";
 import path from "path";
+import { fileURLToPath } from "url";
 import { Client } from "pg";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
@@ -14,6 +15,9 @@ import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { initializeDeadlineReminderJob } from "./deadlineReminder";
 import { initializeWeeklyDigestJob } from "./weeklyDigestJob";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
