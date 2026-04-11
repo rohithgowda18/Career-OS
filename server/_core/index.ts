@@ -35,6 +35,11 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 }
 
 async function initializeDatabase() {
+  if (!process.env.DATABASE_URL) {
+    console.warn("⚠️  DATABASE_URL not set, skipping database initialization");
+    return;
+  }
+
   const client = new Client({
     connectionString: process.env.DATABASE_URL,
     ssl: { rejectUnauthorized: false },
@@ -50,12 +55,21 @@ async function initializeDatabase() {
 
     // Execute the SQL
     await client.query(sql);
-    console.log("✅ Database initialized successfully");
+    console.log("✅ Database initialized successfully - all tables created");
   } catch (error) {
-    console.error("❌ Error initializing database:", (error as Error).message);
-    // Don't throw - allow server to continue (tables might already exist)
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    if (errorMsg.includes("already exists")) {
+      console.log("ℹ️  Database tables already exist, skipping initialization");
+    } else {
+      console.error("❌ Error initializing database:", errorMsg);
+      console.error("Full error:", error);
+    }
   } finally {
-    await client.end();
+    try {
+      await client.end();
+    } catch (e) {
+      // ignore
+    }
   }
 }
 
