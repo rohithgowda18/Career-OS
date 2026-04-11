@@ -1,14 +1,13 @@
 import { jsxLocPlugin } from "@builder.io/vite-plugin-jsx-loc";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
-import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
 import { vitePluginManusRuntime } from "vite-plugin-manus-runtime";
-import path from "node:path";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+import path from "node:path";
 
 const plugins = [
   react(),
@@ -96,7 +95,7 @@ export default defineConfig({
   plugins,
   resolve: {
     alias: {
-      "@": path.resolve("src"),
+      "@": path.resolve(__dirname, "client/src"),
       "@shared": path.resolve(__dirname, "shared"),
       "@assets": path.resolve(__dirname, "attached_assets"),
     },
