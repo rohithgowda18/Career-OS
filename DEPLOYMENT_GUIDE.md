@@ -40,17 +40,19 @@
    - **Plan:** Free
 4. **Add Environment Variables:**
    - Click **"Add Environment Variable"**
-   - Add each variable:
+   - Add each variable exactly as shown in `.env.render`:
      
      | Key | Value |
      |-----|-------|
      | `NODE_ENV` | `production` |
      | `PORT` | `3000` |
-     | `DATABASE_URL` | Paste the PostgreSQL URL from Step 1.2 |
-     | `JWT_SECRET` | Create a random 32+ char string (use: `openssl rand -base64 32`) |
+     | `DATABASE_URL` | Paste the PostgreSQL Internal URL from Step 1.2 |
+     | `JWT_SECRET` | `eventtracker_super_secret_123456` |
      | `VITE_APP_ID` | `event-tracker-app` |
-     | `VITE_OAUTH_PORTAL_URL` | Your Render API URL (e.g., `https://event-tracker-api.onrender.com`) |
-     | `OAUTH_SERVER_URL` | Your Render API URL (e.g., `https://event-tracker-api.onrender.com`) |
+     | `VITE_OAUTH_PORTAL_URL` | `https://event-tracker-api.onrender.com` |
+     | `OAUTH_SERVER_URL` | `https://event-tracker-api.onrender.com` |
+     
+   **Reference:** See `.env.render` file in your GitHub repo for exact format.
 
 5. Click **"Create Web Service"**
 6. Render will auto-deploy from GitHub
