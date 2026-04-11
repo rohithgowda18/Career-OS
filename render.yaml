@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: event-tracker-api
+    env: node
+    plan: free
+    buildCommand: npm run build
+    startCommand: node dist/index.js
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+
+  - type: pserv
+    name: event-tracker-db
+    plan: free
+    ipAllowList: []
+    postgresVersion: 13
