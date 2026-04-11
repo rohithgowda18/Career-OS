@@ -3,6 +3,9 @@ import express from "express";
 import { createServer } from "http";
 import net from "net";
 import cors from "cors";
+import fs from "fs";
+import path from "path";
+import { Client } from "pg";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
 import { registerMockAuthRoutes } from "./mockAuth";
@@ -29,6 +32,31 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
     }
   }
   throw new Error(`No available port found starting from ${startPort}`);
+}
+
+async function initializeDatabase() {
+  const client = new Client({
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false },
+  });
+
+  try {
+    await client.connect();
+    console.log("✅ Database connected");
+
+    // Read the SQL initialization script
+    const sqlPath = path.join(__dirname, "../db-init.sql");
+    const sql = fs.readFileSync(sqlPath, "utf8");
+
+    // Execute the SQL
+    await client.query(sql);
+    console.log("✅ Database initialized successfully");
+  } catch (error) {
+    console.error("❌ Error initializing database:", (error as Error).message);
+    // Don't throw - allow server to continue (tables might already exist)
+  } finally {
+    await client.end();
+  }
 }
 
 async function startServer() {
@@ -74,6 +102,9 @@ async function startServer() {
   } else {
     serveStatic(app);
   }
+
+  // Initialize database (create tables if they don't exist)
+  await initializeDatabase();
 
   // Initialize deadline reminder job
   initializeDeadlineReminderJob();

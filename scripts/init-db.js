@@ -1,6 +1,10 @@
-const fs = require("fs");
-const path = require("path");
-const { Client } = require("pg");
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+import { Client } from "pg";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 async function initializeDatabase() {
   const client = new Client({
@@ -23,7 +27,9 @@ async function initializeDatabase() {
 
     process.exit(0);
   } catch (error) {
-    console.error("❌ Error initializing database:", error.message);
+    console.error("❌ Error initializing database:");
+    console.error("Error message:", error.message);
+    console.error("Full error:", error);
     process.exit(1);
   } finally {
     await client.end();
