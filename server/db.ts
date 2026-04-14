@@ -372,6 +372,7 @@ export async function getProfileStats(userId: number) {
       hackathons: apps.filter(a => a.eventType === "Hackathon").length,
       workshops: apps.filter(a => a.eventType === "Workshop").length,
       conferences: apps.filter(a => a.eventType === "Conference").length,
+      internships: apps.filter(a => a.eventType === "Internship").length,
       other: apps.filter(a => a.eventType === "Other").length,
     },
   };

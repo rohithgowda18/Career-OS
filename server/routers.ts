@@ -4,7 +4,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { getApplicationsByUserId, getApplicationById, createApplication, updateApplication, deleteApplication, getUserPreferences, createUserPreferences, updateUserPreferences, getUserProfile, getProfileByUsername, createOrUpdateProfile, getProfileStats, getProfileApplications, getUserApplicationProfile, createOrUpdateUserApplicationProfile } from "./db";
+import { getApplicationsByUserId, getApplicationById, createApplication, updateApplication, deleteApplication, getUserPreferences, createUserPreferences, updateUserPreferences, getUserProfile, getProfileByUsername, createOrUpdateProfile, getProfileStats, getProfileApplications, getUserApplicationProfile, createOrUpdateUserApplicationProfile, getPool } from "./db";
 import { handleApplicationStatusChange } from "./notificationHandlers";
 import { generateRecommendations, calculateSuccessMetrics } from "./_core/recommendationEngine";
 import { fetchEventMetadata } from "./_core/metadataService";
@@ -447,6 +447,278 @@ export const appRouter = router({
         overallAcceptanceRate,
       };
     }),
+  }),
+
+  // =====================================================
+  // ADVANCED FEATURES
+  // =====================================================
+
+  // Feature 1: AI Personalized Recommendations
+  recommendations: router({
+    getPersonalized: protectedProcedure.query(async ({ ctx }) => {
+      // Import RecommendationService at the top of file
+      const { RecommendationService } = await import('./_core/recommendationService');
+      return RecommendationService.generateForUser(ctx.user.id);
+    }),
+
+    updateUserProfile: protectedProcedure
+      .input(
+        z.object({
+          skillsJson: z.array(z.object({
+            name: z.string(),
+            level: z.enum(["beginner", "intermediate", "advanced", "expert"]),
+            yearsOfExperience: z.number().optional(),
+          })).optional(),
+          interests: z.array(z.string()).optional(),
+          experienceLevel: z.enum(["beginner", "intermediate", "advanced", "expert"]).optional(),
+          preferredEventTypes: z.array(z.string()).optional(),
+          location: z.string().optional(),
+          timezone: z.string().optional(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const { RecommendationService } = await import('./_core/recommendationService');
+        await RecommendationService.updateUserProfile(ctx.user.id, input);
+        return { success: true };
+      }),
+  }),
+
+  // Feature 2: Team Formation System
+  teams: router({
+    create: protectedProcedure
+      .input(
+        z.object({
+          applicationId: z.number(),
+          name: z.string().min(1, "Team name required"),
+          description: z.string().optional(),
+          maxMembers: z.number().min(2).max(20).default(5),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const { TeamService } = await import('./_core/teamService');
+        const team = await TeamService.createTeam(
+          input.applicationId,
+          ctx.user.id,
+          input.name,
+          input.description,
+          input.maxMembers
+        );
+        return team;
+      }),
+
+    getByEvent: protectedProcedure
+      .input(z.object({ applicationId: z.number() }))
+      .query(async ({ input }) => {
+        const { TeamService } = await import('./_core/teamService');
+        return TeamService.getEventTeams(input.applicationId);
+      }),
+
+    getById: protectedProcedure
+      .input(z.object({ teamId: z.number() }))
+      .query(async ({ input }) => {
+        const { TeamService } = await import('./_core/teamService');
+        const team = await TeamService.getTeamWithMembers(input.teamId);
+        if (!team) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Team not found" });
+        }
+        return team;
+      }),
+
+    getUserTeams: protectedProcedure.query(async ({ ctx }) => {
+      const { TeamService } = await import('./_core/teamService');
+      return TeamService.getUserTeams(ctx.user.id);
+    }),
+
+    join: protectedProcedure
+      .input(z.object({ teamId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const { TeamService } = await import('./_core/teamService');
+        await TeamService.addTeamMember(input.teamId, ctx.user.id, 'member');
+        return { success: true };
+      }),
+
+    leave: protectedProcedure
+      .input(z.object({ teamId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const { TeamService } = await import('./_core/teamService');
+        await TeamService.removeTeamMember(input.teamId, ctx.user.id);
+        return { success: true };
+      }),
+  }),
+
+  // Feature 3: Smart Calendar with Conflict Detection
+  calendar: router({
+    detectConflicts: protectedProcedure
+      .input(
+        z.object({
+          startDate: z.date(),
+          endDate: z.date(),
+        })
+      )
+      .query(async ({ ctx, input }) => {
+        const { ConflictDetectionService } = await import('./_core/conflictDetectionService');
+        return ConflictDetectionService.detectConflicts(
+          ctx.user.id,
+          input.startDate,
+          input.endDate
+        );
+      }),
+
+    getConflictRecommendation: protectedProcedure
+      .input(
+        z.object({
+          app1Id: z.number(),
+          app2Id: z.number(),
+        })
+      )
+      .query(async ({ ctx, input }) => {
+        const { ConflictDetectionService } = await import('./_core/conflictDetectionService');
+        const recommendedId = await ConflictDetectionService.getSmartRecommendation(
+          ctx.user.id,
+          input.app1Id,
+          input.app2Id
+        );
+        return { recommendedApplicationId: recommendedId };
+      }),
+
+    getUserConflicts: protectedProcedure.query(async ({ ctx }) => {
+      const { ConflictDetectionService } = await import('./_core/conflictDetectionService');
+      return ConflictDetectionService.getUserConflicts(ctx.user.id);
+    }),
+
+    resolveConflict: protectedProcedure
+      .input(z.object({ conflictId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const { ConflictDetectionService } = await import('./_core/conflictDetectionService');
+        await ConflictDetectionService.resolveConflict(input.conflictId);
+        return { success: true };
+      }),
+  }),
+
+  // Feature 4: Predictive Success Scoring
+  successScoring: router({
+    getProbability: protectedProcedure
+      .input(z.object({ applicationId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const app = await getApplicationById(input.applicationId, ctx.user.id);
+        if (!app) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Application not found" });
+        }
+
+        const { SuccessScoringService } = await import('./_core/successScoringService');
+        const { probability, factors } = await SuccessScoringService.calculateSuccessProbability(
+          ctx.user.id,
+          input.applicationId,
+          app.eventType
+        );
+
+        // Store for historical tracking
+        await SuccessScoringService.storeSuccessScore(
+          ctx.user.id,
+          input.applicationId,
+          probability,
+          factors
+        );
+
+        return { probability, factors };
+      }),
+
+    getProbabilitiesForAll: protectedProcedure.query(async ({ ctx }) => {
+      const apps = await getApplicationsByUserId(ctx.user.id);
+      const { SuccessScoringService } = await import('./_core/successScoringService');
+
+      const probabilities = await Promise.all(
+        apps.map(async (app) => {
+          const { probability, factors } = await SuccessScoringService.calculateSuccessProbability(
+            ctx.user.id,
+            app.id,
+            app.eventType
+          );
+
+          return {
+            applicationId: app.id,
+            eventName: app.eventName,
+            probability,
+            factors,
+          };
+        })
+      );
+
+      return probabilities.sort((a, b) => b.probability - a.probability);
+    }),
+  }),
+
+  // Feature 5: Public Profile / Portfolio Mode
+  publicProfile: router({
+    getByUsername: publicProcedure
+      .input(z.object({ username: z.string() }))
+      .query(async ({ input }) => {
+        const profileQuery = `
+          SELECT up.*, u.name, u.email FROM user_profiles up
+          JOIN users u ON up.user_id = u.id
+          WHERE up.username = $1 AND up.profile_visibility = 'public';
+        `;
+
+        const pool = await getPool();
+        const result = await pool.query(profileQuery, [input.username]);
+
+        if (result.rows.length === 0) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Public profile not found",
+          });
+        }
+
+        const profile = result.rows[0];
+        const userId = profile.user_id;
+
+        // Get stats
+        const stats = await getProfileStats(userId);
+
+        // Get accepted applications if show_accepted_only
+        let acceptedApps: Application[] = [];
+        if (profile.show_accepted_only) {
+          acceptedApps = await getProfileApplications(userId, true);
+        }
+
+        return {
+          username: profile.username,
+          bio: profile.bio,
+          avatarUrl: profile.avatar_url,
+          websiteUrl: profile.website_url,
+          linkedinUrl: profile.linkedin_url,
+          twitterHandle: profile.twitter_handle,
+          stats,
+          acceptedApplications: acceptedApps,
+        };
+      }),
+
+    updateVisibility: protectedProcedure
+      .input(
+        z.object({
+          visibility: z.enum(['public', 'private']),
+          showAcceptedOnly: z.boolean().optional(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const pool = await getPool();
+        const query = `
+          UPDATE user_profiles
+          SET profile_visibility = $1,
+              show_accepted_only = COALESCE($2, show_accepted_only),
+              updated_at = CURRENT_TIMESTAMP
+          WHERE user_id = $3
+          RETURNING *;
+        `;
+
+        const result = await pool.query(query, [
+          input.visibility,
+          input.showAcceptedOnly ? 1 : 0,
+          ctx.user.id,
+        ]);
+
+        return result.rows[0];
+      }),
   }),
 });
 

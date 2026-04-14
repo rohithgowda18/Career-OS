@@ -2,12 +2,14 @@
  * Dedicated database types and interfaces to replace Drizzle-inferred types.
  */
 
-export type EventType = 'Hackathon' | 'Workshop' | 'Conference' | 'Other';
+export type EventType = 'Hackathon' | 'Workshop' | 'Conference' | 'Internship' | 'Other';
 export type ApplicationStatus = 'Interested' | 'Applied' | 'Under Review' | 'Accepted' | 'Rejected' | 'Withdrawn';
 export type UserRole = 'user' | 'admin';
 export type NotificationType = 'status_change' | 'deadline_reminder' | 'upcoming_deadline';
 export type ViewType = 'dashboard' | 'kanban' | 'list' | 'calendar' | 'analytics';
 export type ProfileVisibility = 'public' | 'private';
+export type TeamRole = 'lead' | 'member' | 'mentor';
+export type SkillLevel = 'beginner' | 'intermediate' | 'advanced' | 'expert';
 
 export interface User {
   id: number;
@@ -107,8 +109,115 @@ export interface UserApplicationProfile {
   resumeUrl: string | null;
   skills: string | null;
   shortBio: string | null;
+  skillsJson?: UserSkill[];
+  interests?: string[];
+  experienceLevel?: SkillLevel;
+  preferredEventTypes?: string[];
+  location?: string;
+  timezone?: string;
   createdAt: Date;
   updatedAt: Date;
 }
 
 export type InsertUserApplicationProfile = Omit<UserApplicationProfile, 'id' | 'createdAt' | 'updatedAt'>;
+
+// =====================================================
+// ADVANCED FEATURES TYPES
+// =====================================================
+
+// Feature 1: Skills & Interests
+export interface UserSkill {
+  name: string;
+  level: SkillLevel;
+  yearsOfExperience?: number;
+}
+
+// Feature 2: Team Formation
+export interface Team {
+  id: number;
+  name: string;
+  description?: string;
+  applicationId: number;
+  createdBy: number;
+  maxMembers: number;
+  status: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface TeamMember {
+  id: number;
+  teamId: number;
+  userId: number;
+  role: TeamRole;
+  joinedAt: Date;
+  user?: User;
+}
+
+export interface TeamWithMembers extends Team {
+  members: TeamMember[];
+  memberCount: number;
+  isFull: boolean;
+}
+
+// Feature 3: Calendar Conflicts
+export interface CalendarConflict {
+  id: number;
+  userId: number;
+  applicationId1: number;
+  applicationId2: number;
+  conflictDateStart: Date;
+  conflictDateEnd: Date;
+  recommendedApplicationId?: number;
+  resolved: number;
+  createdAt: Date;
+}
+
+// Feature 4: Success Scoring
+export interface SuccessFactor {
+  eventTypeSuccessRate: number;
+  userExperienceLevel: number;
+  skillMatchPercentage: number;
+  timelineScore: number;
+  historicalTrend: number;
+}
+
+export interface EventSuccessScore {
+  id: number;
+  applicationId: number;
+  userId: number;
+  successProbability: number;
+  scoreFactors: SuccessFactor;
+  calculatedAt: Date;
+}
+
+// Feature 5: Recommendations
+export interface Recommendation {
+  id: string;
+  applicationId: number;
+  eventName: string;
+  eventType: EventType;
+  score: number;
+  matchReasons: string[];
+  userFitPercentage: number;
+  skillGaps?: string[];
+}
+
+// Public Profile
+export interface PublicUserProfileStats {
+  totalApplications: number;
+  acceptedCount: number;
+  acceptanceRate: number;
+  eventTypeBreakdown: Record<string, number>;
+}
+
+export interface PublicUserProfile {
+  username: string;
+  bio?: string;
+  avatarUrl?: string;
+  websiteUrl?: string;
+  linkedinUrl?: string;
+  twitterHandle?: string;
+  stats: PublicUserProfileStats;
+  acceptedApplications?: Application[];
+}

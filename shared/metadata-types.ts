@@ -2,7 +2,7 @@
  * Metadata-related type definitions
  */
 
-export type EventType = 'Hackathon' | 'Workshop' | 'Conference' | 'Other';
+export type EventType = 'Hackathon' | 'Workshop' | 'Conference' | 'Internship' | 'Other';
 
 /**
  * Metadata extracted from event URL

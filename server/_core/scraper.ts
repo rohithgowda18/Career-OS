@@ -4,7 +4,7 @@ export interface ExtractedMetadata {
   title: string | null;
   description: string | null;
   imageUrl: string | null;
-  eventType: "Hackathon" | "Workshop" | "Conference" | "Other";
+  eventType: "Hackathon" | "Workshop" | "Conference" | "Internship" | "Other";
 }
 
 /**
@@ -157,8 +157,17 @@ function extractImageUrl(html: string): string | null {
 function suggestEventType(
   title: string | null,
   description: string | null
-): "Hackathon" | "Workshop" | "Conference" | "Other" {
+): "Hackathon" | "Workshop" | "Conference" | "Internship" | "Other" {
   const content = `${title || ""} ${description || ""}`.toLowerCase();
+
+  // Check for internship keywords
+  if (
+    /internship|intern\s*program|graduate\s*program|internship\s*position|career|job\s*opportunity|employment/.test(
+      content
+    )
+  ) {
+    return "Internship";
+  }
 
   // Check for hackathon keywords
   if (

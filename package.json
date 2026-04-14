@@ -9,7 +9,10 @@
     "start": "node dist/index.js",
     "check": "tsc --noEmit",
     "format": "prettier --write .",
-    "test": "vitest run"
+    "test": "vitest run",
+    "migrate": "tsx scripts/migration-runner.ts",
+    "migrate:status": "tsx scripts/migration-runner.ts status",
+    "migrate:rollback": "tsx scripts/migration-runner.ts rollback"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.693.0",

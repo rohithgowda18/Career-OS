@@ -98,6 +98,76 @@ jspm_packages/
 
 # Storybook build outputs
 .out
+
+# Vite specific
+vite-env.d.ts
+dist/
+dev-dist/
+.vite/
+
+# Vitest cache
+.vitest/
+
+# Testing
+coverage/
+.coverage
+*.lcov
+test-results/
+__snapshots__/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Temporary files
+*.tmp
+.tmp/
+temp/
+~*
+
+# Service Worker files
+sw.js
+workbox-*.js
+
+# IDE specific
+.vscode/settings.json
+.vscode/extensions.json
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Generated files
+generated/
+*.generated.ts
+*.generated.js
+
+# Node/npm specific
+package-lock.json
+yarn.lock
+.pnpm-lock.yaml.backup
+
+# Stray system files
+.env.*.local
+.env.*.backup
+config.local.js
+
+# API/Server specific
+.netlify/
+.firebase/
+.replit
+.vercel/
+
+# Client specific
+public/service-worker.js
+public/sw.js
+registerSW.js
+suppress-warnings.js
+
+# Logs and debugging
+debug/
+.debug.log
+dist-test/
 .storybook-out
 
 # Temporary folders

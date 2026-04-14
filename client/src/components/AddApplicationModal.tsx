@@ -292,6 +292,7 @@ export default function AddApplicationModal({
                   <SelectItem value="Hackathon">Hackathon</SelectItem>
                   <SelectItem value="Workshop">Workshop</SelectItem>
                   <SelectItem value="Conference">Conference</SelectItem>
+                  <SelectItem value="Internship">Internship</SelectItem>
                   <SelectItem value="Other">Other</SelectItem>
                 </SelectContent>
               </Select>

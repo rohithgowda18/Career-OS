@@ -2,7 +2,7 @@ import { invokeLLM } from "./llm";
 
 export interface ApplicationHistory {
   eventName: string;
-  eventType: "Hackathon" | "Workshop" | "Conference" | "Other";
+  eventType: "Hackathon" | "Workshop" | "Conference" | "Internship" | "Other";
   status: string;
   deadline: Date;
   notes?: string;
@@ -93,7 +93,7 @@ Based on this history, provide 2-3 personalized recommendations for event types 
                   properties: {
                     eventType: {
                       type: "string",
-                      enum: ["Hackathon", "Workshop", "Conference", "Other"],
+                      enum: ["Hackathon", "Workshop", "Conference", "Internship", "Other"],
                     },
                     reasoning: { type: "string" },
                     successRate: { type: "number", minimum: 0, maximum: 100 },
