@@ -6,6 +6,8 @@
 dist/
 build/
 *.dist
+target/
+**/target/
 
 # Monorepo build outputs
 apps/web/dist/
