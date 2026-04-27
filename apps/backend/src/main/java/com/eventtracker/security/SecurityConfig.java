@@ -55,8 +55,7 @@ public class SecurityConfig {
         log.info("=== CORS Configuration ===");
         log.info("Allowed origins: {}", origins);
         
-        configuration.setAllowedOrigins(origins
-        configuration.setAllowedOrigins(Arrays.asList(allowedOrigins.split(",")));
+        configuration.setAllowedOrigins(origins);
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
