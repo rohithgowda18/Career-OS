@@ -45,6 +45,8 @@ public class UserService {
         user.setFirstName(normalizeNullableName(firstName));
         user.setLastName(normalizeNullableName(lastName));
         user.setUsername(uniqueUsername);
+        user.setRole("USER");
+        user.setLoginMethod("EMAIL");
         user.setIsActive(true);
 
         user = userRepository.save(user);
@@ -203,6 +205,10 @@ public class UserService {
         user.setOauthEmail(normalizedEmail);
         user.setOauthName(normalizeNullableName(name));
         user.setUsername(uniqueUsername);
+        user.setRole("USER");
+        user.setLoginMethod(oauthProvider == null || oauthProvider.isBlank()
+                ? "OAUTH"
+                : oauthProvider.trim().toUpperCase(Locale.ROOT));
         user.setIsActive(true);
 
         user = userRepository.save(user);

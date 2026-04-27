@@ -37,6 +37,12 @@ public class User implements UserDetails {
 
     private String password;
 
+    @Column(nullable = false)
+    private String role = "USER";
+
+    @Column(name = "login_method", nullable = false)
+    private String loginMethod = "EMAIL";
+
     @Column(name = "oauth_id")
     private String oauthId;
 
@@ -90,9 +96,45 @@ public class User implements UserDetails {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
+    @PrePersist
+    void onCreate() {
+        if (role == null || role.isBlank()) {
+            role = "USER";
+        }
+        if (loginMethod == null || loginMethod.isBlank()) {
+            loginMethod = "EMAIL";
+        }
+        if (isActive == null) {
+            isActive = true;
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        if (createdAt == null) {
+            createdAt = now;
+        }
+        if (updatedAt == null) {
+            updatedAt = now;
+        }
+    }
+
+    @PreUpdate
+    void onUpdate() {
+        if (role == null || role.isBlank()) {
+            role = "USER";
+        }
+        if (loginMethod == null || loginMethod.isBlank()) {
+            loginMethod = "EMAIL";
+        }
+        if (isActive == null) {
+            isActive = true;
+        }
+        updatedAt = LocalDateTime.now();
+    }
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"));
+        String normalizedRole = role == null || role.isBlank() ? "USER" : role.toUpperCase();
+        return Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + normalizedRole));
     }
 
     @Override

@@ -66,6 +66,9 @@ class UserServiceTest {
         assertThat(user.getEmail()).isEqualTo("ada@example.com");
         assertThat(user.getUsername()).isEqualTo("ada");
         assertThat(user.getPassword()).isEqualTo("encoded-password");
+        assertThat(user.getRole()).isEqualTo("USER");
+        assertThat(user.getLoginMethod()).isEqualTo("EMAIL");
+        assertThat(user.getIsActive()).isTrue();
 
         verify(userPreferencesRepository).save(any(UserPreferences.class));
         verify(userProfileRepository).save(any(UserProfile.class));
