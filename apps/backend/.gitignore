@@ -1,0 +1,66 @@
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.original
+release.properties
+.releases.xml
+.flattened-pom.xml
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.iml
+*.iws
+*.ipr
+.DS_Store
+
+# Spring Boot
+*.log
+logs/
+.gradle
+build/
+gradle/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Dependencies
+.m2/
+.maven/
+
+# Java
+*.class
+*.jar
+*.war
+*.nar
+!frontend/target/classes/
+
+# OS
+Thumbs.db
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+
+# Testing
+coverage/
+*.lcov
+.jacoco/
+
+# Application runtime
+debug/
+dist-test/

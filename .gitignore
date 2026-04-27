@@ -7,6 +7,10 @@ dist/
 build/
 *.dist
 
+# Monorepo build outputs
+apps/web/dist/
+apps/web/dev-dist/
+
 # Debug logs
 .manus-logs/
 
@@ -181,3 +185,19 @@ temp/
 
 # Webdev artifacts (checkpoint zips, migrations, etc.)
 .webdev/
+
+# Maven (Spring Boot Backend)
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# Spring Boot Artifacts
+*.jar
+*.war

@@ -1,9 +1,0 @@
-{
-  "installCommand": "pnpm install --no-frozen-lockfile",
-  "buildCommand": "vite build",
-  "outputDirectory": "dist/public",
-  "routes": [
-    { "handle": "filesystem" },
-    { "src": "/(.*)", "dest": "/index.html" }
-  ]
-}

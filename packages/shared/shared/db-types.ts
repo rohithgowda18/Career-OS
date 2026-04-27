@@ -16,7 +16,6 @@ export interface User {
   openId: string;
   name: string | null;
   email: string | null;
-  passwordHash?: string | null;
   loginMethod: string | null;
   role: UserRole;
   createdAt: Date;
