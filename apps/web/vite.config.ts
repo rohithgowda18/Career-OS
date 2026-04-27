@@ -33,7 +33,7 @@ export default defineConfig({
     },
   },
   optimizeDeps: {
-    exclude: ["@trpc/server", "@trpc/server/observable", "@trpc/server/rpc"],
+    exclude: [],
   },
   server: {
     port: 5173,
