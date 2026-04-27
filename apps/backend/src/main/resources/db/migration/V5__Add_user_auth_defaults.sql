@@ -6,13 +6,22 @@ ALTER TABLE users
     ADD COLUMN IF NOT EXISTS role VARCHAR(50),
     ADD COLUMN IF NOT EXISTS login_method VARCHAR(50);
 
+-- Older databases may have PostgreSQL enum columns from the Node-era schema.
+-- Spring maps these fields as strings, so normalize them to varchar before
+-- applying trim/default checks.
+ALTER TABLE users
+    ALTER COLUMN role DROP DEFAULT,
+    ALTER COLUMN login_method DROP DEFAULT,
+    ALTER COLUMN role TYPE VARCHAR(50) USING UPPER(role::TEXT),
+    ALTER COLUMN login_method TYPE VARCHAR(50) USING UPPER(login_method::TEXT);
+
 UPDATE users
 SET role = 'USER'
-WHERE role IS NULL OR BTRIM(role) = '';
+WHERE role IS NULL OR BTRIM(role::TEXT) = '';
 
 UPDATE users
 SET login_method = 'EMAIL'
-WHERE login_method IS NULL OR BTRIM(login_method) = '';
+WHERE login_method IS NULL OR BTRIM(login_method::TEXT) = '';
 
 UPDATE users
 SET is_active = true
