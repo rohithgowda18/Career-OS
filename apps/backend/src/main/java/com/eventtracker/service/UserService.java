@@ -12,6 +12,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Locale;
 import java.util.Optional;
 
 @Service
@@ -28,12 +29,14 @@ public class UserService {
             throw new IllegalArgumentException("Email already exists");
         }
 
+        String uniqueUsername = makeUniqueUsername(username, email);
+
         User user = new User();
         user.setEmail(email);
         user.setPassword(passwordEncoder.encode(password));
         user.setFirstName(firstName);
         user.setLastName(lastName);
-        user.setUsername(username);
+        user.setUsername(uniqueUsername);
         user.setIsActive(true);
 
         user = userRepository.save(user);
@@ -46,11 +49,36 @@ public class UserService {
         // Create default profile
         UserProfile profile = new UserProfile();
         profile.setUser(user);
-        profile.setUsername(username);
+        profile.setUsername(uniqueUsername);
         profile.setIsPublic(false);
         userProfileRepository.save(profile);
 
         return user;
+    }
+
+    private String makeUniqueUsername(String requestedUsername, String email) {
+        String base = normalizeUsername(requestedUsername);
+        if (base.isBlank()) {
+            base = normalizeUsername(email.substring(0, email.indexOf('@')));
+        }
+        if (base.isBlank()) {
+            base = "user";
+        }
+
+        String candidate = base;
+        int suffix = 1;
+        while (userRepository.existsByUsername(candidate)) {
+            candidate = base + suffix;
+            suffix++;
+        }
+        return candidate;
+    }
+
+    private String normalizeUsername(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]", "");
     }
 
     public Optional<User> findByEmail(String email) {

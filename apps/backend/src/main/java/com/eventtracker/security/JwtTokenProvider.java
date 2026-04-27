@@ -6,6 +6,7 @@ import java.util.Map;
 
 import javax.crypto.SecretKey;
 
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -24,6 +25,13 @@ public class JwtTokenProvider {
 
     @Value("${app.jwt.expiration:86400000}")
     private long jwtExpirationMillis;
+
+    @PostConstruct
+    void validateConfiguration() {
+        if (jwtSecret == null || jwtSecret.getBytes().length < 64) {
+            throw new IllegalStateException("JWT_SECRET must be at least 64 bytes for HS512 signing");
+        }
+    }
 
     private SecretKey getSigningKey() {
         return Keys.hmacShaKeyFor(jwtSecret.getBytes());

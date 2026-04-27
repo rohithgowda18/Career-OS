@@ -1,12 +1,24 @@
 import axios from 'axios';
 
-// Get API URL from environment, default to localhost
-const apiBaseUrl = (import.meta.env.VITE_API_URL || 'http://localhost:8080');
+const configuredApiUrl = import.meta.env.VITE_API_URL?.trim();
 
-// Remove any trailing slashes and /api suffix to normalize
-const normalizedUrl = apiBaseUrl
-  .replace(/\/+$/, '') // Remove trailing slashes
-  .replace(/\/api\/?$/, ''); // Remove /api at the end if present
+const getApiBaseUrl = () => {
+  if (configuredApiUrl) {
+    return configuredApiUrl;
+  }
+
+  if (import.meta.env.DEV) {
+    return 'http://localhost:8080';
+  }
+
+  throw new Error('VITE_API_URL is required for production builds');
+};
+
+// Remove trailing slashes and one /api suffix so callers may configure either
+// https://backend.example.com or https://backend.example.com/api.
+const normalizedUrl = getApiBaseUrl()
+  .replace(/\/+$/, '')
+  .replace(/\/api\/?$/, '');
 
 const restClient = axios.create({
   baseURL: `${normalizedUrl}/api`,
@@ -39,6 +51,16 @@ restClient.interceptors.response.use(
       localStorage.removeItem('token');
       // window.location.href = '/login';
     }
+
+    if (error.response?.data) {
+      error.message =
+        typeof error.response.data === 'string'
+          ? error.response.data
+          : error.response.data.message || error.message;
+    } else if (error.code === 'ERR_NETWORK') {
+      error.message = 'Unable to reach the API. Check VITE_API_URL and backend CORS settings.';
+    }
+
     return Promise.reject(error);
   }
 );
