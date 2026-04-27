@@ -47,6 +47,7 @@ public class SecurityConfig {
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
         java.util.List<String> origins = Arrays.asList(allowedOrigins.split(","))
             .stream()
             .map(String::trim)
