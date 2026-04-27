@@ -29,7 +29,7 @@ public class SecurityConfig {
     private final JwtTokenProvider jwtTokenProvider;
     private final UserService userService;
 
-    @Value("${app.cors.allowed-origins:http://localhost:5173,http://localhost:3000}")
+    @Value("${app.cors.allowed-origins:http://localhost:5173,http://localhost:3000,https://eventpulse-phi.vercel.app}")
     private String allowedOrigins;
 
     @Bean
