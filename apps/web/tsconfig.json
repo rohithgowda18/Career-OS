@@ -19,9 +19,7 @@
     /* Path mapping */
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
-      "@shared/*": ["../../shared/*"],
-      "@/_core/*": ["./src/_core/*"]
+      "@/*": ["./src/*"]
     }
   },
   "include": ["src"],

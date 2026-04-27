@@ -4,4 +4,4 @@
  */
 
 export type * from "./db-types";
-export * from "./_core/errors";
+export * from "../lib/errors";

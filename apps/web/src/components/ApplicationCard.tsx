@@ -1,4 +1,4 @@
-import { Application } from "@shared/types";
+import { Application } from "@/types/types";
 import { MoreVertical, ExternalLink, Trash2, Edit2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {

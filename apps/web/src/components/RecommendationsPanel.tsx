@@ -7,13 +7,11 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 
 interface Recommendation {
+  eventName: string;
   eventType: string;
-  reasoning: string;
-  successRate: number;
-  suggestedEvents: Array<{
-    name: string;
-    url: string;
-  }>;
+  matchScore: number;
+  reasons: string[];
+  skillGaps: string[];
   bestTimeToApply: string;
   tips: string[];
 }
@@ -114,29 +112,37 @@ export default function RecommendationsPanel() {
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {recommendations.map((rec, idx) => (
             <Card key={idx} className="p-6 space-y-4 hover:shadow-lg transition-shadow">
-              {/* Event Type Badge */}
+              {/* Event Header */}
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <h3 className="font-semibold text-foreground text-lg">{rec.eventType}</h3>
+                  <h3 className="font-semibold text-foreground text-lg">{rec.eventName}</h3>
+                  <span className="text-sm text-muted-foreground">{rec.eventType}</span>
                 </div>
                 <Badge variant="secondary" className="whitespace-nowrap">
-                  {rec.successRate}% match
+                  {rec.matchScore}% match
                 </Badge>
               </div>
 
-              {/* Reasoning */}
-              <p className="text-sm text-muted-foreground">{rec.reasoning}</p>
+              {/* Reasons */}
+              <div className="space-y-1">
+                <h4 className="text-sm font-medium">Why it's a match:</h4>
+                <ul className="text-sm text-muted-foreground pl-1 space-y-1">
+                  {(rec.reasons || []).map((reason, idx) => (
+                    <li key={idx} className="flex gap-2"><span className="text-accent">•</span> {reason}</li>
+                  ))}
+                </ul>
+              </div>
 
-              {/* Success Rate Indicator */}
+              {/* Match Score Indicator */}
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <TrendingUp className="w-4 h-4 text-accent" />
-                  <span className="text-sm font-medium">Success Rate</span>
+                  <span className="text-sm font-medium">Match Score</span>
                 </div>
                 <div className="w-full bg-secondary rounded-full h-2">
                   <div
                     className="bg-accent h-2 rounded-full transition-all"
-                    style={{ width: `${rec.successRate}%` }}
+                    style={{ width: `${Math.min(100, Math.max(0, rec.matchScore || 0))}%` }}
                   />
                 </div>
               </div>
@@ -150,25 +156,20 @@ export default function RecommendationsPanel() {
                 <p className="text-sm text-muted-foreground">{rec.bestTimeToApply}</p>
               </div>
 
-              {/* Suggested Events */}
+              {/* Skill Gaps */}
+              {rec.skillGaps && rec.skillGaps.length > 0 && rec.skillGaps[0] !== "None identified" && (
               <div className="space-y-2">
-                <h4 className="text-sm font-semibold text-foreground">Suggested Events</h4>
-                <div className="space-y-2">
-                  {(rec.suggestedEvents || []).map((event, eventIdx) => (
-                    <div key={eventIdx} className="flex items-start gap-2">
-                      <span className="text-accent text-sm font-semibold">•</span>
-                      <a 
-                        href={event.url} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-sm text-accent hover:underline"
-                      >
-                        {event.name}
-                      </a>
+                <h4 className="text-sm font-semibold text-foreground">Skill Gaps to Address</h4>
+                <div className="space-y-1">
+                  {(rec.skillGaps || []).map((gap, eventIdx) => (
+                    <div key={eventIdx} className="flex items-start gap-2 text-sm text-destructive">
+                      <span className="font-semibold">•</span>
+                      <span>{gap}</span>
                     </div>
                   ))}
                 </div>
               </div>
+              )}
 
               {/* Tips */}
               <div className="space-y-2 pt-2 border-t border-border">

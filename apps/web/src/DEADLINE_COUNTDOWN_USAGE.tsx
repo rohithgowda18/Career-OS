@@ -7,7 +7,7 @@
 
 import { getDeadlineStatus, formatDeadlineDate } from '@/lib/getDeadlineStatus';
 import { DeadlineBadge } from '@/components/DeadlineBadge';
-import { Application } from '@shared/types';
+import { Application } from '@/types/types';
 
 // ============================================
 // Example 1: Using the helper function
