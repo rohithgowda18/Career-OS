@@ -25,17 +25,24 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
 
     public User createUser(String email, String password, String firstName, String lastName, String username) {
-        if (userRepository.existsByEmail(email)) {
+        String normalizedEmail = normalizeEmail(email);
+        if (normalizedEmail.isBlank()) {
+            throw new IllegalArgumentException("Email is required");
+        }
+        if (password == null || password.isBlank()) {
+            throw new IllegalArgumentException("Password is required");
+        }
+        if (userRepository.existsByEmailIgnoreCase(normalizedEmail)) {
             throw new IllegalArgumentException("Email already exists");
         }
 
-        String uniqueUsername = makeUniqueUsername(username, email);
+        String uniqueUsername = makeUniqueUsername(username, normalizedEmail);
 
         User user = new User();
-        user.setEmail(email);
+        user.setEmail(normalizedEmail);
         user.setPassword(passwordEncoder.encode(password));
-        user.setFirstName(firstName);
-        user.setLastName(lastName);
+        user.setFirstName(normalizeNullableName(firstName));
+        user.setLastName(normalizeNullableName(lastName));
         user.setUsername(uniqueUsername);
         user.setIsActive(true);
 
@@ -58,7 +65,8 @@ public class UserService {
 
     private String makeUniqueUsername(String requestedUsername, String email) {
         String base = normalizeUsername(requestedUsername);
-        if (base.isBlank()) {
+        int atIndex = email.indexOf('@');
+        if (base.isBlank() && atIndex > 0) {
             base = normalizeUsername(email.substring(0, email.indexOf('@')));
         }
         if (base.isBlank()) {
@@ -67,7 +75,7 @@ public class UserService {
 
         String candidate = base;
         int suffix = 1;
-        while (userRepository.existsByUsername(candidate)) {
+        while (userRepository.existsByUsernameIgnoreCase(candidate)) {
             candidate = base + suffix;
             suffix++;
         }
@@ -78,11 +86,27 @@ public class UserService {
         if (value == null) {
             return "";
         }
-        return value.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]", "");
+        String normalized = value.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]", "");
+        return normalized.length() > 40 ? normalized.substring(0, 40) : normalized;
+    }
+
+    private String normalizeEmail(String email) {
+        return email == null ? "" : email.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private String normalizeNullableName(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     public Optional<User> findByEmail(String email) {
-        return userRepository.findByEmail(email);
+        String normalizedEmail = normalizeEmail(email);
+        return normalizedEmail.isBlank()
+                ? Optional.empty()
+                : userRepository.findByEmailIgnoreCase(normalizedEmail);
     }
 
     public Optional<User> findById(Long id) {
@@ -118,6 +142,7 @@ public class UserService {
         dto.setId(user.getId());
         dto.setEmail(user.getEmail());
         dto.setUsername(user.getUsername());
+        dto.setName(buildDisplayName(user));
         dto.setFirstName(user.getFirstName());
         dto.setLastName(user.getLastName());
         dto.setBio(user.getBio());
@@ -128,14 +153,34 @@ public class UserService {
         return dto;
     }
 
+    private String buildDisplayName(User user) {
+        String firstName = normalizeNullableName(user.getFirstName());
+        String lastName = normalizeNullableName(user.getLastName());
+        if (firstName != null && lastName != null) {
+            return firstName + " " + lastName;
+        }
+        if (firstName != null) {
+            return firstName;
+        }
+        if (lastName != null) {
+            return lastName;
+        }
+        return user.getUsername();
+    }
+
     public Optional<User> findOrCreateOAuthUser(String oauthId, String oauthProvider, String email, String name) {
         Optional<User> existingUser = userRepository.findByOauthIdAndOauthProvider(oauthId, oauthProvider);
         if (existingUser.isPresent()) {
             return existingUser;
         }
 
+        String normalizedEmail = normalizeEmail(email);
+        if (normalizedEmail.isBlank()) {
+            throw new IllegalArgumentException("Email is required");
+        }
+
         // Check if email already exists
-        Optional<User> emailUser = userRepository.findByEmail(email);
+        Optional<User> emailUser = userRepository.findByEmailIgnoreCase(normalizedEmail);
         if (emailUser.isPresent()) {
             User user = emailUser.get();
             user.setOauthId(oauthId);
@@ -143,13 +188,16 @@ public class UserService {
             return Optional.of(userRepository.save(user));
         }
 
+        String uniqueUsername = makeUniqueUsername(name, normalizedEmail);
+
         // Create new user
         User user = new User();
-        user.setEmail(email);
+        user.setEmail(normalizedEmail);
         user.setOauthId(oauthId);
         user.setOauthProvider(oauthProvider);
-        user.setOauthEmail(email);
-        user.setOauthName(name);
+        user.setOauthEmail(normalizedEmail);
+        user.setOauthName(normalizeNullableName(name));
+        user.setUsername(uniqueUsername);
         user.setIsActive(true);
 
         user = userRepository.save(user);
@@ -162,6 +210,7 @@ public class UserService {
         // Create default profile
         UserProfile profile = new UserProfile();
         profile.setUser(user);
+        profile.setUsername(uniqueUsername);
         profile.setIsPublic(false);
         userProfileRepository.save(profile);
 

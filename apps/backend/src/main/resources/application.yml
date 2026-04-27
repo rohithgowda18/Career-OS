@@ -5,6 +5,9 @@ spring:
   main:
     allow-circular-references: true
     allow-bean-definition-overriding: true
+    lazy-initialization: ${SPRING_MAIN_LAZY_INITIALIZATION:false}
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
 
   datasource:
     url: ${SPRING_DATASOURCE_URL}
@@ -12,27 +15,31 @@ spring:
     password: ${SPRING_DATASOURCE_PASSWORD}
     driver-class-name: org.postgresql.Driver
     hikari:
-      maximum-pool-size: 10
-      minimum-idle: 5
-      connection-timeout: 20000
+      maximum-pool-size: ${DB_MAX_POOL_SIZE:3}
+      minimum-idle: ${DB_MIN_IDLE:0}
+      connection-timeout: ${DB_CONNECTION_TIMEOUT_MS:10000}
+      validation-timeout: ${DB_VALIDATION_TIMEOUT_MS:3000}
       idle-timeout: 300000
-      max-lifetime: 1200000
+      max-lifetime: 600000
+      initialization-fail-timeout: ${DB_INITIALIZATION_FAIL_TIMEOUT_MS:30000}
 
   jpa:
+    open-in-view: false
     hibernate:
-      ddl-auto: update
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:validate}
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
-        format_sql: true
-        use_sql_comments: true
+        format_sql: false
+        use_sql_comments: false
     show-sql: false
 
   sql:
     init:
-      mode: always
+      mode: never
 
   flyway:
+    enabled: ${FLYWAY_ENABLED:true}
     baseline-on-migrate: true
     baseline-version: 1
 
@@ -50,7 +57,9 @@ spring:
     enabled: ${MAIL_ENABLED:false}
 
 server:
-  port: 8080
+  port: ${PORT:8080}
+  address: 0.0.0.0
+  shutdown: graceful
   servlet:
     context-path: /api
   error:
@@ -61,15 +70,29 @@ server:
     max-http-post-size: 2MB
     max-http-form-post-size: 2MB
     threads:
-      max: 200
-      min-spare: 10
-    processor-cache: 200
-    accept-count: 100
+      max: ${TOMCAT_MAX_THREADS:50}
+      min-spare: ${TOMCAT_MIN_SPARE_THREADS:5}
+    processor-cache: 50
+    accept-count: 50
   compression:
     enabled: false
   http2:
     enabled: false
   forward-headers-strategy: framework
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+  health:
+    mail:
+      enabled: false
 
 app:
   jwt:
@@ -93,7 +116,9 @@ app:
 logging:
   level:
     root: INFO
-    com.eventtracker: DEBUG
-    org.springframework.security: DEBUG
+    com.eventtracker: ${APP_LOG_LEVEL:INFO}
+    org.springframework.security: ${SECURITY_LOG_LEVEL:INFO}
+    org.hibernate.SQL: WARN
+    com.zaxxer.hikari: INFO
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %logger{36} - %msg%n"

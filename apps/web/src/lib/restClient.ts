@@ -53,10 +53,11 @@ restClient.interceptors.response.use(
     }
 
     if (error.response?.data) {
+      const responseData = error.response.data;
       error.message =
-        typeof error.response.data === 'string'
-          ? error.response.data
-          : error.response.data.message || error.message;
+        typeof responseData === 'string'
+          ? responseData
+          : responseData.message || Object.values(responseData).find(value => typeof value === 'string') || error.message;
     } else if (error.code === 'ERR_NETWORK') {
       error.message = 'Unable to reach the API. Check VITE_API_URL and backend CORS settings.';
     }

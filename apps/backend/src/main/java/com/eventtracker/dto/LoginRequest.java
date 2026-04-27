@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Size;
 
 @Data
 @NoArgsConstructor
@@ -15,5 +16,6 @@ public class LoginRequest {
     private String email;
 
     @NotBlank(message = "Password is required")
+    @Size(max = 128, message = "Password must be 128 characters or fewer")
     private String password;
 }

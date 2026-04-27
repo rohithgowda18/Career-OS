@@ -11,8 +11,8 @@ import { toast } from "sonner";
 export default function LoginPage() {
   const [, setLocation] = useLocation();
   const [isSignUp, setIsSignUp] = useState(false);
-  const [email, setEmail] = useState("rohit@gmail.com");
-  const [password, setPassword] = useState("rohit");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [name, setName] = useState("");
 
   const queryClient = useQueryClient();
@@ -25,6 +25,10 @@ export default function LoginPage() {
       setLocation("/dashboard");
     },
     onError: (error: any) => {
+      if (error.response?.status === 401) {
+        toast.error("Invalid email or password");
+        return;
+      }
       toast.error(error.message || "Failed to log in");
     },
   });
@@ -37,6 +41,10 @@ export default function LoginPage() {
       setLocation("/dashboard");
     },
     onError: (error: any) => {
+      if (error.response?.status === 409) {
+        toast.error("An account with that email already exists");
+        return;
+      }
       toast.error(error.message || "Failed to register");
     },
   });
@@ -45,20 +53,17 @@ export default function LoginPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLoading) return;
+
+    const normalizedEmail = email.trim().toLowerCase();
     if (isSignUp) {
-      const [firstName, ...lastNameParts] = name.trim().split(/\s+/);
-      const lastName = lastNameParts.join(" ");
-      const username = email.split("@")[0].replace(/[^a-zA-Z0-9]/g, "") + Math.floor(Math.random() * 1000);
-      
       registerMutation.mutate({ 
-        email, 
-        password, 
-        firstName: firstName || name, 
-        lastName: lastName || "",
-        username: username
+        name: name.trim(),
+        email: normalizedEmail, 
+        password
       });
     } else {
-      loginMutation.mutate({ email, password });
+      loginMutation.mutate({ email: normalizedEmail, password });
     }
   };
 
@@ -71,6 +76,7 @@ export default function LoginPage() {
       {/* Back button */}
       <button 
         onClick={() => setLocation("/")}
+        disabled={isLoading}
         className="absolute top-8 left-8 flex items-center gap-2 text-sm text-muted-foreground hover:text-white transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
@@ -106,6 +112,8 @@ export default function LoginPage() {
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       required={isSignUp}
+                      disabled={isLoading}
+                      autoComplete="name"
                       className="pl-10 h-12 bg-white/5 border-white/10 focus:border-accent/50 focus:ring-accent/20 transition-all rounded-xl"
                     />
                   </div>
@@ -122,6 +130,8 @@ export default function LoginPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required 
+                    disabled={isLoading}
+                    autoComplete="email"
                     className="pl-10 h-12 bg-white/5 border-white/10 focus:border-accent/50 focus:ring-accent/20 transition-all rounded-xl"
                   />
                 </div>
@@ -130,7 +140,7 @@ export default function LoginPage() {
                 <div className="flex items-center justify-between">
                   <Label htmlFor="password">Password</Label>
                   {!isSignUp && (
-                    <button type="button" className="text-xs text-accent hover:underline">Forgot password?</button>
+                    <button type="button" disabled={isLoading} className="text-xs text-accent hover:underline disabled:pointer-events-none disabled:opacity-50">Forgot password?</button>
                   )}
                 </div>
                 <Input 
@@ -140,6 +150,9 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required 
+                  minLength={isSignUp ? 6 : undefined}
+                  disabled={isLoading}
+                  autoComplete={isSignUp ? "new-password" : "current-password"}
                   className="h-12 bg-white/5 border-white/10 focus:border-accent/50 focus:ring-accent/20 transition-all rounded-xl"
                 />
               </div>
@@ -171,11 +184,11 @@ export default function LoginPage() {
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <button className="flex items-center justify-center h-12 rounded-xl border border-white/10 hover:bg-white/5 transition-all font-medium gap-2">
+            <button type="button" disabled={isLoading} className="flex items-center justify-center h-12 rounded-xl border border-white/10 hover:bg-white/5 transition-all font-medium gap-2 disabled:pointer-events-none disabled:opacity-50">
               <Github className="w-5 h-5" />
               Github
             </button>
-            <button className="flex items-center justify-center h-12 rounded-xl border border-white/10 hover:bg-white/5 transition-all font-medium gap-2">
+            <button type="button" disabled={isLoading} className="flex items-center justify-center h-12 rounded-xl border border-white/10 hover:bg-white/5 transition-all font-medium gap-2 disabled:pointer-events-none disabled:opacity-50">
               <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center">
                 <div className="w-3 h-3 bg-black rounded-sm" />
               </div>
@@ -188,7 +201,8 @@ export default function LoginPage() {
           {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
           <button 
             onClick={() => setIsSignUp(!isSignUp)} 
-            className="text-accent font-semibold hover:underline"
+            disabled={isLoading}
+            className="text-accent font-semibold hover:underline disabled:pointer-events-none disabled:opacity-50"
           >
             {isSignUp ? "Log in" : "Sign up for free"}
           </button>

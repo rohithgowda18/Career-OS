@@ -27,6 +27,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String path = request.getServletPath();
         return "OPTIONS".equalsIgnoreCase(request.getMethod())
                 || "/error".equals(path)
+                || "/actuator/health".equals(path)
+                || path.startsWith("/actuator/health/")
+                || "/actuator/info".equals(path)
                 || "/auth/login".equals(path)
                 || "/auth/register".equals(path)
                 || path.startsWith("/auth/oauth/");

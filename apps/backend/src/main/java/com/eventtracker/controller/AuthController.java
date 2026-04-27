@@ -14,8 +14,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -35,18 +33,18 @@ import java.util.Optional;
 public class AuthController {
 
     private final UserService userService;
-    private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider tokenProvider;
     private final PasswordEncoder passwordEncoder;
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request) {
         try {
+            NameParts nameParts = resolveNameParts(request);
             User user = userService.createUser(
                     request.getEmail(),
                     request.getPassword(),
-                    request.getFirstName(),
-                    request.getLastName(),
+                    nameParts.firstName(),
+                    nameParts.lastName(),
                     request.getUsername()
             );
 
@@ -58,13 +56,18 @@ public class AuthController {
                     userService.convertToDTO(user)
             ));
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+            HttpStatus status = e.getMessage() != null && e.getMessage().toLowerCase().contains("exists")
+                    ? HttpStatus.CONFLICT
+                    : HttpStatus.BAD_REQUEST;
+            return ResponseEntity.status(status).body(errorBody(status, e.getMessage()));
         } catch (DataIntegrityViolationException e) {
             log.warn("Registration rejected because of duplicate or invalid persisted user data", e);
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("A user with those details already exists");
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(errorBody(HttpStatus.CONFLICT, "A user with those details already exists"));
         } catch (Exception e) {
             log.error("Registration error", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Registration failed");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(errorBody(HttpStatus.INTERNAL_SERVER_ERROR, "Registration failed"));
         }
     }
 
@@ -73,7 +76,8 @@ public class AuthController {
         try {
             Optional<User> user = userService.findByEmail(request.getEmail());
             if (user.isEmpty() || !passwordEncoder.matches(request.getPassword(), user.get().getPassword())) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid credentials");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(errorBody(HttpStatus.UNAUTHORIZED, "Invalid email or password"));
             }
 
             User authenticatedUser = user.get();
@@ -86,7 +90,8 @@ public class AuthController {
             ));
         } catch (Exception e) {
             log.error("Login error", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Login failed");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(errorBody(HttpStatus.INTERNAL_SERVER_ERROR, "Login failed"));
         }
     }
 
@@ -112,12 +117,51 @@ public class AuthController {
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, String>> handleValidationErrors(MethodArgumentNotValidException ex) {
-        Map<String, String> errors = new HashMap<>();
+    public ResponseEntity<Map<String, Object>> handleValidationErrors(MethodArgumentNotValidException ex) {
+        Map<String, Object> errors = new HashMap<>();
+        String firstMessage = "Validation failed";
         for (FieldError error : ex.getBindingResult().getFieldErrors()) {
             errors.put(error.getField(), error.getDefaultMessage());
+            if ("Validation failed".equals(firstMessage)) {
+                firstMessage = error.getDefaultMessage();
+            }
         }
-        errors.put("message", "Validation failed");
+        errors.put("status", HttpStatus.BAD_REQUEST.value());
+        errors.put("error", HttpStatus.BAD_REQUEST.getReasonPhrase());
+        errors.put("message", firstMessage);
         return ResponseEntity.badRequest().body(errors);
+    }
+
+    private NameParts resolveNameParts(RegisterRequest request) {
+        String firstName = trimToNull(request.getFirstName());
+        String lastName = trimToNull(request.getLastName());
+        String fullName = trimToNull(request.getName());
+
+        if ((firstName == null || firstName.isBlank()) && fullName != null) {
+            String[] pieces = fullName.split("\\s+", 2);
+            firstName = pieces[0];
+            lastName = pieces.length > 1 ? pieces[1] : lastName;
+        }
+
+        return new NameParts(firstName, lastName);
+    }
+
+    private String trimToNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private Map<String, Object> errorBody(HttpStatus status, String message) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("status", status.value());
+        body.put("error", status.getReasonPhrase());
+        body.put("message", message);
+        return body;
+    }
+
+    private record NameParts(String firstName, String lastName) {
     }
 }
