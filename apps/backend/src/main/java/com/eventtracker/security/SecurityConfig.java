@@ -18,12 +18,15 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import org.springframework.context.annotation.Lazy;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.Arrays;
+import java.util.stream.Collectors;
 
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
+@Slf4j
 public class SecurityConfig {
 
     private final JwtTokenProvider jwtTokenProvider;
@@ -44,7 +47,15 @@ public class SecurityConfig {
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
+        java.util.List<String> origins = Arrays.asList(allowedOrigins.split(","))
+            .stream()
+            .map(String::trim)
+            .collect(Collectors.toList());
+        
+        log.info("=== CORS Configuration ===");
+        log.info("Allowed origins: {}", origins);
+        
+        configuration.setAllowedOrigins(origins
         configuration.setAllowedOrigins(Arrays.asList(allowedOrigins.split(",")));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
