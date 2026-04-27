@@ -46,6 +46,7 @@ public class AuthDTO {
         @Size(max = 60, message = "Last name must be 60 characters or fewer")
         private String lastName;
 
+        @NotBlank(message = "Username is required")
         @Size(max = 40, message = "Username must be 40 characters or fewer")
         private String username;
     }

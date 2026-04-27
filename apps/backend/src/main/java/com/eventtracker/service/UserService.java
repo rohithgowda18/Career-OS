@@ -27,8 +27,12 @@ public class UserService {
 
     public User createUser(String email, String password, String firstName, String lastName, String username) {
         String normalizedEmail = normalizeEmail(email);
+        String normalizedRequestedUsername = normalizeUsername(username);
         if (normalizedEmail.isBlank()) {
             throw new IllegalArgumentException("Email is required");
+        }
+        if (normalizedRequestedUsername.isBlank()) {
+            throw new IllegalArgumentException("Username is required");
         }
         if (password == null || password.isBlank()) {
             throw new IllegalArgumentException("Password is required");
@@ -37,7 +41,7 @@ public class UserService {
             throw new DuplicateUserException("Email already exists");
         }
 
-        String uniqueUsername = makeUniqueUsername(username, normalizedEmail);
+        String uniqueUsername = makeUniqueUsername(normalizedRequestedUsername, normalizedEmail, true);
         String normalizedFirstName = normalizeNullableName(firstName);
         String normalizedLastName = normalizeNullableName(lastName);
         String encodedPassword = passwordEncoder.encode(password);
@@ -72,9 +76,9 @@ public class UserService {
         return user;
     }
 
-    private String makeUniqueUsername(String requestedUsername, String email) {
+    private String makeUniqueUsername(String requestedUsername, String email, boolean rejectRequestedDuplicate) {
         String base = normalizeUsername(requestedUsername);
-        if (!base.isBlank() && userRepository.existsByUsernameIgnoreCase(base)) {
+        if (rejectRequestedDuplicate && !base.isBlank() && userRepository.existsByUsernameIgnoreCase(base)) {
             throw new DuplicateUserException("Username already exists");
         }
 
@@ -214,7 +218,7 @@ public class UserService {
             return Optional.of(userRepository.save(user));
         }
 
-        String uniqueUsername = makeUniqueUsername(name, normalizedEmail);
+        String uniqueUsername = makeUniqueUsername(name, normalizedEmail, false);
 
         // Create new user
         User user = new User();

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,14 +13,15 @@ export default function LoginPage() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
+  const [showWakeMessage, setShowWakeMessage] = useState(false);
 
   const queryClient = useQueryClient();
 
   const loginMutation = useMutation({
     mutationFn: authApi.login,
     onSuccess: () => {
-      toast.success("Welcome back!");
+      toast.success("Login successful");
       queryClient.invalidateQueries({ queryKey: ['auth', 'me'] });
       setLocation("/dashboard");
     },
@@ -29,27 +30,40 @@ export default function LoginPage() {
         toast.error("Invalid email or password");
         return;
       }
-      toast.error(error.message || "Failed to log in");
+      toast.error(error.response?.status >= 500 ? "Server error" : error.message || "Failed to log in");
     },
   });
 
   const registerMutation = useMutation({
     mutationFn: authApi.register,
     onSuccess: () => {
-      toast.success("Account created successfully!");
+      toast.success("Registration successful");
       queryClient.invalidateQueries({ queryKey: ['auth', 'me'] });
       setLocation("/dashboard");
     },
     onError: (error: any) => {
       if (error.response?.status === 409) {
-        toast.error("An account with that email already exists");
+        toast.error(error.message || "Email or username already exists");
         return;
       }
-      toast.error(error.message || "Failed to register");
+      toast.error(error.response?.status >= 500 ? "Server error" : error.message || "Failed to register");
     },
   });
 
   const isLoading = loginMutation.isPending || registerMutation.isPending;
+
+  useEffect(() => {
+    if (!isLoading) {
+      setShowWakeMessage(false);
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setShowWakeMessage(true);
+    }, 5000);
+
+    return () => window.clearTimeout(timer);
+  }, [isLoading]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,7 +72,7 @@ export default function LoginPage() {
     const normalizedEmail = email.trim().toLowerCase();
     if (isSignUp) {
       registerMutation.mutate({ 
-        name: name.trim(),
+        username: username.trim(),
         email: normalizedEmail, 
         password
       });
@@ -102,18 +116,18 @@ export default function LoginPage() {
             <div className="space-y-4">
               {isSignUp && (
                 <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-                  <Label htmlFor="name">Full Name</Label>
+                  <Label htmlFor="username">Username</Label>
                   <div className="relative group">
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-accent transition-colors" />
                     <Input 
-                      id="name" 
+                      id="username" 
                       type="text" 
-                      placeholder="John Doe" 
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
+                      placeholder="rohit18" 
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
                       required={isSignUp}
                       disabled={isLoading}
-                      autoComplete="name"
+                      autoComplete="username"
                       className="pl-10 h-12 bg-white/5 border-white/10 focus:border-accent/50 focus:ring-accent/20 transition-all rounded-xl"
                     />
                   </div>
@@ -146,7 +160,7 @@ export default function LoginPage() {
                 <Input 
                   id="password" 
                   type="password" 
-                  placeholder="••••••••" 
+                  placeholder="Password" 
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required 
@@ -172,6 +186,11 @@ export default function LoginPage() {
                 isSignUp ? "Create Account" : "Log in"
               )}
             </Button>
+            {showWakeMessage && (
+              <p className="text-center text-sm text-muted-foreground">
+                Waking server, please wait...
+              </p>
+            )}
           </form>
 
           <div className="relative my-8">

@@ -60,7 +60,7 @@ class UserServiceTest {
         when(userPreferencesRepository.save(any(UserPreferences.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(userProfileRepository.save(any(UserProfile.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        User user = userService.createUser("Ada@Example.com", "password123", "Ada", "Lovelace", null);
+        User user = userService.createUser("Ada@Example.com", "password123", "Ada", "Lovelace", "Ada");
 
         assertThat(user.getId()).isEqualTo(1L);
         assertThat(user.getEmail()).isEqualTo("ada@example.com");
@@ -86,7 +86,7 @@ class UserServiceTest {
                 "password123",
                 "Ada",
                 "Lovelace",
-                null
+                "Ada"
         ))
                 .isInstanceOf(DuplicateUserException.class)
                 .hasMessage("Email already exists");
