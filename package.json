@@ -2,6 +2,7 @@
   "name": "event-app-tracker",
   "version": "1.0.0",
   "type": "module",
+  "packageManager": "npm@10.8.1",
   "license": "MIT",
   "scripts": {
     "dev": "npm run dev -w apps/web",
