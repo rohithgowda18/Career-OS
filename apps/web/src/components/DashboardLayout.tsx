@@ -25,8 +25,8 @@ import { useIsMobile } from "@/hooks/useMobile";
 import { LayoutDashboard, LogOut, PanelLeft, Users } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
-import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
-import { PWAInstallButton } from './PWAInstallButton';
+import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
+import { PWAInstallButton } from "./PWAInstallButton";
 import { Button } from "./ui/button";
 
 const menuItems = [
@@ -55,10 +55,10 @@ export default function DashboardLayout({
   }, [sidebarWidth]);
 
   if (loading) {
-    return <DashboardLayoutSkeleton />
+    return <DashboardLayoutSkeleton />;
   }
 
-  if (!user) {
+  if (!loading && !user) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="flex flex-col items-center gap-8 p-8 max-w-md w-full">
@@ -67,7 +67,8 @@ export default function DashboardLayout({
               Sign in to continue
             </h1>
             <p className="text-sm text-muted-foreground text-center max-w-sm">
-              Access to this dashboard requires authentication. Continue to launch the login flow.
+              Access to this dashboard requires authentication. Continue to
+              launch the login flow.
             </p>
           </div>
           <Button
@@ -221,19 +222,21 @@ function DashboardLayoutContent({
       <SidebarInset>
         <header className="flex border-b h-14 items-center justify-between bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:backdrop-blur sticky top-0 z-40">
           <div className="flex items-center gap-2">
-            {isMobile && <SidebarTrigger className="h-9 w-9 rounded-lg bg-background" />}
+            {isMobile && (
+              <SidebarTrigger className="h-9 w-9 rounded-lg bg-background" />
+            )}
             <span className="tracking-tight text-foreground font-semibold">
               {activeMenuItem?.label ?? "Dashboard"}
             </span>
           </div>
-          
+
           <div className="flex items-center">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center outline-none">
                   <Avatar className="h-9 w-9 border cursor-pointer hover:opacity-80 transition-opacity">
                     <AvatarFallback className="text-xs font-medium">
-                      {user?.name?.charAt(0).toUpperCase() || 'U'}
+                      {user?.name?.charAt(0).toUpperCase() || "U"}
                     </AvatarFallback>
                   </Avatar>
                 </button>
@@ -241,8 +244,12 @@ function DashboardLayoutContent({
               <DropdownMenuContent align="end" className="w-56 mt-2">
                 <div className="flex items-center justify-start gap-2 p-2">
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">{user?.name || "User"}</p>
-                    <p className="text-xs text-muted-foreground truncate">{user?.email || "No email"}</p>
+                    <p className="text-sm font-medium leading-none">
+                      {user?.name || "User"}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {user?.email || "No email"}
+                    </p>
                   </div>
                 </div>
                 <DropdownMenuSeparator />

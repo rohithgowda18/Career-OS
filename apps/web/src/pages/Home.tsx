@@ -39,7 +39,7 @@ export default function Home() {
     );
   }
 
-  if (!user) {
+  if (!loading && !user) {
     window.location.href = "/login";
     return null;
   }

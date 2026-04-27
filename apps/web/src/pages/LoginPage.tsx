@@ -20,9 +20,22 @@ export default function LoginPage() {
 
   const loginMutation = useMutation({
     mutationFn: authApi.login,
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success("Login successful");
-      queryClient.invalidateQueries({ queryKey: ['auth', 'me'] });
+      // Refetch the me query and wait for user to be hydrated before navigating
+      await queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
+      // Wait for user to be available in cache
+      let tries = 0;
+      while (tries < 10) {
+        const user = queryClient.getQueryData(["auth", "me"]);
+        if (user) {
+          setLocation("/dashboard");
+          return;
+        }
+        await new Promise(res => setTimeout(res, 100));
+        tries++;
+      }
+      // Fallback: navigate anyway
       setLocation("/dashboard");
     },
     onError: (error: any) => {
@@ -30,7 +43,11 @@ export default function LoginPage() {
         toast.error("Invalid email or password");
         return;
       }
-      toast.error(error.response?.status >= 500 ? "Server error" : error.message || "Failed to log in");
+      toast.error(
+        error.response?.status >= 500
+          ? "Server error"
+          : error.message || "Failed to log in"
+      );
     },
   });
 
@@ -38,7 +55,7 @@ export default function LoginPage() {
     mutationFn: authApi.register,
     onSuccess: () => {
       toast.success("Registration successful");
-      queryClient.invalidateQueries({ queryKey: ['auth', 'me'] });
+      queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
       setLocation("/dashboard");
     },
     onError: (error: any) => {
@@ -46,7 +63,11 @@ export default function LoginPage() {
         toast.error(error.message || "Email or username already exists");
         return;
       }
-      toast.error(error.response?.status >= 500 ? "Server error" : error.message || "Failed to register");
+      toast.error(
+        error.response?.status >= 500
+          ? "Server error"
+          : error.message || "Failed to register"
+      );
     },
   });
 
@@ -71,10 +92,10 @@ export default function LoginPage() {
 
     const normalizedEmail = email.trim().toLowerCase();
     if (isSignUp) {
-      registerMutation.mutate({ 
+      registerMutation.mutate({
         username: username.trim(),
-        email: normalizedEmail, 
-        password
+        email: normalizedEmail,
+        password,
       });
     } else {
       loginMutation.mutate({ email: normalizedEmail, password });
@@ -88,7 +109,7 @@ export default function LoginPage() {
       <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] rounded-full bg-blue-600/10 blur-[130px]" />
 
       {/* Back button */}
-      <button 
+      <button
         onClick={() => setLocation("/")}
         disabled={isLoading}
         className="absolute top-8 left-8 flex items-center gap-2 text-sm text-muted-foreground hover:text-white transition-colors"
@@ -100,14 +121,19 @@ export default function LoginPage() {
       {/* Login Card */}
       <div className="w-full max-w-[420px] z-10 animate-in fade-in zoom-in-95 duration-500">
         <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-accent to-blue-600 shadow-2xl shadow-accent/20 mb-6 group cursor-pointer" onClick={() => setLocation("/")}>
+          <div
+            className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-accent to-blue-600 shadow-2xl shadow-accent/20 mb-6 group cursor-pointer"
+            onClick={() => setLocation("/")}
+          >
             <Sparkles className="w-10 h-10 text-white" />
           </div>
           <h1 className="text-3xl font-black tracking-tight mb-2">
             {isSignUp ? "Create Account" : "Welcome Back"}
           </h1>
           <p className="text-muted-foreground">
-            {isSignUp ? "Sign up to start tracking your events." : "Log in to your dashboard to manage your events."}
+            {isSignUp
+              ? "Sign up to start tracking your events."
+              : "Log in to your dashboard to manage your events."}
           </p>
         </div>
 
@@ -119,12 +145,12 @@ export default function LoginPage() {
                   <Label htmlFor="username">Username</Label>
                   <div className="relative group">
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-accent transition-colors" />
-                    <Input 
-                      id="username" 
-                      type="text" 
-                      placeholder="rohit18" 
+                    <Input
+                      id="username"
+                      type="text"
+                      placeholder="rohit18"
                       value={username}
-                      onChange={(e) => setUsername(e.target.value)}
+                      onChange={e => setUsername(e.target.value)}
                       required={isSignUp}
                       disabled={isLoading}
                       autoComplete="username"
@@ -137,13 +163,13 @@ export default function LoginPage() {
                 <Label htmlFor="email">Email address</Label>
                 <div className="relative group">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-accent transition-colors" />
-                  <Input 
-                    id="email" 
-                    type="email" 
-                    placeholder="name@example.com" 
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="name@example.com"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required 
+                    onChange={e => setEmail(e.target.value)}
+                    required
                     disabled={isLoading}
                     autoComplete="email"
                     className="pl-10 h-12 bg-white/5 border-white/10 focus:border-accent/50 focus:ring-accent/20 transition-all rounded-xl"
@@ -154,16 +180,22 @@ export default function LoginPage() {
                 <div className="flex items-center justify-between">
                   <Label htmlFor="password">Password</Label>
                   {!isSignUp && (
-                    <button type="button" disabled={isLoading} className="text-xs text-accent hover:underline disabled:pointer-events-none disabled:opacity-50">Forgot password?</button>
+                    <button
+                      type="button"
+                      disabled={isLoading}
+                      className="text-xs text-accent hover:underline disabled:pointer-events-none disabled:opacity-50"
+                    >
+                      Forgot password?
+                    </button>
                   )}
                 </div>
-                <Input 
-                  id="password" 
-                  type="password" 
-                  placeholder="Password" 
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="Password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required 
+                  onChange={e => setPassword(e.target.value)}
+                  required
                   minLength={isSignUp ? 6 : undefined}
                   disabled={isLoading}
                   autoComplete={isSignUp ? "new-password" : "current-password"}
@@ -172,8 +204,8 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               disabled={isLoading}
               className="w-full h-12 bg-accent hover:bg-accent/90 text-white rounded-xl font-bold text-base shadow-lg shadow-accent/20 transition-all"
             >
@@ -182,8 +214,10 @@ export default function LoginPage() {
                   <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                   {isSignUp ? "Creating Account..." : "Signing in..."}
                 </>
+              ) : isSignUp ? (
+                "Create Account"
               ) : (
-                isSignUp ? "Create Account" : "Log in"
+                "Log in"
               )}
             </Button>
             {showWakeMessage && (
@@ -198,16 +232,26 @@ export default function LoginPage() {
               <span className="w-full border-t border-white/10" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-[#0a0a0c] px-4 text-muted-foreground leading-none">Or continue with</span>
+              <span className="bg-[#0a0a0c] px-4 text-muted-foreground leading-none">
+                Or continue with
+              </span>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <button type="button" disabled={isLoading} className="flex items-center justify-center h-12 rounded-xl border border-white/10 hover:bg-white/5 transition-all font-medium gap-2 disabled:pointer-events-none disabled:opacity-50">
+            <button
+              type="button"
+              disabled={isLoading}
+              className="flex items-center justify-center h-12 rounded-xl border border-white/10 hover:bg-white/5 transition-all font-medium gap-2 disabled:pointer-events-none disabled:opacity-50"
+            >
               <Github className="w-5 h-5" />
               Github
             </button>
-            <button type="button" disabled={isLoading} className="flex items-center justify-center h-12 rounded-xl border border-white/10 hover:bg-white/5 transition-all font-medium gap-2 disabled:pointer-events-none disabled:opacity-50">
+            <button
+              type="button"
+              disabled={isLoading}
+              className="flex items-center justify-center h-12 rounded-xl border border-white/10 hover:bg-white/5 transition-all font-medium gap-2 disabled:pointer-events-none disabled:opacity-50"
+            >
               <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center">
                 <div className="w-3 h-3 bg-black rounded-sm" />
               </div>
@@ -218,8 +262,8 @@ export default function LoginPage() {
 
         <p className="text-center mt-8 text-sm text-muted-foreground">
           {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
-          <button 
-            onClick={() => setIsSignUp(!isSignUp)} 
+          <button
+            onClick={() => setIsSignUp(!isSignUp)}
             disabled={isLoading}
             className="text-accent font-semibold hover:underline disabled:pointer-events-none disabled:opacity-50"
           >
@@ -231,8 +275,12 @@ export default function LoginPage() {
       {/* Footer info */}
       <div className="absolute bottom-8 text-xs text-muted-foreground/50 flex gap-6">
         <span>© 2024 Event Tracker</span>
-        <a href="#" className="hover:text-white">Privacy Policy</a>
-        <a href="#" className="hover:text-white">Terms of Service</a>
+        <a href="#" className="hover:text-white">
+          Privacy Policy
+        </a>
+        <a href="#" className="hover:text-white">
+          Terms of Service
+        </a>
       </div>
     </div>
   );
