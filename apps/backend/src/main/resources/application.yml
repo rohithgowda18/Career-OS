@@ -6,10 +6,6 @@ spring:
     allow-circular-references: true
     allow-bean-definition-overriding: true
 
-app:
-  cors:
-    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:3000,https://eventpulse-phi.vercel.app}
-
   datasource:
     url: ${SPRING_DATASOURCE_URL}
     username: ${SPRING_DATASOURCE_USERNAME}
@@ -52,6 +48,10 @@ app:
           starttls:
             enable: false
     enabled: ${MAIL_ENABLED:false}
+
+app:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:3000,https://eventpulse-phi.vercel.app}
 
 server:
   port: 8080
