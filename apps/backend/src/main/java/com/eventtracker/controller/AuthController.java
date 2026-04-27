@@ -5,6 +5,7 @@ import com.eventtracker.dto.AuthDTO.RegisterRequest;
 import com.eventtracker.dto.AuthDTO.AuthResponse;
 import com.eventtracker.dto.UserDTO;
 import com.eventtracker.entity.User;
+import com.eventtracker.exception.DuplicateUserException;
 import com.eventtracker.security.JwtTokenProvider;
 import com.eventtracker.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -12,6 +13,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.core.NestedExceptionUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -55,15 +57,19 @@ public class AuthController {
                     tokenProvider.getJwtExpirationMillis(),
                     userService.convertToDTO(user)
             ));
+        } catch (DuplicateUserException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(errorBody(HttpStatus.CONFLICT, e.getMessage()));
         } catch (IllegalArgumentException e) {
-            HttpStatus status = e.getMessage() != null && e.getMessage().toLowerCase().contains("exists")
-                    ? HttpStatus.CONFLICT
-                    : HttpStatus.BAD_REQUEST;
-            return ResponseEntity.status(status).body(errorBody(status, e.getMessage()));
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorBody(HttpStatus.BAD_REQUEST, e.getMessage()));
         } catch (DataIntegrityViolationException e) {
-            log.warn("Registration rejected because of duplicate or invalid persisted user data", e);
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(errorBody(HttpStatus.CONFLICT, "A user with those details already exists"));
+            if (isUserUniqueConstraintViolation(e)) {
+                log.warn("Registration rejected because of duplicate persisted user data", e);
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                        .body(errorBody(HttpStatus.CONFLICT, "Email or username already exists"));
+            }
+            log.error("Registration failed because persisted user data violated a non-duplicate constraint", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(errorBody(HttpStatus.INTERNAL_SERVER_ERROR, "Registration failed"));
         } catch (Exception e) {
             log.error("Registration error", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -160,6 +166,20 @@ public class AuthController {
         body.put("error", status.getReasonPhrase());
         body.put("message", message);
         return body;
+    }
+
+    private boolean isUserUniqueConstraintViolation(DataIntegrityViolationException exception) {
+        Throwable rootCause = NestedExceptionUtils.getMostSpecificCause(exception);
+        String message = rootCause == null ? exception.getMessage() : rootCause.getMessage();
+        if (message == null) {
+            return false;
+        }
+
+        String normalizedMessage = message.toLowerCase();
+        return normalizedMessage.contains("users_email_key")
+                || normalizedMessage.contains("users_username_key")
+                || normalizedMessage.contains("uk_users_email")
+                || normalizedMessage.contains("uk_users_username");
     }
 
     private record NameParts(String firstName, String lastName) {

@@ -4,6 +4,7 @@ import com.eventtracker.dto.UserDTO;
 import com.eventtracker.entity.User;
 import com.eventtracker.entity.UserProfile;
 import com.eventtracker.entity.UserPreferences;
+import com.eventtracker.exception.DuplicateUserException;
 import com.eventtracker.repository.UserRepository;
 import com.eventtracker.repository.UserProfileRepository;
 import com.eventtracker.repository.UserPreferencesRepository;
@@ -33,7 +34,7 @@ public class UserService {
             throw new IllegalArgumentException("Password is required");
         }
         if (userRepository.existsByEmailIgnoreCase(normalizedEmail)) {
-            throw new IllegalArgumentException("Email already exists");
+            throw new DuplicateUserException("Email already exists");
         }
 
         String uniqueUsername = makeUniqueUsername(username, normalizedEmail);
@@ -65,6 +66,10 @@ public class UserService {
 
     private String makeUniqueUsername(String requestedUsername, String email) {
         String base = normalizeUsername(requestedUsername);
+        if (!base.isBlank() && userRepository.existsByUsernameIgnoreCase(base)) {
+            throw new DuplicateUserException("Username already exists");
+        }
+
         int atIndex = email.indexOf('@');
         if (base.isBlank() && atIndex > 0) {
             base = normalizeUsername(email.substring(0, email.indexOf('@')));
