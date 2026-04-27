@@ -4,7 +4,8 @@
  */
 
 import { useState, useCallback } from 'react';
-import { trpc } from '@/lib/trpc';
+import { useMutation } from '@tanstack/react-query';
+import { applicationsApi } from '@/lib/api/applicationsApi';
 
 export interface FetchMetadataState {
   isLoading: boolean;
@@ -34,7 +35,7 @@ export function useFetchMetadata(): UseFetchMetadataReturn {
   });
 
   // Use tRPC mutation for fetching metadata
-  const fetchMetadataMutation = trpc.applications.fetchMetadata.useMutation();
+  const fetchMetadataMutation = useMutation({ mutationFn: applicationsApi.fetchMetadata });
 
   const fetchMetadata = useCallback(
     async (url: string) => {

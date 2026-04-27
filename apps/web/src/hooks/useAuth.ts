@@ -1,21 +1,24 @@
-import { trpc } from "@/lib/trpc";
 import { useCallback, useMemo } from "react";
 import { useLocation } from "wouter";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { authApi } from "@/lib/api/authApi";
 
 export function useAuth() {
-  const utils = trpc.useUtils();
+  const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
 
-  const meQuery = trpc.auth.me.useQuery(undefined, {
+  const meQuery = useQuery({
+    queryKey: ['auth', 'me'],
+    queryFn: authApi.me,
     retry: false,
     refetchOnWindowFocus: false,
   });
 
   const logout = useCallback(async () => {
     localStorage.removeItem("token");
-    utils.auth.me.setData(undefined, null);
+    queryClient.setQueryData(['auth', 'me'], null);
     setLocation("/login");
-  }, [utils, setLocation]);
+  }, [queryClient, setLocation]);
 
   const state = useMemo(() => {
     return {

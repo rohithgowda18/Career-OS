@@ -1,4 +1,5 @@
-import { trpc } from "@/lib/trpc";
+import { useQuery } from "@tanstack/react-query";
+import { analyticsApi } from "@/lib/api/analyticsApi";
 import { Loader2 } from "lucide-react";
 import {
   BarChart,
@@ -31,10 +32,10 @@ const COLORS = {
 };
 
 export default function AnalyticsDashboard() {
-  const acceptanceRatesQuery = trpc.analytics.acceptanceRates.useQuery();
-  const seasonalTrendsQuery = trpc.analytics.seasonalTrends.useQuery();
-  const statusDistributionQuery = trpc.analytics.statusDistribution.useQuery();
-  const summaryQuery = trpc.analytics.summary.useQuery();
+  const acceptanceRatesQuery = useQuery({ queryKey: ['analytics', 'rates'], queryFn: analyticsApi.acceptanceRates });
+  const seasonalTrendsQuery = useQuery({ queryKey: ['analytics', 'trends'], queryFn: analyticsApi.seasonalTrends });
+  const statusDistributionQuery = useQuery({ queryKey: ['analytics', 'distribution'], queryFn: analyticsApi.statusDistribution });
+  const summaryQuery = useQuery({ queryKey: ['analytics', 'summary'], queryFn: analyticsApi.summary });
 
   const isLoading =
     acceptanceRatesQuery.isLoading ||

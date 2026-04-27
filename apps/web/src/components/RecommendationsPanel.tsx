@@ -3,7 +3,9 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Lightbulb, TrendingUp, Calendar, Zap } from "lucide-react";
-import { trpc } from "@/lib/trpc";
+import { useQuery } from "@tanstack/react-query";
+import { analyticsApi } from "@/lib/api/analyticsApi";
+import { applicationsApi } from "@/lib/api/applicationsApi";
 import { toast } from "sonner";
 
 interface Recommendation {
@@ -21,8 +23,8 @@ export default function RecommendationsPanel() {
   const [isLoading, setIsLoading] = useState(false);
   const [hasGenerated, setHasGenerated] = useState(false);
 
-  const applicationsQuery = trpc.applications.list.useQuery();
-  const recommendationsQuery = trpc.recommendations.generate.useQuery();
+  const applicationsQuery = useQuery({ queryKey: ['applications'], queryFn: applicationsApi.list });
+  const recommendationsQuery = useQuery({ queryKey: ['recommendations'], queryFn: analyticsApi.generateRecommendations });
   
   const handleGenerateRecommendationsInternal = async () => {
     await recommendationsQuery.refetch();

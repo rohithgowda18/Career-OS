@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useLocation } from "wouter";
-import { trpc } from "@/lib/trpc";
+import { useQuery } from "@tanstack/react-query";
+import { profileApi } from "@/lib/api/profileApi";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,20 +12,23 @@ export default function PublicProfile() {
   const { username } = useParams<{ username: string }>();
   const [, navigate] = useLocation();
 
-  const profileQuery = trpc.profile.getByUsername.useQuery(
-    { username: username || "" },
-    { enabled: !!username }
-  );
+  const profileQuery = useQuery({
+    queryKey: ['profile', username],
+    queryFn: () => profileApi.getByUsername(username || ""),
+    enabled: !!username
+  });
 
-  const statsQuery = trpc.profile.getStats.useQuery(
-    { username: username || "" },
-    { enabled: !!username }
-  );
+  const statsQuery = useQuery({
+    queryKey: ['profile', username, 'stats'],
+    queryFn: () => profileApi.getStats(username || ""),
+    enabled: !!username
+  });
 
-  const applicationsQuery = trpc.profile.getApplications.useQuery(
-    { username: username || "" },
-    { enabled: !!username }
-  );
+  const applicationsQuery = useQuery({
+    queryKey: ['profile', username, 'applications'],
+    queryFn: () => profileApi.getApplications(username || ""),
+    enabled: !!username
+  });
 
   if (!username) {
     return (

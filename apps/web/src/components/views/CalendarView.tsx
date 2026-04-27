@@ -1,22 +1,33 @@
 import { useState, useMemo } from "react";
 import { ChevronLeft, ChevronRight, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { trpc } from "@/lib/trpc";
+import { useQuery } from "@tanstack/react-query";
+import { applicationsApi } from "@/lib/api/applicationsApi";
 import { toast } from "sonner";
 
 const DAYS_OF_WEEK = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTHS = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December"
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 
 const STATUS_COLORS: Record<string, string> = {
-  "Interested": "bg-blue-100 text-blue-900 border-blue-300",
-  "Applied": "bg-purple-100 text-purple-900 border-purple-300",
+  Interested: "bg-blue-100 text-blue-900 border-blue-300",
+  Applied: "bg-purple-100 text-purple-900 border-purple-300",
   "Under Review": "bg-yellow-100 text-yellow-900 border-yellow-300",
-  "Accepted": "bg-green-100 text-green-900 border-green-300",
-  "Rejected": "bg-red-100 text-red-900 border-red-300",
-  "Withdrawn": "bg-gray-100 text-gray-900 border-gray-300",
+  Accepted: "bg-green-100 text-green-900 border-green-300",
+  Rejected: "bg-red-100 text-red-900 border-red-300",
+  Withdrawn: "bg-gray-100 text-gray-900 border-gray-300",
 };
 
 interface CalendarEvent {
@@ -28,14 +39,17 @@ interface CalendarEvent {
 
 export default function CalendarView() {
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
-  const applicationsQuery = trpc.applications.list.useQuery();
+  const applicationsQuery = useQuery({
+    queryKey: ["applications"],
+    queryFn: applicationsApi.list,
+  });
   const applications = applicationsQuery.data || [];
 
   // Convert applications to calendar events
   const events = useMemo(() => {
     return applications
-      .filter(app => app.deadline)
-      .map(app => ({
+      .filter((app: any) => app.deadline)
+      .map((app: any) => ({
         id: app.id,
         eventName: app.eventName,
         status: app.status,
@@ -56,7 +70,7 @@ export default function CalendarView() {
   // Get events for a specific day
   const getEventsForDay = (day: number | null): CalendarEvent[] => {
     if (!day) return [];
-    return events.filter(event => {
+    return events.filter((event: CalendarEvent) => {
       return (
         event.deadline.getFullYear() === currentDate.getFullYear() &&
         event.deadline.getMonth() === currentDate.getMonth() &&
@@ -67,12 +81,23 @@ export default function CalendarView() {
 
   // Navigate to previous month
   const handlePrevMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1));
+    setCurrentDate(
+      new Date(currentDate.getFullYear(), currentDate.getMonth() - 1)
+    );
   };
 
   // Navigate to next month
   const handleNextMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1));
+    setCurrentDate(
+      new Date(currentDate.getFullYear(), currentDate.getMonth() + 1)
+    );
+  };
+
+  // Get all events with type annotations
+  const getAllEvents = () => {
+    return events.forEach((event: CalendarEvent) => {
+      // Process events
+    });
   };
 
   // Export calendar to iCal format
@@ -98,13 +123,13 @@ END:VTIMEZONE
 `;
 
       // Add events
-      events.forEach(event => {
+      events.forEach((event: CalendarEvent) => {
         const deadline = event.deadline;
-        const dateStr = deadline.toISOString().split('T')[0].replace(/-/g, '');
-        
+        const dateStr = deadline.toISOString().split("T")[0].replace(/-/g, "");
+
         icalContent += `BEGIN:VEVENT
 UID:app-${event.id}@eventtracker
-DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}Z
+DTSTAMP:${new Date().toISOString().replace(/[-:]/g, "").split(".")[0]}Z
 DTSTART;VALUE=DATE:${dateStr}
 SUMMARY:${event.eventName} - ${event.status}
 DESCRIPTION:Application Status: ${event.status}
@@ -121,13 +146,15 @@ END:VEVENT
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `event-applications-${new Date().toISOString().split('T')[0]}.ics`;
+      link.download = `event-applications-${new Date().toISOString().split("T")[0]}.ics`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
 
-      toast.success("Calendar exported successfully! You can now import it into Google Calendar, Outlook, or Apple Calendar.");
+      toast.success(
+        "Calendar exported successfully! You can now import it into Google Calendar, Outlook, or Apple Calendar."
+      );
     } catch (error) {
       console.error("Export failed:", error);
       toast.error("Failed to export calendar");
@@ -154,28 +181,17 @@ END:VEVENT
       {/* Header with navigation */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handlePrevMonth}
-          >
+          <Button variant="ghost" size="icon" onClick={handlePrevMonth}>
             <ChevronLeft className="w-5 h-5" />
           </Button>
           <h2 className="text-2xl font-bold min-w-[200px]">
             {MONTHS[currentDate.getMonth()]} {currentDate.getFullYear()}
           </h2>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleNextMonth}
-          >
+          <Button variant="ghost" size="icon" onClick={handleNextMonth}>
             <ChevronRight className="w-5 h-5" />
           </Button>
         </div>
-        <Button
-          onClick={handleExportCalendar}
-          className="gap-2"
-        >
+        <Button onClick={handleExportCalendar} className="gap-2">
           <Download className="w-4 h-4" />
           Export to Calendar
         </Button>
@@ -218,7 +234,9 @@ END:VEVENT
               >
                 {day && (
                   <>
-                    <div className={`text-sm font-semibold mb-2 ${isToday ? "text-accent" : "text-foreground"}`}>
+                    <div
+                      className={`text-sm font-semibold mb-2 ${isToday ? "text-accent" : "text-foreground"}`}
+                    >
                       {day}
                     </div>
                     <div className="space-y-1">
@@ -228,8 +246,12 @@ END:VEVENT
                           className={`text-xs p-1 rounded border ${STATUS_COLORS[event.status] || "bg-gray-100"}`}
                           title={event.eventName}
                         >
-                          <div className="font-medium truncate">{event.eventName}</div>
-                          <div className="text-xs opacity-75">{event.status}</div>
+                          <div className="font-medium truncate">
+                            {event.eventName}
+                          </div>
+                          <div className="text-xs opacity-75">
+                            {event.status}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -256,10 +278,14 @@ END:VEVENT
 
       {/* Info box */}
       <div className="card-elevated p-6 bg-blue-50 border border-blue-200">
-        <h3 className="font-semibold text-blue-900 mb-2">💡 Calendar Export Tips</h3>
+        <h3 className="font-semibold text-blue-900 mb-2">
+          💡 Calendar Export Tips
+        </h3>
         <ul className="text-sm text-blue-800 space-y-1">
           <li>• Click "Export to Calendar" to download an .ics file</li>
-          <li>• Import the file into Google Calendar, Outlook, or Apple Calendar</li>
+          <li>
+            • Import the file into Google Calendar, Outlook, or Apple Calendar
+          </li>
           <li>• Your application deadlines will sync as calendar events</li>
           <li>• Color-coded by status for easy visualization</li>
           <li>• Re-export anytime to sync updates</li>

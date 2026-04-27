@@ -1,5 +1,12 @@
-import { trpc } from "@/lib/trpc";
-import { Loader2, Plus, ChevronUp, ChevronDown, ExternalLink } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { applicationsApi } from "@/lib/api/applicationsApi";
+import {
+  Loader2,
+  Plus,
+  ChevronUp,
+  ChevronDown,
+  ExternalLink,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import AddApplicationModal from "@/components/AddApplicationModal";
@@ -24,7 +31,10 @@ export default function ListView() {
   const [sortField, setSortField] = useState<SortField>("deadline");
   const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
 
-  const applicationsQuery = trpc.applications.list.useQuery();
+  const applicationsQuery = useQuery({
+    queryKey: ["applications"],
+    queryFn: applicationsApi.list,
+  });
   const applications = applicationsQuery.data || [];
 
   const filteredAndSorted = useMemo(() => {
@@ -32,26 +42,26 @@ export default function ListView() {
 
     // Apply status filter
     if (statusFilter !== "all") {
-      filtered = filtered.filter((app) => app.status === statusFilter);
+      filtered = filtered.filter((app: any) => app.status === statusFilter);
     }
 
     // Apply type filter
     if (typeFilter !== "all") {
-      filtered = filtered.filter((app) => app.eventType === typeFilter);
+      filtered = filtered.filter((app: any) => app.eventType === typeFilter);
     }
 
     // Apply search query
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(
-        (app) =>
+        (app: any) =>
           app.eventName.toLowerCase().includes(query) ||
           app.notes?.toLowerCase().includes(query)
       );
     }
 
     // Sort
-    filtered.sort((a, b) => {
+    filtered.sort((a: any, b: any) => {
       let aVal: any = a[sortField];
       let bVal: any = b[sortField];
 
@@ -69,7 +79,14 @@ export default function ListView() {
     });
 
     return filtered;
-  }, [applications, statusFilter, typeFilter, searchQuery, sortField, sortOrder]);
+  }, [
+    applications,
+    statusFilter,
+    typeFilter,
+    searchQuery,
+    sortField,
+    sortOrder,
+  ]);
 
   if (applicationsQuery.isLoading) {
     return (
@@ -105,7 +122,7 @@ export default function ListView() {
           <Input
             placeholder="Search applications..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={e => setSearchQuery(e.target.value)}
           />
         </div>
 
@@ -179,7 +196,7 @@ export default function ListView() {
               <p className="text-muted-foreground">No applications found</p>
             </div>
           ) : (
-            filteredAndSorted.map((app) => (
+            filteredAndSorted.map((app: any) => (
               <div
                 key={app.id}
                 className="px-6 py-4 grid grid-cols-12 gap-4 items-center hover:bg-background/50 transition-colors"
@@ -236,7 +253,9 @@ export default function ListView() {
                 </div>
                 <div className="col-span-1">
                   {/* Edit functionality handled via ApplicationCard in other views */}
-                  <span className="text-xs text-muted-foreground">View Kanban for edit</span>
+                  <span className="text-xs text-muted-foreground">
+                    View Kanban for edit
+                  </span>
                 </div>
               </div>
             ))

@@ -10,19 +10,25 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useState } from "react";
-import { trpc } from "@/lib/trpc";
+import { useQuery } from "@tanstack/react-query";
 import { PWAInstallButton } from "@/components/PWAInstallButton";
 import DashboardView from "@/components/views/DashboardView";
 import KanbanView from "@/components/views/KanbanView";
 import CalendarView from "@/components/views/CalendarView";
 import AnalyticsDashboard from "@/components/AnalyticsDashboard";
 import SettingsPage from "@/components/SettingsPage";
+import { profileApi } from "@/lib/api/profileApi";
 
 export default function Home() {
   const { user, loading, logout } = useAuth();
-  const [currentView, setCurrentView] = useState<"dashboard" | "kanban" | "calendar" | "analytics" | "settings">("dashboard");
-  
-  const preferencesQuery = trpc.preferences.get.useQuery();
+  const [currentView, setCurrentView] = useState<
+    "dashboard" | "kanban" | "calendar" | "analytics" | "settings"
+  >("dashboard");
+
+  const preferencesQuery = useQuery({
+    queryKey: ["preferences"],
+    queryFn: profileApi.getPreferences,
+  });
   const preferences = preferencesQuery.data;
 
   if (loading) {
@@ -57,7 +63,7 @@ export default function Home() {
                 <button className="flex items-center outline-none">
                   <Avatar className="h-9 w-9 border cursor-pointer hover:opacity-80 transition-opacity">
                     <AvatarFallback className="text-xs font-medium bg-accent text-accent-foreground">
-                      {user?.name?.charAt(0).toUpperCase() || 'U'}
+                      {user?.name?.charAt(0).toUpperCase() || "U"}
                     </AvatarFallback>
                   </Avatar>
                 </button>
@@ -65,8 +71,12 @@ export default function Home() {
               <DropdownMenuContent align="end" className="w-56 mt-2">
                 <div className="flex items-center justify-start gap-2 p-2">
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">{user?.name || "User"}</p>
-                    <p className="text-xs text-muted-foreground truncate">{user?.email || "No email"}</p>
+                    <p className="text-sm font-medium leading-none">
+                      {user?.name || "User"}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {user?.email || "No email"}
+                    </p>
                   </div>
                 </div>
                 <DropdownMenuSeparator />
@@ -99,7 +109,7 @@ export default function Home() {
               { id: "kanban", label: "Kanban" },
               { id: "calendar", label: "Calendar" },
               { id: "analytics", label: "Analytics" },
-            ].map((tab) => (
+            ].map(tab => (
               <button
                 key={tab.id}
                 onClick={() => setCurrentView(tab.id as any)}

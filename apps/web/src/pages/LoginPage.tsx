@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Sparkles, Loader2, Github, Mail, ArrowLeft, User } from "lucide-react";
-import { trpc } from "@/lib/trpc";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { authApi } from "@/lib/api/authApi";
 import { toast } from "sonner";
 
 export default function LoginPage() {
@@ -14,26 +15,28 @@ export default function LoginPage() {
   const [password, setPassword] = useState("rohit");
   const [name, setName] = useState("");
 
-  const utils = trpc.useUtils();
+  const queryClient = useQueryClient();
 
-  const loginMutation = trpc.auth.login.useMutation({
+  const loginMutation = useMutation({
+    mutationFn: authApi.login,
     onSuccess: () => {
       toast.success("Welcome back!");
-      utils.auth.me.invalidate();
+      queryClient.invalidateQueries({ queryKey: ['auth', 'me'] });
       setLocation("/dashboard");
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(error.message || "Failed to log in");
     },
   });
 
-  const registerMutation = trpc.auth.register.useMutation({
+  const registerMutation = useMutation({
+    mutationFn: authApi.register,
     onSuccess: () => {
       toast.success("Account created successfully!");
-      utils.auth.me.invalidate();
+      queryClient.invalidateQueries({ queryKey: ['auth', 'me'] });
       setLocation("/dashboard");
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(error.message || "Failed to register");
     },
   });

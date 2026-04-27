@@ -1,5 +1,10 @@
 import { useState, useEffect, useRef } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,7 +16,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { trpc } from "@/lib/trpc";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { applicationsApi } from "@/lib/api/applicationsApi";
 import { toast } from "sonner";
 import { Loader2, Wand2, AlertCircle } from "lucide-react";
 import { useApplicationProfile } from "@/hooks/useApplicationProfile";
@@ -35,20 +41,24 @@ export default function AddApplicationModal({
     eventName: initialData?.eventName || "",
     eventType: initialData?.eventType || "Hackathon",
     status: initialData?.status || "Interested",
-    deadline: initialData?.deadline ? new Date(initialData.deadline).toISOString().split("T")[0] : "",
+    deadline: initialData?.deadline
+      ? new Date(initialData.deadline).toISOString().split("T")[0]
+      : "",
     notes: initialData?.notes || "",
     url: initialData?.url || "",
   });
-  const debounceTimer = useRef<NodeJS.Timeout>();
+  const debounceTimer = useRef<NodeJS.Timeout | null>(null);
   const lastFetchedUrl = useRef<string>("");
-  
-  // Application profile hook
-  const { profile, hasProfile, formatProfileForNotes } = useApplicationProfile();
 
-  const utils = trpc.useUtils();
-  const createMutation = trpc.applications.create.useMutation({
+  // Application profile hook
+  const { profile, hasProfile, formatProfileForNotes } =
+    useApplicationProfile();
+
+  const queryClient = useQueryClient();
+  const createMutation = useMutation({
+    mutationFn: applicationsApi.create,
     onSuccess: () => {
-      utils.applications.list.invalidate();
+      queryClient.invalidateQueries({ queryKey: ["applications"] });
       toast.success("Application added successfully");
       onOpenChange(false);
       setFormData({
@@ -61,30 +71,32 @@ export default function AddApplicationModal({
       });
       setMetadataError(null);
     },
-    onError: (error) => {
+    onError: error => {
       toast.error(error.message || "Failed to add application");
     },
   });
 
-  const updateMutation = trpc.applications.update.useMutation({
+  const updateMutation = useMutation({
+    mutationFn: applicationsApi.update,
     onSuccess: () => {
-      utils.applications.list.invalidate();
+      queryClient.invalidateQueries({ queryKey: ["applications"] });
       toast.success("Application updated successfully");
       onOpenChange(false);
       setMetadataError(null);
     },
-    onError: (error) => {
+    onError: error => {
       toast.error(error.message || "Failed to update application");
     },
   });
 
   const isLoading = createMutation.isPending || updateMutation.isPending;
-  const fetchMetadataMutation = trpc.applications.fetchMetadata.useMutation({
-    onSuccess: (data) => {
-      console.log('[AddApplicationModal] Fetch metadata response:', data);
-      
+  const fetchMetadataMutation = useMutation({
+    mutationFn: applicationsApi.fetchMetadata,
+    onSuccess: (data: any) => {
+      console.log("[AddApplicationModal] Fetch metadata response:", data);
+
       if (data.success && data.data) {
-        console.log('[AddApplicationModal] Metadata received:', {
+        console.log("[AddApplicationModal] Metadata received:", {
           title: data.data.title,
           description: data.data.description,
           deadline: data.data.deadline,
@@ -92,47 +104,55 @@ export default function AddApplicationModal({
         });
 
         // Smart autofill: only fill empty fields to avoid overwriting user input
-        setFormData((prev) => {
+        setFormData(prev => {
           const updated = {
             ...prev,
             eventName: prev.eventName || data.data?.title || "",
             notes: prev.notes || data.data?.description || "",
             deadline: prev.deadline || data.data?.deadline || "",
-            eventType: prev.eventType === "Hackathon" && data.data?.eventType ? data.data.eventType : prev.eventType,
+            eventType:
+              prev.eventType === "Hackathon" && data.data?.eventType
+                ? data.data.eventType
+                : prev.eventType,
           };
-          console.log('[AddApplicationModal] Updated form data:', updated);
+          console.log("[AddApplicationModal] Updated form data:", updated);
           return updated;
         });
-        
+
         // Determine which fields were auto-filled
         const filledFields = [];
-        if (!formData.eventName && data.data.title) filledFields.push("Event Name");
-        if (!formData.notes && data.data.description) filledFields.push("Description");
-        if (!formData.deadline && data.data.deadline) filledFields.push("Deadline");
-        if (data.data.eventType && formData.eventType === "Hackathon") filledFields.push("Event Type");
-        
-        const message = filledFields.length > 0 
-          ? `Auto-filled: ${filledFields.join(", ")}. You can edit any field.`
-          : "Metadata fetched, but no new information found.";
-        
-        console.log('[AddApplicationModal] Toast message:', message);
+        if (!formData.eventName && data.data.title)
+          filledFields.push("Event Name");
+        if (!formData.notes && data.data.description)
+          filledFields.push("Description");
+        if (!formData.deadline && data.data.deadline)
+          filledFields.push("Deadline");
+        if (data.data.eventType && formData.eventType === "Hackathon")
+          filledFields.push("Event Type");
+
+        const message =
+          filledFields.length > 0
+            ? `Auto-filled: ${filledFields.join(", ")}. You can edit any field.`
+            : "Metadata fetched, but no new information found.";
+
+        console.log("[AddApplicationModal] Toast message:", message);
         toast.success(message);
         setMetadataError(null);
       } else if (data.error) {
-        console.error('[AddApplicationModal] Fetch error:', data.error);
+        console.error("[AddApplicationModal] Fetch error:", data.error);
         setMetadataError(data.error);
         toast.error(data.error);
       } else {
         const errorMsg = "Failed to fetch metadata";
-        console.error('[AddApplicationModal]', errorMsg);
+        console.error("[AddApplicationModal]", errorMsg);
         setMetadataError(errorMsg);
         toast.error(errorMsg);
       }
       setIsFetchingMetadata(false);
     },
-    onError: (error) => {
+    onError: error => {
       const errorMsg = error.message || "Failed to fetch event details";
-      console.error('[AddApplicationModal] Mutation error:', errorMsg);
+      console.error("[AddApplicationModal] Mutation error:", errorMsg);
       setMetadataError(errorMsg);
       toast.error(errorMsg);
       setIsFetchingMetadata(false);
@@ -148,13 +168,13 @@ export default function AddApplicationModal({
     // Reset error state
     setMetadataError(null);
     setIsFetchingMetadata(true);
-    
+
     // Normalize URL
     let url = formData.url.trim();
     if (!url.startsWith("http://") && !url.startsWith("https://")) {
       url = `https://${url}`;
     }
-    
+
     fetchMetadataMutation.mutate({ url });
   };
 
@@ -172,10 +192,10 @@ export default function AddApplicationModal({
     // Append profile info to notes without overwriting
     const profileText = formatProfileForNotes();
     const newNotes = (formData.notes || "") + profileText;
-    
+
     setFormData({ ...formData, notes: newNotes });
     toast.success("Profile information added to notes");
-    console.log('[AddApplicationModal] Profile autofilled:', profileText);
+    console.log("[AddApplicationModal] Profile autofilled:", profileText);
   };
 
   // Auto-fetch metadata when user finishes typing URL
@@ -192,13 +212,17 @@ export default function AddApplicationModal({
     // Only auto-fetch if URL looks valid and is different from last fetched
     if (newUrl.trim() && newUrl !== lastFetchedUrl.current) {
       let normalizedUrl = newUrl.trim();
-      if (!normalizedUrl.startsWith("http://") && !normalizedUrl.startsWith("https://")) {
+      if (
+        !normalizedUrl.startsWith("http://") &&
+        !normalizedUrl.startsWith("https://")
+      ) {
         normalizedUrl = `https://${normalizedUrl}`;
       }
 
       // Check if it looks like a URL (has a dot or is already a full URL)
-      const looksLikeUrl = normalizedUrl.includes(".") || normalizedUrl.startsWith("http");
-      
+      const looksLikeUrl =
+        normalizedUrl.includes(".") || normalizedUrl.startsWith("http");
+
       if (looksLikeUrl && !formData.eventName.trim()) {
         // Debounce: wait 1 second after user stops typing before auto-fetching
         debounceTimer.current = setTimeout(() => {
@@ -224,7 +248,7 @@ export default function AddApplicationModal({
     if (debounceTimer.current) {
       clearTimeout(debounceTimer.current);
     }
-    console.log('[AddApplicationModal] Form cleared');
+    console.log("[AddApplicationModal] Form cleared");
     toast.success("Form cleared");
   };
 
@@ -232,11 +256,15 @@ export default function AddApplicationModal({
     e.preventDefault();
 
     if (!formData.eventName.trim()) {
-      toast.error("Please enter an event name or paste a URL and wait for auto-fill");
+      toast.error(
+        "Please enter an event name or paste a URL and wait for auto-fill"
+      );
       return;
     }
 
-    const deadline = formData.deadline ? new Date(formData.deadline) : undefined;
+    const deadline = formData.deadline
+      ? new Date(formData.deadline)
+      : undefined;
 
     if (applicationId) {
       updateMutation.mutate({
@@ -269,7 +297,7 @@ export default function AddApplicationModal({
               id="eventName"
               placeholder="e.g., TechCrunch Disrupt 2024"
               value={formData.eventName}
-              onChange={(e) =>
+              onChange={e =>
                 setFormData({ ...formData, eventName: e.target.value })
               }
             />
@@ -281,7 +309,7 @@ export default function AddApplicationModal({
               <Label htmlFor="eventType">Event Type</Label>
               <Select
                 value={formData.eventType}
-                onValueChange={(value) =>
+                onValueChange={value =>
                   setFormData({ ...formData, eventType: value })
                 }
               >
@@ -303,7 +331,7 @@ export default function AddApplicationModal({
               <Label htmlFor="status">Status</Label>
               <Select
                 value={formData.status}
-                onValueChange={(value) =>
+                onValueChange={value =>
                   setFormData({ ...formData, status: value })
                 }
               >
@@ -329,7 +357,7 @@ export default function AddApplicationModal({
               id="deadline"
               type="date"
               value={formData.deadline}
-              onChange={(e) =>
+              onChange={e =>
                 setFormData({ ...formData, deadline: e.target.value })
               }
             />
@@ -351,7 +379,9 @@ export default function AddApplicationModal({
                 variant="outline"
                 size="icon"
                 onClick={handleFetchMetadata}
-                disabled={isFetchingMetadata || isLoading || !formData.url.trim()}
+                disabled={
+                  isFetchingMetadata || isLoading || !formData.url.trim()
+                }
                 title="Manually fetch event details from URL"
               >
                 {isFetchingMetadata ? (
@@ -367,13 +397,17 @@ export default function AddApplicationModal({
                 <div>
                   <p className="font-medium">Couldn't fetch details from URL</p>
                   <p className="text-xs mt-1">{metadataError}</p>
-                  <p className="text-xs mt-2">You can still add the event manually - all fields can be edited.</p>
+                  <p className="text-xs mt-2">
+                    You can still add the event manually - all fields can be
+                    edited.
+                  </p>
                 </div>
               </div>
             )}
             {!metadataError && formData.url && (
               <p className="text-xs text-gray-500 mt-1">
-                💡 Tip: Auto-fetches event name, description, type, and deadline (if available).
+                💡 Tip: Auto-fetches event name, description, type, and deadline
+                (if available).
               </p>
             )}
           </div>
@@ -399,7 +433,7 @@ export default function AddApplicationModal({
               id="notes"
               placeholder="Add event description, notes, ideas, or important information..."
               value={formData.notes}
-              onChange={(e) =>
+              onChange={e =>
                 setFormData({ ...formData, notes: e.target.value })
               }
               rows={4}

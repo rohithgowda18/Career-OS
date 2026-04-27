@@ -14,7 +14,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { trpc } from "@/lib/trpc";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { applicationsApi } from "@/lib/api/applicationsApi";
 import { toast } from "sonner";
 import { useState } from "react";
 import AddApplicationModal from "./AddApplicationModal";
@@ -24,15 +25,23 @@ interface ApplicationCardProps {
   application: Application;
 }
 
-const STATUSES = ["Interested", "Applied", "Under Review", "Accepted", "Rejected", "Withdrawn"] as const;
+const STATUSES = [
+  "Interested",
+  "Applied",
+  "Under Review",
+  "Accepted",
+  "Rejected",
+  "Withdrawn",
+] as const;
 
 export default function ApplicationCard({ application }: ApplicationCardProps) {
   const [showEditModal, setShowEditModal] = useState(false);
-  const utils = trpc.useUtils();
+  const queryClient = useQueryClient();
 
-  const updateMutation = trpc.applications.update.useMutation({
+  const updateMutation = useMutation({
+    mutationFn: applicationsApi.update,
     onSuccess: () => {
-      utils.applications.list.invalidate();
+      queryClient.invalidateQueries({ queryKey: ["applications"] });
       toast.success("Status updated");
     },
     onError: () => {
@@ -40,9 +49,10 @@ export default function ApplicationCard({ application }: ApplicationCardProps) {
     },
   });
 
-  const deleteMutation = trpc.applications.delete.useMutation({
+  const deleteMutation = useMutation({
+    mutationFn: applicationsApi.delete,
     onSuccess: () => {
-      utils.applications.list.invalidate();
+      queryClient.invalidateQueries({ queryKey: ["applications"] });
       toast.success("Application deleted");
     },
     onError: () => {
@@ -59,7 +69,7 @@ export default function ApplicationCard({ application }: ApplicationCardProps) {
 
   const handleDelete = () => {
     if (confirm("Are you sure you want to delete this application?")) {
-      deleteMutation.mutate({ id: application.id });
+      deleteMutation.mutate(application.id);
     }
   };
 
@@ -113,7 +123,10 @@ export default function ApplicationCard({ application }: ApplicationCardProps) {
                   Open Link
                 </DropdownMenuItem>
               )}
-              <DropdownMenuItem onClick={handleDelete} className="text-destructive">
+              <DropdownMenuItem
+                onClick={handleDelete}
+                className="text-destructive"
+              >
                 <Trash2 className="w-4 h-4 mr-2" />
                 Delete
               </DropdownMenuItem>
@@ -122,7 +135,9 @@ export default function ApplicationCard({ application }: ApplicationCardProps) {
         </div>
 
         <div className="space-y-2 mb-3">
-          <p className="text-xs text-muted-foreground">{application.eventType}</p>
+          <p className="text-xs text-muted-foreground">
+            {application.eventType}
+          </p>
 
           {application.deadline && (
             <DeadlineBadge deadline={application.deadline} showDate={true} />
@@ -145,7 +160,7 @@ export default function ApplicationCard({ application }: ApplicationCardProps) {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {STATUSES.map((status) => (
+              {STATUSES.map(status => (
                 <SelectItem key={status} value={status}>
                   {status}
                 </SelectItem>

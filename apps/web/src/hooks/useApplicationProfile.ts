@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { trpc } from '@/lib/trpc';
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { profileApi } from "@/lib/api/profileApi";
 import { toast } from 'sonner';
 
 interface ApplicationProfileData {
@@ -19,10 +20,11 @@ export function useApplicationProfile() {
   const [loading, setLoading] = useState(false);
 
   // Fetch profile
-  const getProfileQuery = trpc.applicationProfile.get.useQuery();
+  const getProfileQuery = useQuery({ queryKey: ['applicationProfile'], queryFn: profileApi.me });
 
   // Update profile mutation
-  const updateProfileMutation = trpc.applicationProfile.upsert.useMutation({
+  const updateProfileMutation = useMutation({
+    mutationFn: profileApi.upsertApplicationProfile,
     onSuccess: (data) => {
       setProfile(data as any);
       toast.success('Profile saved successfully');

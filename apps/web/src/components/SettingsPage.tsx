@@ -9,7 +9,8 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { trpc } from "@/lib/trpc";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { profileApi } from "@/lib/api/profileApi";
 import { toast } from "sonner";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import ApplicationProfileForm from "./ApplicationProfileForm";
@@ -19,7 +20,7 @@ interface SettingsPageProps {
 }
 
 export default function SettingsPage({ onBack }: SettingsPageProps) {
-  const preferencesQuery = trpc.preferences.get.useQuery();
+  const preferencesQuery = useQuery({ queryKey: ["preferences"], queryFn: profileApi.getPreferences });
   const preferences = preferencesQuery.data;
 
   const [defaultView, setDefaultView] = useState<"dashboard" | "kanban" | "list" | "calendar" | "analytics">("dashboard");
@@ -43,7 +44,8 @@ export default function SettingsPage({ onBack }: SettingsPageProps) {
     }
   }, [preferences]);
 
-  const updateMutation = trpc.preferences.update.useMutation({
+  const updateMutation = useMutation({
+    mutationFn: profileApi.updatePreferences,
     onSuccess: () => {
       toast.success("Settings saved successfully");
     },
