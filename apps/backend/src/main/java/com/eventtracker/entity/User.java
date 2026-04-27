@@ -35,7 +35,15 @@ public class User implements UserDetails {
     @Column(unique = true)
     private String username;
 
+    @Column(name = "open_id")
+    private String openId;
+
+    private String name;
+
     private String password;
+
+    @Column(name = "password_hash")
+    private String passwordHash;
 
     @Column(nullable = false)
     private String role = "USER";
@@ -96,8 +104,20 @@ public class User implements UserDetails {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
+    @Column(name = "last_signed_in")
+    private LocalDateTime lastSignedIn;
+
     @PrePersist
     void onCreate() {
+        if (openId == null || openId.isBlank()) {
+            openId = email == null || email.isBlank() ? "email:unknown" : "email:" + email;
+        }
+        if (name == null || name.isBlank()) {
+            name = buildName();
+        }
+        if ((passwordHash == null || passwordHash.isBlank()) && password != null && !password.isBlank()) {
+            passwordHash = password;
+        }
         if (role == null || role.isBlank()) {
             role = "USER";
         }
@@ -115,10 +135,22 @@ public class User implements UserDetails {
         if (updatedAt == null) {
             updatedAt = now;
         }
+        if (lastSignedIn == null) {
+            lastSignedIn = now;
+        }
     }
 
     @PreUpdate
     void onUpdate() {
+        if (openId == null || openId.isBlank()) {
+            openId = email == null || email.isBlank() ? "email:unknown" : "email:" + email;
+        }
+        if (name == null || name.isBlank()) {
+            name = buildName();
+        }
+        if ((passwordHash == null || passwordHash.isBlank()) && password != null && !password.isBlank()) {
+            passwordHash = password;
+        }
         if (role == null || role.isBlank()) {
             role = "USER";
         }
@@ -129,6 +161,19 @@ public class User implements UserDetails {
             isActive = true;
         }
         updatedAt = LocalDateTime.now();
+    }
+
+    private String buildName() {
+        String first = firstName == null ? "" : firstName.trim();
+        String last = lastName == null ? "" : lastName.trim();
+        String fullName = (first + " " + last).trim();
+        if (!fullName.isBlank()) {
+            return fullName;
+        }
+        if (username != null && !username.isBlank()) {
+            return username;
+        }
+        return email;
     }
 
     @Override

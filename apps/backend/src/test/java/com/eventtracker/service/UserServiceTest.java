@@ -64,8 +64,11 @@ class UserServiceTest {
 
         assertThat(user.getId()).isEqualTo(1L);
         assertThat(user.getEmail()).isEqualTo("ada@example.com");
+        assertThat(user.getOpenId()).isEqualTo("email:ada@example.com");
         assertThat(user.getUsername()).isEqualTo("ada");
         assertThat(user.getPassword()).isEqualTo("encoded-password");
+        assertThat(user.getPasswordHash()).isEqualTo("encoded-password");
+        assertThat(user.getName()).isEqualTo("Ada Lovelace");
         assertThat(user.getRole()).isEqualTo("USER");
         assertThat(user.getLoginMethod()).isEqualTo("EMAIL");
         assertThat(user.getIsActive()).isTrue();

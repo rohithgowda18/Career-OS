@@ -38,12 +38,18 @@ public class UserService {
         }
 
         String uniqueUsername = makeUniqueUsername(username, normalizedEmail);
+        String normalizedFirstName = normalizeNullableName(firstName);
+        String normalizedLastName = normalizeNullableName(lastName);
+        String encodedPassword = passwordEncoder.encode(password);
 
         User user = new User();
         user.setEmail(normalizedEmail);
-        user.setPassword(passwordEncoder.encode(password));
-        user.setFirstName(normalizeNullableName(firstName));
-        user.setLastName(normalizeNullableName(lastName));
+        user.setOpenId("email:" + normalizedEmail);
+        user.setPassword(encodedPassword);
+        user.setPasswordHash(encodedPassword);
+        user.setFirstName(normalizedFirstName);
+        user.setLastName(normalizedLastName);
+        user.setName(buildDisplayName(normalizedFirstName, normalizedLastName, uniqueUsername));
         user.setUsername(uniqueUsername);
         user.setRole("USER");
         user.setLoginMethod("EMAIL");
@@ -87,6 +93,19 @@ public class UserService {
             suffix++;
         }
         return candidate;
+    }
+
+    private String buildDisplayName(String firstName, String lastName, String fallback) {
+        if (firstName != null && lastName != null) {
+            return firstName + " " + lastName;
+        }
+        if (firstName != null) {
+            return firstName;
+        }
+        if (lastName != null) {
+            return lastName;
+        }
+        return fallback;
     }
 
     private String normalizeUsername(String value) {
@@ -200,10 +219,12 @@ public class UserService {
         // Create new user
         User user = new User();
         user.setEmail(normalizedEmail);
+        user.setOpenId(oauthProvider + ":" + oauthId);
         user.setOauthId(oauthId);
         user.setOauthProvider(oauthProvider);
         user.setOauthEmail(normalizedEmail);
         user.setOauthName(normalizeNullableName(name));
+        user.setName(normalizeNullableName(name));
         user.setUsername(uniqueUsername);
         user.setRole("USER");
         user.setLoginMethod(oauthProvider == null || oauthProvider.isBlank()
