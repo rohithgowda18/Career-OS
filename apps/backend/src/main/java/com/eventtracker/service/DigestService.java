@@ -79,7 +79,7 @@ public class DigestService {
         sb.append("<h3>Upcoming Deadlines (Next 7 Days)</h3>");
         List<Application> upcoming = applications.stream()
                 .filter(a -> a.getDeadline() != null && a.getDeadline().isAfter(LocalDateTime.now()) && a.getDeadline().isBefore(LocalDateTime.now().plusDays(7)))
-                .collect(Collectors.toList());
+                .toList();
 
         if (upcoming.isEmpty()) {
             sb.append("<p>No upcoming deadlines this week.</p>");
