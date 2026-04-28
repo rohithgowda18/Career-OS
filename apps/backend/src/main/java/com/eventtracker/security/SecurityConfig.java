@@ -34,7 +34,7 @@ public class SecurityConfig {
     private final JwtTokenProvider jwtTokenProvider;
     private final UserService userService;
 
-    @Value("${app.cors.allowed-origin-patterns}")
+    @Value("${app.cors.allowed-origins}")
     private String allowedOrigins;
 
     @Bean
