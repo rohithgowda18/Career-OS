@@ -102,8 +102,7 @@ app:
     expiration: 1800000 # 30 minutes in ms
 
   cors:
-    allowed-origins: https://your-vercel-app.vercel.app
-    allowed-origin-patterns: https://your-vercel-app.vercel.app
+    allowed-origins: https://eventpulse-phi.vercel.app,https://eventpulse-phi-git-main-yourusername.vercel.app,https://localhost:3000
 
   oauth:
     google:
