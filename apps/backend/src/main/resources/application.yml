@@ -33,7 +33,6 @@ spring:
       hibernate:
         format_sql: false
         use_sql_comments: false
-        temp.use_jdbc_metadata_defaults: false
         generate_statistics: false
         jdbc.lob.non_contextual_creation: true
     show-sql: false
