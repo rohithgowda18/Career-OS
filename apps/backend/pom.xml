@@ -62,12 +62,6 @@
             <scope>runtime</scope>
         </dependency>
 
-        <dependency>
-            <groupId>org.flywaydb</groupId>
-            <artifactId>flyway-core</artifactId>
-            <version>9.22.3</version>
-        </dependency>
-
         <!-- JWT for authentication -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
@@ -89,17 +83,7 @@
             <scope>runtime</scope>
         </dependency>
 
-        <!-- Email Support -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-mail</artifactId>
-        </dependency>
 
-        <!-- HTTP Client for metadata fetching -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-webflux</artifactId>
-        </dependency>
 
         <!-- JSON Processing -->
         <dependency>
@@ -114,13 +98,7 @@
             <optional>true</optional>
         </dependency>
 
-        <!-- Spring Boot DevTools for hot reload -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-devtools</artifactId>
-            <scope>runtime</scope>
-            <optional>true</optional>
-        </dependency>
+
 
         <!-- Testing -->
         <dependency>
@@ -135,26 +113,7 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- Web Scraping -->
-        <dependency>
-            <groupId>org.jsoup</groupId>
-            <artifactId>jsoup</artifactId>
-            <version>1.17.2</version>
-        </dependency>
 
-        <!-- LLM Integration (Groq) -->
-        <dependency>
-			<groupId>dev.langchain4j</groupId>
-			<artifactId>langchain4j-open-ai</artifactId>
-			<version>0.33.0</version>
-		</dependency>
-
-        <!-- Hibernate JSON Support -->
-        <dependency>
-            <groupId>io.hypersistence</groupId>
-            <artifactId>hypersistence-utils-hibernate-63</artifactId>
-            <version>3.7.3</version>
-        </dependency>
     </dependencies>
 
     <build>

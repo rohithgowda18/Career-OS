@@ -15,23 +15,24 @@ spring:
     password: ${SPRING_DATASOURCE_PASSWORD}
     driver-class-name: org.postgresql.Driver
     hikari:
-      maximum-pool-size: 3
+      maximum-pool-size: 2
       minimum-idle: 1
-      connection-timeout: 10000
-      validation-timeout: 3000
+      connection-timeout: 5000
+      validation-timeout: 5000
       idle-timeout: 300000
-      max-lifetime: 600000
-      initialization-fail-timeout: 30000
+      max-lifetime: 300000
+      initialization-fail-timeout: 10000
 
   jpa:
     open-in-view: false
     hibernate:
-      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:validate}
+      ddl-auto: none
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: false
         use_sql_comments: false
+        temp.use_jdbc_metadata_defaults: false
     show-sql: false
 
   sql:
@@ -39,9 +40,7 @@ spring:
       mode: never
 
   flyway:
-    enabled: ${FLYWAY_ENABLED:true}
-    baseline-on-migrate: true
-    baseline-version: 1
+    enabled: false
 
   mail:
     host: ${MAIL_HOST:localhost}
@@ -76,7 +75,7 @@ server:
     accept-count: 50
   compression:
     enabled: true
-    mime-types: application/json,application/xml,text/html,text/xml,text/plain
+    mime-types: application/json,text/plain
     min-response-size: 1024
   http2:
     enabled: false
@@ -116,10 +115,10 @@ app:
 
 logging:
   level:
-    root: INFO
-    com.eventtracker: INFO
-    org.springframework.security: INFO
-    org.hibernate.SQL: WARN
-    com.zaxxer.hikari: INFO
+    root: WARN
+    com.eventtracker: WARN
+    org.springframework.security: WARN
+    org.hibernate.SQL: ERROR
+    com.zaxxer.hikari: WARN
   pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} - %logger{36} - %msg%n"
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
