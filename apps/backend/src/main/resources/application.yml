@@ -31,7 +31,6 @@ spring:
       ddl-auto: none
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: false
         use_sql_comments: false
         temp.use_jdbc_metadata_defaults: false
@@ -62,7 +61,7 @@ spring:
     enabled: ${MAIL_ENABLED:false}
 
 server:
-  port: ${PORT:8080}
+  port: ${PORT:10000}
   address: 0.0.0.0
   shutdown: graceful
   servlet:

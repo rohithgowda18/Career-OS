@@ -19,6 +19,9 @@ import org.springframework.scheduling.annotation.EnableScheduling;
         JmxAutoConfiguration.class,
         // Admin JMX: Spring Boot Admin JMX beans, not used
         SpringApplicationAdminJmxAutoConfiguration.class,
+        // Unused features to reduce scanning
+        org.springframework.boot.autoconfigure.websocket.servlet.WebSocketServletAutoConfiguration.class,
+        org.springframework.boot.autoconfigure.batch.BatchAutoConfiguration.class
 })
 @EnableScheduling
 public class EventAppTrackerApplication {
