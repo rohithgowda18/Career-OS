@@ -5,7 +5,7 @@ spring:
   main:
     allow-circular-references: true
     allow-bean-definition-overriding: true
-    lazy-initialization: ${SPRING_MAIN_LAZY_INITIALIZATION:false}
+    lazy-initialization: true
   lifecycle:
     timeout-per-shutdown-phase: 20s
 
@@ -15,13 +15,13 @@ spring:
     password: ${SPRING_DATASOURCE_PASSWORD}
     driver-class-name: org.postgresql.Driver
     hikari:
-      maximum-pool-size: ${DB_MAX_POOL_SIZE:3}
-      minimum-idle: ${DB_MIN_IDLE:0}
-      connection-timeout: ${DB_CONNECTION_TIMEOUT_MS:10000}
-      validation-timeout: ${DB_VALIDATION_TIMEOUT_MS:3000}
+      maximum-pool-size: 3
+      minimum-idle: 1
+      connection-timeout: 10000
+      validation-timeout: 3000
       idle-timeout: 300000
       max-lifetime: 600000
-      initialization-fail-timeout: ${DB_INITIALIZATION_FAIL_TIMEOUT_MS:30000}
+      initialization-fail-timeout: 30000
 
   jpa:
     open-in-view: false
@@ -75,7 +75,9 @@ server:
     processor-cache: 50
     accept-count: 50
   compression:
-    enabled: false
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain
+    min-response-size: 1024
   http2:
     enabled: false
   forward-headers-strategy: framework
@@ -97,11 +99,11 @@ management:
 app:
   jwt:
     secret: ${JWT_SECRET:this-is-a-very-long-secret-key-that-is-at-least-64-characters-long-to-satisfy-hs512-requirements}
-    expiration: 86400000
+    expiration: 1800000 # 30 minutes in ms
 
   cors:
-    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:3000,https://eventpulse-phi.vercel.app}
-    allowed-origin-patterns: ${CORS_ALLOWED_ORIGIN_PATTERNS:${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:3000,https://eventpulse-phi.vercel.app,https://*.vercel.app}}
+    allowed-origins: https://your-vercel-app.vercel.app
+    allowed-origin-patterns: https://your-vercel-app.vercel.app
 
   oauth:
     google:
@@ -116,8 +118,8 @@ app:
 logging:
   level:
     root: INFO
-    com.eventtracker: ${APP_LOG_LEVEL:INFO}
-    org.springframework.security: ${SECURITY_LOG_LEVEL:INFO}
+    com.eventtracker: INFO
+    org.springframework.security: INFO
     org.hibernate.SQL: WARN
     com.zaxxer.hikari: INFO
   pattern:

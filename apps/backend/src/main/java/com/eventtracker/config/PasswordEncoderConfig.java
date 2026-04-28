@@ -10,7 +10,8 @@ public class PasswordEncoderConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
+        // Strength 10: secure and performant for production
+        return new BCryptPasswordEncoder(10);
     }
 }
 
