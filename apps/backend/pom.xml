@@ -91,6 +91,22 @@
             <artifactId>jackson-databind</artifactId>
         </dependency>
 
+        <!-- Web Scraping (Lazy loaded, optional for startup) -->
+        <dependency>
+            <groupId>org.jsoup</groupId>
+            <artifactId>jsoup</artifactId>
+            <version>1.17.2</version>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- LLM Integration (Lazy loaded, optional for startup) -->
+        <dependency>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j-open-ai</artifactId>
+            <version>0.33.0</version>
+            <optional>true</optional>
+        </dependency>
+
         <!-- Lombok for boilerplate -->
         <dependency>
             <groupId>org.projectlombok</groupId>

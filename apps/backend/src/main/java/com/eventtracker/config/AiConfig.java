@@ -5,10 +5,12 @@ import dev.langchain4j.model.openai.OpenAiChatModel;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 
 import java.time.Duration;
 
 @Configuration
+@Lazy
 public class AiConfig {
 
     @Value("${groq.api.key:}")
