@@ -31,10 +31,12 @@ spring:
       ddl-auto: none
     properties:
       hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: false
         use_sql_comments: false
         temp.use_jdbc_metadata_defaults: false
         # ADDED: prevents Hibernate probing DB metadata at startup (saves ~3-5s)
+        # NOTE: requires 'dialect' to be set explicitly above
         boot.allow_jdbc_metadata_access: false
         generate_statistics: false
         jdbc.lob.non_contextual_creation: true
