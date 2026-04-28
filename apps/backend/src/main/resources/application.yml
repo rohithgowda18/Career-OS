@@ -20,7 +20,7 @@ spring:
       minimum-idle: 1
       connection-timeout: 3000 # REDUCED: was 5000
       validation-timeout: 1000 # REDUCED: was 5000
-      idle-timeout: 300000
+      idle-timeout: 240000
       max-lifetime: 300000
       initialization-fail-timeout: -1 # CHANGED: fail immediately if DB is down, don't block startup for 10s
       keepalive-time: 30000 # ADDED: prevents connection drops on Render
