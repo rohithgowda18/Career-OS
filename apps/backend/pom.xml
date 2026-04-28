@@ -114,6 +114,13 @@
             <optional>true</optional>
         </dependency>
 
+        <!-- Email Support (Lazy loaded, optional for startup) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+            <optional>true</optional>
+        </dependency>
+
 
 
         <!-- Testing -->
