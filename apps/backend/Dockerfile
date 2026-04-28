@@ -26,7 +26,20 @@ USER spring:spring
 
 EXPOSE 8080
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=90s --retries=3 \
-    CMD wget -qO- "http://127.0.0.1:${PORT}/api/actuator/health/readiness" | grep -q '"status":"UP"' || exit 1
+HEALTHCHECK --interval=30s --timeout=5s --start-period=45s --retries=3 \
+    CMD wget -qO- "http://127.0.0.1:${PORT}/api/actuator/health" | grep -q '"status":"UP"' || exit 1
 
-ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -Xms128m -Xmx256m -XX:MaxRAMPercentage=${JAVA_MAX_RAM_PERCENTAGE} -XX:InitialRAMPercentage=${JAVA_INITIAL_RAM_PERCENTAGE} -XX:+UseSerialGC -XX:TieredStopAtLevel=1 -XX:+ExitOnOutOfMemoryError -Djava.security.egd=file:/dev/./urandom -jar /app/app.jar"]
+ENTRYPOINT ["sh", "-c", "exec java \
+  -XX:+UseSerialGC \
+  -XX:TieredStopAtLevel=1 \
+  -Xms64m \
+  -Xmx220m \
+  -XX:MaxMetaspaceSize=128m \
+  -XX:ReservedCodeCacheSize=32m \
+  -XX:+ExitOnOutOfMemoryError \
+  -XX:+TieredCompilation \
+  -Djava.security.egd=file:/dev/./urandom \
+  -Dspring.jmx.enabled=false \
+  -Dfile.encoding=UTF-8 \
+  $JAVA_OPTS \
+  -jar /app/app.jar"]

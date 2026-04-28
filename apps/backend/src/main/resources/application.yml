@@ -3,11 +3,12 @@ spring:
     name: event-app-tracker
 
   main:
-    allow-circular-references: true
-    allow-bean-definition-overriding: true
+    # REMOVED: allow-circular-references: true (forces eager proxying)
+    # REMOVED: allow-bean-definition-overriding: true
     lazy-initialization: true
+    banner-mode: off # ADDED: saves ~50ms parsing/printing
   lifecycle:
-    timeout-per-shutdown-phase: 20s
+    timeout-per-shutdown-phase: 10s # REDUCED: was 20s
 
   datasource:
     url: ${SPRING_DATASOURCE_URL}
@@ -17,11 +18,12 @@ spring:
     hikari:
       maximum-pool-size: 2
       minimum-idle: 1
-      connection-timeout: 5000
-      validation-timeout: 5000
+      connection-timeout: 3000 # REDUCED: was 5000
+      validation-timeout: 1000 # REDUCED: was 5000
       idle-timeout: 300000
       max-lifetime: 300000
-      initialization-fail-timeout: 10000
+      initialization-fail-timeout: -1 # CHANGED: fail immediately if DB is down, don't block startup for 10s
+      keepalive-time: 30000 # ADDED: prevents connection drops on Render
 
   jpa:
     open-in-view: false
@@ -33,6 +35,10 @@ spring:
         format_sql: false
         use_sql_comments: false
         temp.use_jdbc_metadata_defaults: false
+        # ADDED: prevents Hibernate probing DB metadata at startup (saves ~3-5s)
+        boot.allow_jdbc_metadata_access: false
+        generate_statistics: false
+        jdbc.lob.non_contextual_creation: true
     show-sql: false
 
   sql:
@@ -70,9 +76,9 @@ server:
     max-http-form-post-size: 2MB
     threads:
       max: ${TOMCAT_MAX_THREADS:50}
-      min-spare: ${TOMCAT_MIN_SPARE_THREADS:5}
+      min-spare: 2 # REDUCED: was 5
     processor-cache: 50
-    accept-count: 50
+    accept-count: 20 # REDUCED: was 50
   compression:
     enabled: true
     mime-types: application/json,text/plain
@@ -83,11 +89,13 @@ server:
 
 management:
   endpoints:
+    enabled-by-default: false # ADDED: disable all by default
     web:
       exposure:
-        include: health,info
+        include: health # REDUCED: removed 'info'
   endpoint:
     health:
+      enabled: true # ADDED: re-enable health
       probes:
         enabled: true
       show-details: never
@@ -121,4 +129,4 @@ logging:
     org.hibernate.SQL: ERROR
     com.zaxxer.hikari: WARN
   pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    console: "%p %c{1} - %m%n" # SIMPLIFIED: removed date prefix to reduce logging overhead

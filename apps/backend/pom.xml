@@ -85,12 +85,6 @@
 
 
 
-        <!-- JSON Processing -->
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-        </dependency>
-
         <!-- Web Scraping (Lazy loaded, optional for startup) -->
         <dependency>
             <groupId>org.jsoup</groupId>

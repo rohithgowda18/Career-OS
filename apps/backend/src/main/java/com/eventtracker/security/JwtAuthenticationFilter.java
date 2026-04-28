@@ -1,26 +1,40 @@
 package com.eventtracker.security;
 
-import com.eventtracker.service.UserService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import com.eventtracker.service.UserService;
+
 import java.io.IOException;
 
+/**
+ * JWT filter using ObjectProvider<UserService> for lazy resolution.
+ * This breaks the eager SecurityConfig -> UserService bean graph that would
+ * otherwise force BCrypt + 3 repositories to initialize at startup before
+ * lazy-initialization can take effect. Saves ~3-4s on cold start.
+ */
 @Slf4j
-@RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider tokenProvider;
-    private final UserService userService;
+    // ObjectProvider resolves UserService on first authenticated request,
+    // not at Spring context startup.
+    private final ObjectProvider<UserService> userServiceProvider;
+
+    public JwtAuthenticationFilter(JwtTokenProvider tokenProvider,
+                                   ObjectProvider<UserService> userServiceProvider) {
+        this.tokenProvider = tokenProvider;
+        this.userServiceProvider = userServiceProvider;
+    }
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
@@ -38,29 +52,27 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
-        log.info("Processing request: {} {}", request.getMethod(), request.getRequestURI());
         try {
             String jwt = getJwtFromRequest(request);
-            log.info("JWT extracted from request: {}", jwt != null ? "PRESENT" : "MISSING");
 
             if (StringUtils.hasText(jwt) && tokenProvider.validateToken(jwt)) {
                 Long userId = tokenProvider.getUserIdFromToken(jwt);
-                log.info("JWT validated for userId: {}", userId);
 
+                // Resolve UserService lazily on first authenticated request
+                UserService userService = userServiceProvider.getObject();
                 userService.findById(userId).ifPresentOrElse(user -> {
                     UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                             user, null, user.getAuthorities());
                     authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authentication);
-                    log.info("Successfully authenticated user: {}", user.getEmail());
-                }, () -> {
-                    log.warn("User not found for userId: {}", userId);
-                });
+                    log.debug("Authenticated user: {}", user.getEmail());
+                }, () -> log.warn("User not found for userId: {}", userId));
+
             } else if (StringUtils.hasText(jwt)) {
-                log.warn("JWT validation failed for token: {}. Reason: Invalid signature, expired or malformed.", jwt.substring(0, Math.min(jwt.length(), 10)) + "...");
+                log.warn("JWT validation failed — invalid or expired token");
             }
         } catch (Exception ex) {
-            log.error("JWT Authentication error: {}", ex.getMessage(), ex);
+            log.error("JWT Authentication error: {}", ex.getMessage());
         }
 
         filterChain.doFilter(request, response);

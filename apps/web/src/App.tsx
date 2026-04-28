@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
@@ -9,6 +10,7 @@ import PublicProfile from "./pages/PublicProfile";
 import ComponentShowcase from "./pages/ComponentShowcase";
 import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/LoginPage";
+import { startKeepAlive } from "./lib/keepAlive";
 
 function Router() {
   return (
@@ -26,6 +28,10 @@ function Router() {
 }
 
 function App() {
+  useEffect(() => {
+    startKeepAlive();
+  }, []);
+
   return (
     <ErrorBoundary>
       <ThemeProvider

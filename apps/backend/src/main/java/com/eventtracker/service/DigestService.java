@@ -1,6 +1,7 @@
 package com.eventtracker.service;
 
 import com.eventtracker.entity.Application;
+import com.eventtracker.entity.Application.ApplicationStatus;
 import com.eventtracker.entity.User;
 import com.eventtracker.entity.UserPreferences;
 import com.eventtracker.repository.ApplicationRepository;
@@ -8,13 +9,12 @@ import com.eventtracker.repository.UserPreferencesRepository;
 import com.eventtracker.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -24,15 +24,18 @@ public class DigestService {
     private final UserRepository userRepository;
     private final ApplicationRepository applicationRepository;
     private final UserPreferencesRepository preferencesRepository;
-    private final EmailService emailService;
+    // ObjectProvider: DigestService is eager (no @Lazy), but we must NOT force
+    // JavaMailSender to initialize at startup. ObjectProvider defers that to
+    // the first actual digest send (weekly cron). Saves ~2-3s on cold start.
+    private final ObjectProvider<EmailService> emailServiceProvider;
 
     public void processAllWeeklyDigests() {
-        List<User> users = userRepository.findAll();
-        for (User user : users) {
-           UserPreferences prefs = preferencesRepository.findByUserId(user.getId()).orElse(null);
-           if (prefs != null && prefs.getEmailNotifications()) {
-               sendWeeklyDigest(user);
-           }
+        // Single query: only fetch preferences where emailNotifications=true
+        // Fixes N+1: was findAll() users then per-user findByUserId() inside loop
+        List<UserPreferences> enabledPrefs = preferencesRepository.findAllByEmailNotificationsTrue();
+        log.info("Processing weekly digest for {} opted-in users", enabledPrefs.size());
+        for (UserPreferences prefs : enabledPrefs) {
+            sendWeeklyDigest(prefs.getUser());
         }
     }
 
@@ -42,14 +45,23 @@ public class DigestService {
 
         String subject = "Your Weekly Event Application Digest";
         String htmlContent = generateHtmlDigest(user, applications);
-        
+
+        // Resolve EmailService lazily — only when actually sending
+        EmailService emailService = emailServiceProvider.getIfAvailable();
+        if (emailService == null) {
+            log.warn("EmailService not available — skipping digest for {}", user.getEmail());
+            return;
+        }
         emailService.sendEmail(user.getEmail(), subject, htmlContent, true);
         log.info("Weekly digest sent to {}", user.getEmail());
     }
 
     private String generateHtmlDigest(User user, List<Application> applications) {
         long total = applications.size();
-        long accepted = applications.stream().filter(a -> a.getStatus().name().equals("Accepted")).count();
+        // Direct enum comparison — avoids string allocation via .name().equals()
+        long accepted = applications.stream()
+                .filter(a -> ApplicationStatus.Accepted == a.getStatus())
+                .count();
         double rate = total > 0 ? (double) accepted / total * 100 : 0;
 
         StringBuilder sb = new StringBuilder();

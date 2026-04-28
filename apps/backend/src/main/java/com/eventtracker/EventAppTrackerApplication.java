@@ -2,9 +2,24 @@ package com.eventtracker;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.admin.SpringApplicationAdminJmxAutoConfiguration;
+import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
+import org.springframework.boot.autoconfigure.jmx.JmxAutoConfiguration;
+import org.springframework.boot.autoconfigure.mail.MailSenderAutoConfiguration;
+import org.springframework.boot.autoconfigure.mail.MailSenderValidatorAutoConfiguration;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
-@SpringBootApplication
+@SpringBootApplication(exclude = {
+        // Mail: even with mail.enabled=false, auto-config attempts SMTP DNS resolution at startup
+        MailSenderAutoConfiguration.class,
+        MailSenderValidatorAutoConfiguration.class,
+        // Flyway: already disabled in yml; exclusion prevents class scanning entirely
+        FlywayAutoConfiguration.class,
+        // JMX: registers MBeans on startup — unnecessary overhead on Render free tier
+        JmxAutoConfiguration.class,
+        // Admin JMX: Spring Boot Admin JMX beans, not used
+        SpringApplicationAdminJmxAutoConfiguration.class,
+})
 @EnableScheduling
 public class EventAppTrackerApplication {
 

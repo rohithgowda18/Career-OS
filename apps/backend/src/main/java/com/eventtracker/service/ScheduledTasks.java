@@ -19,12 +19,5 @@ public class ScheduledTasks {
         digestService.processAllWeeklyDigests();
         log.info("Weekly digest process completed.");
     }
-
-    // Run daily at 10:00 AM for deadline reminders
-    @Scheduled(cron = "0 0 10 * * *")
-    public void scheduleDeadlineReminders() {
-        log.info("Starting daily deadline reminders check...");
-        // Placeholder for future reminder logic if needed
-        log.info("Daily reminders check completed.");
-    }
 }
+

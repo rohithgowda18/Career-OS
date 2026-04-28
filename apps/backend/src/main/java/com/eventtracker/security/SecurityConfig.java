@@ -2,11 +2,13 @@ package com.eventtracker.security;
 
 import com.eventtracker.service.UserService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -19,11 +21,8 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import org.springframework.context.annotation.Lazy;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.Arrays;
-import java.util.stream.Collectors;
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -32,7 +31,10 @@ import java.util.stream.Collectors;
 public class SecurityConfig {
 
     private final JwtTokenProvider jwtTokenProvider;
-    private final UserService userService;
+    // ObjectProvider<UserService> — prevents UserService (+ BCrypt + 3 repos) from
+    // initializing eagerly at startup. SecurityConfig is @EnableWebSecurity so it's
+    // always eager; this is the only way to keep UserService lazy.
+    private final ObjectProvider<UserService> userServiceProvider;
 
     @Value("${app.cors.allowed-origins}")
     private String allowedOrigins;
@@ -44,25 +46,23 @@ public class SecurityConfig {
 
     @Bean
     public JwtAuthenticationFilter jwtAuthenticationFilter() {
-        return new JwtAuthenticationFilter(jwtTokenProvider, userService);
+        return new JwtAuthenticationFilter(jwtTokenProvider, userServiceProvider);
     }
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        java.util.List<String> allowedOriginsList = Arrays.asList(allowedOrigins.split(","))
-            .stream()
+        List<String> allowedOriginsList = Arrays.stream(allowedOrigins.split(","))
             .map(String::trim)
             .filter(origin -> !origin.isBlank())
-            .collect(Collectors.toList());
+            .toList();
 
-        log.info("=== CORS Configuration ===");
-        log.info("Allowed origins: {}", allowedOriginsList);
+        log.debug("CORS allowed origins: {}", allowedOriginsList);
 
-        configuration.setAllowedOrigins(allowedOriginsList); // Use setAllowedOrigins for exact match
+        configuration.setAllowedOrigins(allowedOriginsList);
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"));
-        configuration.setExposedHeaders(Arrays.asList("Authorization"));
+        configuration.setExposedHeaders(List.of("Authorization"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
 
