@@ -62,7 +62,7 @@ export default function ApplicationCard({ application }: ApplicationCardProps) {
 
   const handleStatusChange = (newStatus: string) => {
     updateMutation.mutate({
-      id: application.id,
+      ...application,
       status: newStatus as any,
     });
   };

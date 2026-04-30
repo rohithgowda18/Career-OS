@@ -1,5 +1,6 @@
 package com.eventtracker.controller;
 
+import com.eventtracker.dto.MetadataRequestDTO;
 import com.eventtracker.dto.ApplicationDTO;
 import com.eventtracker.entity.Application;
 import com.eventtracker.entity.User;
@@ -35,11 +36,11 @@ public class ApplicationController {
     }
 
     @PostMapping("/fetch-metadata")
-    public ResponseEntity<?> fetchMetadata(@RequestParam String url) {
+    public ResponseEntity<?> fetchMetadata(@Valid @RequestBody MetadataRequestDTO request) {
         try {
-            return ResponseEntity.ok(metadataService.fetchMetadata(url));
+            return ResponseEntity.ok(metadataService.fetchMetadata(request.getUrl()));
         } catch (Exception e) {
-            log.error("Error fetching metadata for URL: {}", url, e);
+            log.error("Error fetching metadata for URL: {}", request.getUrl(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
         }
     }

@@ -5,30 +5,31 @@ spring:
   main:
     # REMOVED: allow-circular-references: true (forces eager proxying)
     # REMOVED: allow-bean-definition-overriding: true
-    lazy-initialization: true
-    banner-mode: off # ADDED: saves ~50ms parsing/printing
+    lazy-initialization: false
+    banner-mode: off
   lifecycle:
     timeout-per-shutdown-phase: 10s # REDUCED: was 20s
 
   datasource:
-    url: ${SPRING_DATASOURCE_URL}
-    username: ${SPRING_DATASOURCE_USERNAME}
-    password: ${SPRING_DATASOURCE_PASSWORD}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/event_tracker_db}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:Rohk_1265}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 2
       minimum-idle: 1
-      connection-timeout: 3000 # REDUCED: was 5000
-      validation-timeout: 1000 # REDUCED: was 5000
+      connection-timeout: 10000
+      validation-timeout: 5000
       idle-timeout: 240000
       max-lifetime: 300000
-      initialization-fail-timeout: -1 # CHANGED: fail immediately if DB is down, don't block startup for 10s
+      initialization-fail-timeout: 5000 # Give it 5s to connect at startup
       keepalive-time: 30000 # ADDED: prevents connection drops on Render
 
   jpa:
     open-in-view: false
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
-      ddl-auto: none
+      ddl-auto: update
     properties:
       hibernate:
         format_sql: false
@@ -42,7 +43,9 @@ spring:
       mode: never
 
   flyway:
-    enabled: false
+    enabled: true
+    baseline-on-migrate: true
+    out-of-order: true
 
   mail:
     host: ${MAIL_HOST:localhost}
@@ -58,7 +61,7 @@ spring:
     enabled: ${MAIL_ENABLED:false}
 
 server:
-  port: ${PORT}
+  port: ${PORT:8080}
   address: 0.0.0.0
   shutdown: graceful
   servlet:
@@ -84,6 +87,8 @@ server:
   forward-headers-strategy: framework
 
 management:
+  server:
+    port: ${PORT:8080}
   endpoints:
     enabled-by-default: false # ADDED: disable all by default
     web:
@@ -105,24 +110,26 @@ app:
     expiration: 1800000 # 30 minutes in ms
 
   cors:
-    allowed-origins: https://eventpulse-phi.vercel.app,https://eventpulse-phi-git-main-yourusername.vercel.app,https://localhost:3000
+    allowed-origins: https://eventpulse-phi.vercel.app,https://eventpulse-phi-git-main-yourusername.vercel.app,http://localhost:5173,http://localhost:3000
 
   oauth:
     google:
-      client-id: ${GOOGLE_CLIENT_ID}
-      client-secret: ${GOOGLE_CLIENT_SECRET}
+      client-id: ${GOOGLE_CLIENT_ID:dummy}
+      client-secret: ${GOOGLE_CLIENT_SECRET:dummy}
       redirect-uri: http://localhost:3000/api/auth/google/callback
     github:
-      client-id: ${GITHUB_CLIENT_ID}
-      client-secret: ${GITHUB_CLIENT_SECRET}
+      client-id: ${GITHUB_CLIENT_ID:dummy}
+      client-secret: ${GITHUB_CLIENT_SECRET:dummy}
       redirect-uri: http://localhost:3000/api/auth/github/callback
 
 logging:
   level:
-    root: WARN
-    com.eventtracker: WARN
+    root: INFO
+    com.eventtracker: INFO
     org.springframework.security: WARN
-    org.hibernate.SQL: ERROR
-    com.zaxxer.hikari: WARN
+    org.hibernate.SQL: INFO
+    org.hibernate.type.descriptor.sql: INFO
+    org.flywaydb: INFO
+    com.zaxxer.hikari: INFO
   pattern:
     console: "%p %c{1} - %m%n" # SIMPLIFIED: removed date prefix to reduce logging overhead

@@ -95,24 +95,24 @@ export default function AddApplicationModal({
     onSuccess: (data: any) => {
       console.log("[AddApplicationModal] Fetch metadata response:", data);
 
-      if (data.success && data.data) {
+      if (data.success) {
         console.log("[AddApplicationModal] Metadata received:", {
-          title: data.data.title,
-          description: data.data.description,
-          deadline: data.data.deadline,
-          eventType: data.data.eventType,
+          title: data.title,
+          description: data.description,
+          deadline: data.deadline,
+          eventType: data.eventType,
         });
 
         // Smart autofill: only fill empty fields to avoid overwriting user input
         setFormData(prev => {
           const updated = {
             ...prev,
-            eventName: prev.eventName || data.data?.title || "",
-            notes: prev.notes || data.data?.description || "",
-            deadline: prev.deadline || data.data?.deadline || "",
+            eventName: prev.eventName || data.title || "",
+            notes: prev.notes || data.description || "",
+            deadline: prev.deadline || data.deadline || "",
             eventType:
-              prev.eventType === "Hackathon" && data.data?.eventType
-                ? data.data.eventType
+              prev.eventType === "Hackathon" && data.eventType
+                ? data.eventType
                 : prev.eventType,
           };
           console.log("[AddApplicationModal] Updated form data:", updated);
@@ -121,13 +121,13 @@ export default function AddApplicationModal({
 
         // Determine which fields were auto-filled
         const filledFields = [];
-        if (!formData.eventName && data.data.title)
+        if (!formData.eventName && data.title)
           filledFields.push("Event Name");
-        if (!formData.notes && data.data.description)
+        if (!formData.notes && data.description)
           filledFields.push("Description");
-        if (!formData.deadline && data.data.deadline)
+        if (!formData.deadline && data.deadline)
           filledFields.push("Deadline");
-        if (data.data.eventType && formData.eventType === "Hackathon")
+        if (data.eventType && formData.eventType === "Hackathon")
           filledFields.push("Event Type");
 
         const message =

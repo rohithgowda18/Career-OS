@@ -64,6 +64,21 @@ public class Application {
     @Column(name = "tags")
     private String tags;
 
+    @Column(name = "location")
+    private String location;
+
+    @Column(name = "prize_pool")
+    private String prizePool;
+
+    @Column(name = "min_team_size")
+    private Integer minTeamSize;
+
+    @Column(name = "max_team_size")
+    private Integer maxTeamSize;
+
+    @OneToMany(mappedBy = "application", cascade = CascadeType.ALL, orphanRemoval = true)
+    private java.util.List<ApplicationTimeline> timeline = new java.util.ArrayList<>();
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
