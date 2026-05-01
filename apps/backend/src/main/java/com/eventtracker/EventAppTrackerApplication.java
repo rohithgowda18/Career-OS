@@ -13,8 +13,6 @@ import org.springframework.scheduling.annotation.EnableScheduling;
         // Mail: even with mail.enabled=false, auto-config attempts SMTP DNS resolution at startup
         MailSenderAutoConfiguration.class,
         MailSenderValidatorAutoConfiguration.class,
-        // Flyway: already disabled in yml; exclusion prevents class scanning entirely
-        FlywayAutoConfiguration.class,
         // JMX: registers MBeans on startup — unnecessary overhead on Render free tier
         JmxAutoConfiguration.class,
         // Admin JMX: Spring Boot Admin JMX beans, not used
