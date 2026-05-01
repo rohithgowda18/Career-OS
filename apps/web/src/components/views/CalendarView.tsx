@@ -1,33 +1,23 @@
 import { useState, useMemo } from "react";
-import { ChevronLeft, ChevronRight, Download } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, Calendar as CalendarIcon, List } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { applicationsApi } from "@/lib/api/applicationsApi";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 const DAYS_OF_WEEK = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTHS = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
 ];
 
 const STATUS_COLORS: Record<string, string> = {
-  Interested: "bg-blue-100 text-blue-900 border-blue-300",
-  Applied: "bg-purple-100 text-purple-900 border-purple-300",
-  "Under Review": "bg-yellow-100 text-yellow-900 border-yellow-300",
-  Accepted: "bg-green-100 text-green-900 border-green-300",
-  Rejected: "bg-red-100 text-red-900 border-red-300",
-  Withdrawn: "bg-gray-100 text-gray-900 border-gray-300",
+  Interested: "bg-bg-elevated text-text-muted border-border",
+  Applied: "bg-primary/10 text-primary border-primary/20",
+  UnderReview: "bg-amber-500/10 text-amber-500 border-amber-500/20",
+  Accepted: "bg-success/10 text-success border-success/20",
+  Rejected: "bg-danger/10 text-danger border-danger/20",
 };
 
 interface CalendarEvent {
@@ -39,13 +29,14 @@ interface CalendarEvent {
 
 export default function CalendarView() {
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
+  const [isListView, setIsListView] = useState(false);
+  
   const applicationsQuery = useQuery({
     queryKey: ["applications"],
     queryFn: applicationsApi.list,
   });
   const applications = applicationsQuery.data || [];
 
-  // Convert applications to calendar events
   const events = useMemo(() => {
     return applications
       .filter((app: any) => app.deadline)
@@ -57,17 +48,9 @@ export default function CalendarView() {
       }));
   }, [applications]);
 
-  // Get days in current month
-  const getDaysInMonth = (date: Date) => {
-    return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
-  };
+  const getDaysInMonth = (date: Date) => new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+  const getFirstDayOfMonth = (date: Date) => new Date(date.getFullYear(), date.getMonth(), 1).getDay();
 
-  // Get first day of month (0 = Sunday)
-  const getFirstDayOfMonth = (date: Date) => {
-    return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
-  };
-
-  // Get events for a specific day
   const getEventsForDay = (day: number | null): CalendarEvent[] => {
     if (!day) return [];
     return events.filter((event: CalendarEvent) => {
@@ -79,217 +62,154 @@ export default function CalendarView() {
     });
   };
 
-  // Navigate to previous month
-  const handlePrevMonth = () => {
-    setCurrentDate(
-      new Date(currentDate.getFullYear(), currentDate.getMonth() - 1)
-    );
-  };
+  const handlePrevMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1));
+  const handleNextMonth = () => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1));
 
-  // Navigate to next month
-  const handleNextMonth = () => {
-    setCurrentDate(
-      new Date(currentDate.getFullYear(), currentDate.getMonth() + 1)
-    );
-  };
-
-  // Get all events with type annotations
-  const getAllEvents = () => {
-    return events.forEach((event: CalendarEvent) => {
-      // Process events
-    });
-  };
-
-  // Export calendar to iCal format
   const handleExportCalendar = async () => {
     try {
-      // Generate iCal content
-      let icalContent = `BEGIN:VCALENDAR
-VERSION:2.0
-PRODID:-//Event Tracker//EN
-CALSCALE:GREGORIAN
-METHOD:PUBLISH
-X-WR-CALNAME:Event Applications
-X-WR-TIMEZONE:UTC
-BEGIN:VTIMEZONE
-TZID:UTC
-BEGIN:STANDARD
-DTSTART:19700101T000000
-TZOFFSETFROM:+0000
-TZOFFSETTO:+0000
-TZNAME:UTC
-END:STANDARD
-END:VTIMEZONE
-`;
-
-      // Add events
+      let icalContent = `BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Event Tracker//EN\nMETHOD:PUBLISH\n`;
       events.forEach((event: CalendarEvent) => {
-        const deadline = event.deadline;
-        const dateStr = deadline.toISOString().split("T")[0].replace(/-/g, "");
-
-        icalContent += `BEGIN:VEVENT
-UID:app-${event.id}@eventtracker
-DTSTAMP:${new Date().toISOString().replace(/[-:]/g, "").split(".")[0]}Z
-DTSTART;VALUE=DATE:${dateStr}
-SUMMARY:${event.eventName} - ${event.status}
-DESCRIPTION:Application Status: ${event.status}
-CATEGORIES:${event.status}
-STATUS:CONFIRMED
-END:VEVENT
-`;
+        const dateStr = event.deadline.toISOString().split("T")[0].replace(/-/g, "");
+        icalContent += `BEGIN:VEVENT\nUID:app-${event.id}@eventtracker\nDTSTART;VALUE=DATE:${dateStr}\nSUMMARY:${event.eventName} - ${event.status}\nEND:VEVENT\n`;
       });
-
       icalContent += `END:VCALENDAR`;
 
-      // Download file
       const blob = new Blob([icalContent], { type: "text/calendar" });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `event-applications-${new Date().toISOString().split("T")[0]}.ics`;
-      document.body.appendChild(link);
+      link.download = `event-applications.ics`;
       link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-
-      toast.success(
-        "Calendar exported successfully! You can now import it into Google Calendar, Outlook, or Apple Calendar."
-      );
+      toast.success("Calendar exported!");
     } catch (error) {
-      console.error("Export failed:", error);
-      toast.error("Failed to export calendar");
+      toast.error("Export failed");
     }
   };
 
-  // Build calendar grid
   const daysInMonth = getDaysInMonth(currentDate);
   const firstDay = getFirstDayOfMonth(currentDate);
   const calendarDays: (number | null)[] = [];
-
-  // Add empty cells for days before month starts
-  for (let i = 0; i < firstDay; i++) {
-    calendarDays.push(null);
-  }
-
-  // Add days of month
-  for (let day = 1; day <= daysInMonth; day++) {
-    calendarDays.push(day);
-  }
+  for (let i = 0; i < firstDay; i++) calendarDays.push(null);
+  for (let day = 1; day <= daysInMonth; day++) calendarDays.push(day);
 
   return (
-    <div className="space-y-6">
-      {/* Header with navigation */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={handlePrevMonth}>
-            <ChevronLeft className="w-5 h-5" />
-          </Button>
-          <h2 className="text-2xl font-bold min-w-[200px]">
+    <div className="space-y-6 animate-in fade-in duration-500">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start bg-bg-card p-1 rounded-xl border border-border">
+          <Button variant="ghost" size="icon" onClick={handlePrevMonth} className="h-8 w-8 hover:bg-bg-elevated"><ChevronLeft className="w-4 h-4" /></Button>
+          <h2 className="text-sm font-black uppercase tracking-widest min-w-[140px] text-center">
             {MONTHS[currentDate.getMonth()]} {currentDate.getFullYear()}
           </h2>
-          <Button variant="ghost" size="icon" onClick={handleNextMonth}>
-            <ChevronRight className="w-5 h-5" />
+          <Button variant="ghost" size="icon" onClick={handleNextMonth} className="h-8 w-8 hover:bg-bg-elevated"><ChevronRight className="w-4 h-4" /></Button>
+        </div>
+        
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setIsListView(!isListView)} 
+            className="flex-1 sm:flex-none gap-2 border-border bg-bg-card hover:bg-bg-elevated font-black text-[10px] uppercase tracking-widest h-10"
+          >
+            {isListView ? <CalendarIcon className="w-3 h-3" /> : <List className="w-3 h-3" />}
+            {isListView ? "Grid View" : "List View"}
+          </Button>
+          <Button onClick={handleExportCalendar} variant="outline" size="sm" className="flex-1 sm:flex-none gap-2 border-border bg-bg-card hover:bg-bg-elevated font-black text-[10px] uppercase tracking-widest h-10">
+            <Download className="w-3 h-3" /> Export ICS
           </Button>
         </div>
-        <Button onClick={handleExportCalendar} className="gap-2">
-          <Download className="w-4 h-4" />
-          Export to Calendar
-        </Button>
       </div>
 
-      {/* Calendar grid */}
-      <div className="card-elevated p-6">
-        {/* Day headers */}
-        <div className="grid grid-cols-7 gap-2 mb-4">
-          {DAYS_OF_WEEK.map(day => (
-            <div
-              key={day}
-              className="text-center font-semibold text-sm text-muted-foreground py-2"
-            >
-              {day}
+      {!isListView ? (
+        <div className="card-premium p-4 overflow-x-auto bg-bg-card/30">
+          <div className="min-w-[750px] md:min-w-0">
+            <div className="grid grid-cols-7 gap-2 mb-4">
+              {DAYS_OF_WEEK.map(day => (
+                <div key={day} className="text-center font-black text-[9px] text-text-muted py-2 uppercase tracking-[0.2em]">{day}</div>
+              ))}
             </div>
-          ))}
-        </div>
 
-        {/* Calendar days */}
-        <div className="grid grid-cols-7 gap-2">
-          {calendarDays.map((day, index) => {
-            const dayEvents = getEventsForDay(day);
-            const isToday =
-              day &&
-              new Date().getFullYear() === currentDate.getFullYear() &&
-              new Date().getMonth() === currentDate.getMonth() &&
-              new Date().getDate() === day;
+            <div className="grid grid-cols-7 gap-2">
+              {calendarDays.map((day, index) => {
+                const dayEvents = getEventsForDay(day);
+                const isToday = day && new Date().toDateString() === new Date(currentDate.getFullYear(), currentDate.getMonth(), day).toDateString();
 
-            return (
-              <div
-                key={index}
-                className={`min-h-[120px] p-2 rounded-lg border-2 ${
-                  day
-                    ? isToday
-                      ? "border-accent bg-accent/5"
-                      : "border-border bg-background/50"
-                    : "border-transparent bg-transparent"
-                }`}
-              >
-                {day && (
-                  <>
-                    <div
-                      className={`text-sm font-semibold mb-2 ${isToday ? "text-accent" : "text-foreground"}`}
-                    >
-                      {day}
-                    </div>
-                    <div className="space-y-1">
-                      {dayEvents.map(event => (
-                        <div
-                          key={event.id}
-                          className={`text-xs p-1 rounded border ${STATUS_COLORS[event.status] || "bg-gray-100"}`}
-                          title={event.eventName}
-                        >
-                          <div className="font-medium truncate">
-                            {event.eventName}
-                          </div>
-                          <div className="text-xs opacity-75">
-                            {event.status}
-                          </div>
+                return (
+                  <div key={index} className={cn(
+                    "min-h-[110px] md:min-h-[140px] p-2 rounded-2xl border transition-all duration-300",
+                    day ? (isToday ? "border-primary bg-primary/5 ring-1 ring-primary/20" : "border-border bg-bg-card/20 hover:border-primary/20 hover:bg-bg-elevated/20") : "border-transparent"
+                  )}>
+                    {day && (
+                      <>
+                        <div className={cn(
+                          "text-[10px] font-black mb-2.5 px-1.5 transition-colors",
+                          isToday ? "text-primary" : "text-text-muted/40"
+                        )}>{day}</div>
+                        <div className="space-y-1.5">
+                          {dayEvents.slice(0, 3).map(event => (
+                            <div 
+                              key={event.id} 
+                              className={cn(
+                                "text-[9px] p-1.5 rounded-lg border truncate leading-tight font-black uppercase tracking-tighter transition-all hover:scale-[1.02]",
+                                STATUS_COLORS[event.status] || "bg-bg-elevated border-border text-text-muted"
+                              )} 
+                              title={event.eventName}
+                            >
+                              {event.eventName}
+                            </div>
+                          ))}
+                          {dayEvents.length > 3 && (
+                            <div className="text-[8px] text-center font-black text-text-muted/30 pt-1 tracking-widest">
+                              +{dayEvents.length - 3} MORE
+                            </div>
+                          )}
                         </div>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Legend */}
-      <div className="card-elevated p-6">
-        <h3 className="font-semibold mb-4">Status Legend</h3>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          {Object.entries(STATUS_COLORS).map(([status, colors]) => (
-            <div key={status} className="flex items-center gap-2">
-              <div className={`w-3 h-3 rounded ${colors.split(" ")[0]}`} />
-              <span className="text-sm text-muted-foreground">{status}</span>
+                      </>
+                    )}
+                  </div>
+                );
+              })}
             </div>
-          ))}
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="space-y-4">
+          {events
+            .filter(e => e.deadline.getMonth() === currentDate.getMonth() && e.deadline.getFullYear() === currentDate.getFullYear())
+            .sort((a, b) => a.deadline.getTime() - b.deadline.getTime())
+            .map(event => (
+              <div key={event.id} className="card-premium p-5 flex items-center justify-between gap-6 group">
+                <div className="flex items-center gap-6">
+                  <div className="flex flex-col items-center justify-center w-16 h-16 rounded-[1.25rem] bg-bg-elevated border border-border group-hover:border-primary/40 transition-all shadow-inner">
+                    <span className="text-[9px] font-black text-primary uppercase tracking-widest">{MONTHS[event.deadline.getMonth()].slice(0, 3)}</span>
+                    <span className="text-2xl font-black text-text-main tabular-nums">{event.deadline.getDate()}</span>
+                  </div>
+                  <div>
+                    <h4 className="font-black text-base text-text-main group-hover:text-primary transition-colors tracking-tight">{event.eventName}</h4>
+                    <p className="text-[10px] text-text-muted font-black uppercase tracking-[0.2em] mt-2 opacity-50">Application Deadline</p>
+                  </div>
+                </div>
+                <span className={cn("text-[9px] px-3.5 py-1.5 rounded-lg border font-black uppercase tracking-widest", STATUS_COLORS[event.status])}>
+                  {event.status}
+                </span>
+              </div>
+            ))}
+          {events.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-24 px-4 text-center border-2 border-dashed border-border rounded-[2.5rem] bg-bg-card/10">
+               <CalendarIcon className="w-16 h-16 text-text-muted/5 mb-6" />
+               <h4 className="text-lg font-black text-text-main mb-2 tracking-tight">Schedule Clear</h4>
+               <p className="text-[10px] text-text-muted font-black uppercase tracking-widest opacity-40">No application deadlines found for this period.</p>
+            </div>
+          )}
+        </div>
+      )}
 
-      {/* Info box */}
-      <div className="card-elevated p-6 bg-blue-50 border border-blue-200">
-        <h3 className="font-semibold text-blue-900 mb-2">
-          💡 Calendar Export Tips
-        </h3>
-        <ul className="text-sm text-blue-800 space-y-1">
-          <li>• Click "Export to Calendar" to download an .ics file</li>
-          <li>
-            • Import the file into Google Calendar, Outlook, or Apple Calendar
-          </li>
-          <li>• Your application deadlines will sync as calendar events</li>
-          <li>• Color-coded by status for easy visualization</li>
-          <li>• Re-export anytime to sync updates</li>
-        </ul>
+      <div className="flex flex-wrap gap-4 md:gap-10 p-7 card-premium bg-bg-card/20 border-dashed">
+        {Object.entries(STATUS_COLORS).map(([status, colors]) => (
+          <div key={status} className="flex items-center gap-3.5 group">
+            <div className={cn("w-2.5 h-2.5 rounded-full shadow-lg ring-2 ring-white/5", colors.split(" ")[0].replace("/10", ""))} />
+            <span className="text-[9px] font-black text-text-muted uppercase tracking-[0.2em] group-hover:text-text-main transition-colors">{status === "UnderReview" ? "In Review" : status}</span>
+          </div>
+        ))}
       </div>
     </div>
   );

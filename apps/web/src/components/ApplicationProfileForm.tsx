@@ -1,208 +1,198 @@
-import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Loader2 } from 'lucide-react';
-import { useApplicationProfile } from '@/hooks/useApplicationProfile';
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { userApi } from "@/lib/api/userApi";
+import { toast } from "sonner";
+import { Loader2, User, Mail, School, Github, Linkedin, Globe, MapPin, Sparkles } from "lucide-react";
 
 export default function ApplicationProfileForm() {
-  const { profile, loading, saveProfile, updateProfileMutation } = useApplicationProfile();
-  const [formData, setFormData] = useState({
-    fullName: '',
-    college: '',
-    degree: '',
-    graduationYear: new Date().getFullYear(),
-    githubUrl: '',
-    portfolioUrl: '',
-    resumeUrl: '',
-    skills: '',
-    shortBio: '',
+  const queryClient = useQueryClient();
+  const { data: profile, isLoading } = useQuery({
+    queryKey: ["user", "profile"],
+    queryFn: userApi.getProfile,
   });
 
-  // Load profile data on mount
+  const [formData, setFormData] = useState({
+    college: "",
+    skills: "",
+    githubUrl: "",
+    linkedinUrl: "",
+    portfolioUrl: "",
+    location: "",
+  });
+
   useEffect(() => {
     if (profile) {
       setFormData({
-        fullName: profile.fullName || '',
-        college: profile.college || '',
-        degree: profile.degree || '',
-        graduationYear: profile.graduationYear || new Date().getFullYear(),
-        githubUrl: profile.githubUrl || '',
-        portfolioUrl: profile.portfolioUrl || '',
-        resumeUrl: profile.resumeUrl || '',
-        skills: profile.skills || '',
-        shortBio: profile.shortBio || '',
+        college: profile.college || "",
+        skills: profile.skills || "",
+        githubUrl: profile.githubUrl || "",
+        linkedinUrl: profile.linkedinUrl || "",
+        portfolioUrl: profile.portfolioUrl || "",
+        location: profile.location || "",
       });
     }
   }, [profile]);
 
-  const handleSave = async () => {
-    await saveProfile(formData);
+  const updateMutation = useMutation({
+    mutationFn: userApi.updateProfile,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["user", "profile"] });
+      toast.success("Profile updated successfully");
+    },
+    onError: (err: any) => toast.error(err.message || "Failed to update profile"),
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    updateMutation.mutate(formData);
   };
 
-  const hasChanges = profile && (
-    profile.fullName !== formData.fullName ||
-    profile.college !== formData.college ||
-    profile.degree !== formData.degree ||
-    profile.graduationYear !== formData.graduationYear ||
-    profile.githubUrl !== formData.githubUrl ||
-    profile.portfolioUrl !== formData.portfolioUrl ||
-    profile.resumeUrl !== formData.resumeUrl ||
-    profile.skills !== formData.skills ||
-    profile.shortBio !== formData.shortBio
-  );
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <Loader2 className="w-10 h-10 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h3 className="text-lg font-semibold mb-2">Application Profile</h3>
-        <p className="text-sm text-muted-foreground">
-          Set up your profile once, then autofill it in any new application form
-        </p>
-      </div>
+    <div className="max-w-5xl mx-auto animate-in fade-in slide-in-from-bottom-6 duration-700">
+      <div className="flex flex-col lg:flex-row gap-8 md:gap-12">
+        {/* Left Column: Summary */}
+        <div className="lg:w-1/3 space-y-6">
+          <div className="card-premium p-10 text-center flex flex-col items-center bg-bg-card/40">
+            <div className="relative mb-8">
+              <div className="w-28 h-28 rounded-[2.5rem] bg-bg-elevated border border-border flex items-center justify-center shadow-2xl transition-transform hover:rotate-3 duration-500">
+                <User className="w-14 h-14 text-primary" />
+              </div>
+              <div className="absolute -bottom-3 -right-3 w-10 h-10 rounded-2xl bg-primary border border-white/20 flex items-center justify-center shadow-xl shadow-primary/30">
+                <Sparkles className="w-5 h-5 text-white" />
+              </div>
+            </div>
+            <h2 className="text-2xl font-black text-text-main tracking-tight">Identity Settings</h2>
+            <p className="text-[10px] text-text-muted font-black uppercase tracking-[0.2em] mt-2 opacity-60">Personal Core Data</p>
+          </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Full Name */}
-        <div className="space-y-2">
-          <Label htmlFor="fullName">Full Name</Label>
-          <Input
-            id="fullName"
-            placeholder="Your full name"
-            value={formData.fullName}
-            onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-          />
-        </div>
-
-        {/* College */}
-        <div className="space-y-2">
-          <Label htmlFor="college">College/University</Label>
-          <Input
-            id="college"
-            placeholder="e.g., MIT, Stanford, etc."
-            value={formData.college}
-            onChange={(e) => setFormData({ ...formData, college: e.target.value })}
-          />
-        </div>
-
-        {/* Degree */}
-        <div className="space-y-2">
-          <Label htmlFor="degree">Degree</Label>
-          <Input
-            id="degree"
-            placeholder="e.g., B.S. in Computer Science"
-            value={formData.degree}
-            onChange={(e) => setFormData({ ...formData, degree: e.target.value })}
-          />
-        </div>
-
-        {/* Graduation Year */}
-        <div className="space-y-2">
-          <Label htmlFor="graduationYear">Graduation Year</Label>
-          <Input
-            id="graduationYear"
-            type="number"
-            placeholder="2025"
-            value={formData.graduationYear || ''}
-            onChange={(e) => setFormData({ ...formData, graduationYear: parseInt(e.target.value) || 0 })}
-          />
-        </div>
-
-        {/* GitHub URL */}
-        <div className="space-y-2">
-          <Label htmlFor="githubUrl">GitHub Profile</Label>
-          <Input
-            id="githubUrl"
-            placeholder="https://github.com/username"
-            value={formData.githubUrl}
-            onChange={(e) => setFormData({ ...formData, githubUrl: e.target.value })}
-          />
-        </div>
-
-        {/* Portfolio URL */}
-        <div className="space-y-2">
-          <Label htmlFor="portfolioUrl">Portfolio Website</Label>
-          <Input
-            id="portfolioUrl"
-            placeholder="https://yourportfolio.com"
-            value={formData.portfolioUrl}
-            onChange={(e) => setFormData({ ...formData, portfolioUrl: e.target.value })}
-          />
-        </div>
-
-        {/* Resume URL */}
-        <div className="space-y-2 md:col-span-2">
-          <Label htmlFor="resumeUrl">Resume/CV Link</Label>
-          <Input
-            id="resumeUrl"
-            placeholder="https://drive.google.com/file/d/..."
-            value={formData.resumeUrl}
-            onChange={(e) => setFormData({ ...formData, resumeUrl: e.target.value })}
-          />
-        </div>
-
-        {/* Skills */}
-        <div className="space-y-2 md:col-span-2">
-          <Label htmlFor="skills">Skills (comma separated)</Label>
-          <Input
-            id="skills"
-            placeholder="React, TypeScript, Python, Machine Learning, etc."
-            value={formData.skills}
-            onChange={(e) => setFormData({ ...formData, skills: e.target.value })}
-          />
-        </div>
-
-        {/* Short Bio */}
-        <div className="space-y-2 md:col-span-2">
-          <Label htmlFor="shortBio">Short Bio</Label>
-          <Textarea
-            id="shortBio"
-            placeholder="A brief bio about yourself (2-3 sentences)"
-            value={formData.shortBio}
-            onChange={(e) => setFormData({ ...formData, shortBio: e.target.value })}
-            rows={3}
-          />
-        </div>
-      </div>
-
-      {/* Save Button */}
-      <div className="flex gap-3 pt-4">
-        <Button
-          onClick={handleSave}
-          disabled={loading || !hasChanges}
-        >
-          {loading && updateProfileMutation.isPending && (
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-          )}
-          {updateProfileMutation.isPending ? 'Saving...' : 'Save Profile'}
-        </Button>
-        {!hasChanges && profile && (
-          <p className="text-xs text-muted-foreground self-center">
-            ✓ Profile saved
-          </p>
-        )}
-      </div>
-
-      {/* Preview */}
-      {(formData.fullName || formData.college || formData.skills) && (
-        <div className="mt-6 p-4 rounded-lg border border-border bg-muted/30">
-          <h4 className="text-sm font-semibold mb-3">Preview (as it will appear in notes)</h4>
-          <div className="text-xs space-y-1 font-mono text-muted-foreground">
-            <p>---</p>
-            <p>Applicant Info:</p>
-            {formData.fullName && <p>Name: {formData.fullName}</p>}
-            {formData.college && <p>College: {formData.college}</p>}
-            {formData.degree && <p>Degree: {formData.degree}</p>}
-            {formData.graduationYear && <p>Graduation Year: {formData.graduationYear}</p>}
-            {formData.githubUrl && <p>GitHub: {formData.githubUrl}</p>}
-            {formData.portfolioUrl && <p>Portfolio: {formData.portfolioUrl}</p>}
-            {formData.resumeUrl && <p>Resume: {formData.resumeUrl}</p>}
-            {formData.skills && <p>Skills: {formData.skills}</p>}
-            {formData.shortBio && <p>Bio: {formData.shortBio}</p>}
-            <p>-----------------------</p>
+          <div className="card-premium p-6 space-y-5 bg-bg-card/20">
+             <div className="flex items-center gap-4 text-text-muted group">
+                <div className="w-8 h-8 rounded-lg bg-bg-elevated border border-border flex items-center justify-center group-hover:border-primary/40 transition-colors">
+                   <Mail className="w-4 h-4" />
+                </div>
+                <span className="text-xs font-bold truncate tracking-tight">{profile?.email || "No email linked"}</span>
+             </div>
+             <div className="flex items-center gap-4 text-text-muted group">
+                <div className="w-8 h-8 rounded-lg bg-bg-elevated border border-border flex items-center justify-center group-hover:border-primary/40 transition-colors">
+                   <MapPin className="w-4 h-4" />
+                </div>
+                <span className="text-xs font-bold tracking-tight">{formData.location || "Location undefined"}</span>
+             </div>
           </div>
         </div>
-      )}
+
+        {/* Right Column: Detailed Form */}
+        <div className="lg:flex-1">
+          <form onSubmit={handleSubmit} className="card-premium p-8 md:p-12 space-y-10 bg-bg-card/30">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+              <div className="space-y-2.5">
+                <Label htmlFor="college" className="text-[10px] font-black uppercase tracking-widest text-text-muted opacity-60 flex items-center gap-2">
+                  <School className="w-3.5 h-3.5" /> Institution
+                </Label>
+                <Input
+                  id="college"
+                  value={formData.college}
+                  onChange={(e) => setFormData({ ...formData, college: e.target.value })}
+                  placeholder="University Name"
+                  className="input-premium h-12 text-sm font-semibold"
+                />
+              </div>
+
+              <div className="space-y-2.5">
+                <Label htmlFor="location" className="text-[10px] font-black uppercase tracking-widest text-text-muted opacity-60 flex items-center gap-2">
+                  <MapPin className="w-3.5 h-3.5" /> Residency
+                </Label>
+                <Input
+                  id="location"
+                  value={formData.location}
+                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                  placeholder="City, Country"
+                  className="input-premium h-12 text-sm font-semibold"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2.5">
+              <Label htmlFor="skills" className="text-[10px] font-black uppercase tracking-widest text-text-muted opacity-60">Professional Capabilities</Label>
+              <Textarea
+                id="skills"
+                value={formData.skills}
+                onChange={(e) => setFormData({ ...formData, skills: e.target.value })}
+                placeholder="e.g. Full-stack Architecture, React Native, AWS Deployment..."
+                className="input-premium min-h-[140px] resize-none text-sm font-semibold leading-relaxed"
+              />
+              <p className="text-[10px] text-text-muted italic opacity-40">These keywords power your smart profile and future application matching.</p>
+            </div>
+
+            <div className="space-y-8 pt-4">
+              <h4 className="text-[11px] font-black uppercase tracking-[0.3em] text-text-main border-b border-border/50 pb-3">Digital Fingerprint</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+                <div className="space-y-2.5">
+                  <Label htmlFor="github" className="text-[10px] font-black text-text-muted opacity-60 flex items-center gap-2">
+                    <Github className="w-3.5 h-3.5" /> GitHub
+                  </Label>
+                  <Input
+                    id="github"
+                    value={formData.githubUrl}
+                    onChange={(e) => setFormData({ ...formData, githubUrl: e.target.value })}
+                    placeholder="github.com/identity"
+                    className="input-premium h-12 text-sm font-semibold"
+                  />
+                </div>
+
+                <div className="space-y-2.5">
+                  <Label htmlFor="linkedin" className="text-[10px] font-black text-text-muted opacity-60 flex items-center gap-2">
+                    <Linkedin className="w-3.5 h-3.5" /> LinkedIn
+                  </Label>
+                  <Input
+                    id="linkedin"
+                    value={formData.linkedinUrl}
+                    onChange={(e) => setFormData({ ...formData, linkedinUrl: e.target.value })}
+                    placeholder="linkedin.com/in/identity"
+                    className="input-premium h-12 text-sm font-semibold"
+                  />
+                </div>
+
+                <div className="sm:col-span-2 space-y-2.5">
+                  <Label htmlFor="portfolio" className="text-[10px] font-black text-text-muted opacity-60 flex items-center gap-2">
+                    <Globe className="w-3.5 h-3.5" /> Personal Domain
+                  </Label>
+                  <Input
+                    id="portfolio"
+                    value={formData.portfolioUrl}
+                    onChange={(e) => setFormData({ ...formData, portfolioUrl: e.target.value })}
+                    placeholder="https://identity.com"
+                    className="input-premium h-12 text-sm font-semibold"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-8">
+              <Button 
+                type="submit" 
+                disabled={updateMutation.isPending}
+                className="btn-primary w-full sm:w-auto px-12 h-14 text-base tracking-tight"
+              >
+                {updateMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Commit Changes
+              </Button>
+            </div>
+          </form>
+        </div>
+      </div>
     </div>
   );
 }

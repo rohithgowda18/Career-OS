@@ -7,6 +7,8 @@ import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
 import org.springframework.boot.autoconfigure.jmx.JmxAutoConfiguration;
 import org.springframework.boot.autoconfigure.mail.MailSenderAutoConfiguration;
 import org.springframework.boot.autoconfigure.mail.MailSenderValidatorAutoConfiguration;
+import org.springframework.boot.autoconfigure.domain.EntityScan;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication(exclude = {
@@ -22,6 +24,8 @@ import org.springframework.scheduling.annotation.EnableScheduling;
         org.springframework.boot.autoconfigure.batch.BatchAutoConfiguration.class
 })
 @EnableScheduling
+@EntityScan(basePackages = "com.eventtracker.entity")
+@EnableJpaRepositories(basePackages = "com.eventtracker.repository")
 public class EventAppTrackerApplication {
 
     public static void main(String[] args) {

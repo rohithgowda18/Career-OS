@@ -4,15 +4,12 @@ import { profileApi } from "@/lib/api/profileApi";
 import { toast } from 'sonner';
 
 interface ApplicationProfileData {
-  fullName?: string;
   college?: string;
-  degree?: string;
-  graduationYear?: number;
   githubUrl?: string;
+  linkedinUrl?: string;
   portfolioUrl?: string;
-  resumeUrl?: string;
   skills?: string;
-  shortBio?: string;
+  location?: string;
 }
 
 export function useApplicationProfile() {
@@ -46,15 +43,12 @@ export function useApplicationProfile() {
 
     const lines: string[] = ['', '---', 'Applicant Info:'];
 
-    if (profile.fullName) lines.push(`Name: ${profile.fullName}`);
     if (profile.college) lines.push(`College: ${profile.college}`);
-    if (profile.degree) lines.push(`Degree: ${profile.degree}`);
-    if (profile.graduationYear) lines.push(`Graduation Year: ${profile.graduationYear}`);
+    if (profile.location) lines.push(`Location: ${profile.location}`);
     if (profile.githubUrl) lines.push(`GitHub: ${profile.githubUrl}`);
+    if (profile.linkedinUrl) lines.push(`LinkedIn: ${profile.linkedinUrl}`);
     if (profile.portfolioUrl) lines.push(`Portfolio: ${profile.portfolioUrl}`);
-    if (profile.resumeUrl) lines.push(`Resume: ${profile.resumeUrl}`);
     if (profile.skills) lines.push(`Skills: ${profile.skills}`);
-    if (profile.shortBio) lines.push(`Bio: ${profile.shortBio}`);
 
     lines.push('-----------------------', '');
 

@@ -49,32 +49,20 @@ public class AnalyticsService {
         long total = apps.size();
         long accepted = apps.stream().filter(a -> a.getStatus().name().equals("Accepted")).count();
         long underReview = apps.stream().filter(a -> a.getStatus().name().equals("UnderReview")).count();
+        long applied = apps.stream().filter(a -> a.getStatus().name().equals("Applied")).count();
+        long interested = apps.stream().filter(a -> a.getStatus().name().equals("Interested")).count();
+        long rejected = apps.stream().filter(a -> a.getStatus().name().equals("Rejected")).count();
+
         double acceptanceRate = total > 0 ? (double) accepted / total * 100 : 0;
 
         Map<String, Object> summary = new HashMap<>();
         summary.put("totalApplications", total);
         summary.put("accepted", accepted);
         summary.put("underReview", underReview);
+        summary.put("applied", applied);
+        summary.put("interested", interested);
+        summary.put("rejected", rejected);
         summary.put("overallAcceptanceRate", Math.round(acceptanceRate));
         return summary;
-    }
-
-    public List<Map<String, Object>> getSeasonalTrends(Long userId) {
-        List<Application> apps = applicationRepository.findByUserId(userId);
-        
-        // Group by Month Year
-        Map<String, List<Application>> byMonth = apps.stream()
-                .collect(Collectors.groupingBy(a -> {
-                    return a.getCreatedAt().getMonth().name() + " " + a.getCreatedAt().getYear();
-                }));
-
-        return byMonth.entrySet().stream()
-                .map(e -> {
-                    Map<String, Object> trend = new HashMap<>();
-                    trend.put("month", e.getKey());
-                    trend.put("applications", e.getValue().size());
-                    trend.put("accepted", e.getValue().stream().filter(a -> a.getStatus().name().equals("Accepted")).count());
-                    return trend;
-                }).toList();
     }
 }

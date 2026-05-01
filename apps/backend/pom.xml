@@ -62,16 +62,6 @@
             <scope>runtime</scope>
         </dependency>
 
-        <dependency>
-            <groupId>org.flywaydb</groupId>
-            <artifactId>flyway-core</artifactId>
-            <version>10.4.1</version>
-        </dependency>
-        <dependency>
-            <groupId>org.flywaydb</groupId>
-            <artifactId>flyway-database-postgresql</artifactId>
-            <version>10.4.1</version>
-        </dependency>
 
         <!-- JWT for authentication -->
         <dependency>
@@ -95,38 +85,12 @@
         </dependency>
 
 
-
-        <!-- Web Scraping (Lazy loaded, optional for startup) -->
-        <dependency>
-            <groupId>org.jsoup</groupId>
-            <artifactId>jsoup</artifactId>
-            <version>1.17.2</version>
-            <optional>true</optional>
-        </dependency>
-
-        <!-- LLM Integration (Lazy loaded, optional for startup) -->
-        <dependency>
-            <groupId>dev.langchain4j</groupId>
-            <artifactId>langchain4j-open-ai</artifactId>
-            <version>0.33.0</version>
-            <optional>true</optional>
-        </dependency>
-
         <!-- Lombok for boilerplate -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <optional>true</optional>
         </dependency>
-
-        <!-- Email Support (Lazy loaded, optional for startup) -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-mail</artifactId>
-            <optional>true</optional>
-        </dependency>
-
-
 
         <!-- Testing -->
         <dependency>
@@ -150,6 +114,7 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
+                    <mainClass>com.eventtracker.EventAppTrackerApplication</mainClass>
                     <excludes>
                         <exclude>
                             <groupId>org.projectlombok</groupId>

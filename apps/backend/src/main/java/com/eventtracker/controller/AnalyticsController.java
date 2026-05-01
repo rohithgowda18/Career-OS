@@ -40,12 +40,6 @@ public class AnalyticsController {
         return ResponseEntity.ok(analyticsService.getAcceptanceRates(userId));
     }
 
-    @GetMapping("/trends")
-    public ResponseEntity<List<Map<String, Object>>> getSeasonalTrends() {
-        Long userId = getCurrentUserId();
-        return ResponseEntity.ok(analyticsService.getSeasonalTrends(userId));
-    }
-
     private Long getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User user = (User) authentication.getPrincipal();

@@ -1,6 +1,5 @@
 import { useAuth } from "@/hooks/useAuth";
-import { Button } from "@/components/ui/button";
-import { Loader2, LogOut, Settings } from "lucide-react";
+import { Loader2, LogOut, LayoutDashboard, Trello, Calendar, BarChart3, UserCircle } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -10,31 +9,23 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { PWAInstallButton } from "@/components/PWAInstallButton";
 import DashboardView from "@/components/views/DashboardView";
 import KanbanView from "@/components/views/KanbanView";
 import CalendarView from "@/components/views/CalendarView";
 import AnalyticsDashboard from "@/components/AnalyticsDashboard";
-import SettingsPage from "@/components/SettingsPage";
-import { profileApi } from "@/lib/api/profileApi";
+import ApplicationProfileForm from "@/components/ApplicationProfileForm";
+import { cn } from "@/lib/utils";
 
 export default function Home() {
   const { user, loading, logout } = useAuth();
   const [currentView, setCurrentView] = useState<
-    "dashboard" | "kanban" | "calendar" | "analytics" | "settings"
+    "dashboard" | "kanban" | "calendar" | "analytics" | "profile"
   >("dashboard");
-
-  const preferencesQuery = useQuery({
-    queryKey: ["preferences"],
-    queryFn: profileApi.getPreferences,
-  });
-  const preferences = preferencesQuery.data;
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="w-8 h-8 animate-spin text-accent" />
+      <div className="min-h-screen flex items-center justify-center bg-bg-main">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -44,56 +35,63 @@ export default function Home() {
     return null;
   }
 
+  const tabs = [
+    { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { id: "kanban", label: "Pipeline", icon: Trello },
+    { id: "calendar", label: "Schedule", icon: Calendar },
+    { id: "analytics", label: "Insights", icon: BarChart3 },
+    { id: "profile", label: "Settings", icon: UserCircle },
+  ];
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-bg-main text-text-main pb-20 md:pb-0 font-sans selection:bg-primary/30">
+      {/* Background Glow */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-primary/5 blur-[120px]" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-accent/5 blur-[120px]" />
+      </div>
+
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur-sm">
+      <header className="sticky top-0 z-50 border-b border-border bg-bg-main/80 backdrop-blur-xl">
         <div className="container flex items-center justify-between h-16">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
-              <span className="text-lg font-bold text-accent">📋</span>
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/20">
+              <span className="text-base font-bold text-white">📋</span>
             </div>
-            <h1 className="text-xl font-bold text-foreground">Event Tracker</h1>
+            <h1 className="text-lg font-bold tracking-tight hidden sm:block">EventTracker</h1>
           </div>
 
           <div className="flex items-center gap-4">
-            <PWAInstallButton />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center outline-none">
-                  <Avatar className="h-9 w-9 border cursor-pointer hover:opacity-80 transition-opacity">
-                    <AvatarFallback className="text-xs font-medium bg-accent text-accent-foreground">
-                      {user?.name?.charAt(0).toUpperCase() || "U"}
+                  <Avatar className="h-8 w-8 border border-border cursor-pointer hover:border-primary/50 transition-all">
+                    <AvatarFallback className="text-xs font-black bg-bg-elevated text-primary">
+                      {user?.email?.charAt(0).toUpperCase() || "U"}
                     </AvatarFallback>
                   </Avatar>
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56 mt-2">
-                <div className="flex items-center justify-start gap-2 p-2">
-                  <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">
-                      {user?.name || "User"}
-                    </p>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {user?.email || "No email"}
-                    </p>
-                  </div>
+              <DropdownMenuContent align="end" className="w-56 mt-2 bg-bg-card border-border text-text-main">
+                <div className="flex flex-col p-3 border-b border-border">
+                  <p className="text-[10px] font-black text-text-muted uppercase tracking-widest mb-1">Identity</p>
+                  <p className="text-sm font-bold truncate text-text-main">{user?.email}</p>
                 </div>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={() => setCurrentView("settings")}
-                  className="cursor-pointer"
-                >
-                  <Settings className="mr-2 h-4 w-4" />
-                  <span>Settings</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={logout}
-                  className="cursor-pointer text-destructive focus:text-destructive"
-                >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Sign out</span>
-                </DropdownMenuItem>
+                <div className="p-1">
+                  <DropdownMenuItem onClick={() => setCurrentView("profile")} className="cursor-pointer hover:bg-bg-elevated rounded-md px-3 py-2 text-sm font-bold">
+                    Profile Settings
+                  </DropdownMenuItem>
+                </div>
+                <DropdownMenuSeparator className="bg-border" />
+                <div className="p-1">
+                  <DropdownMenuItem
+                    onClick={logout}
+                    className="cursor-pointer text-danger hover:bg-danger/10 rounded-md px-3 py-2 text-sm font-bold"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Sign out</span>
+                  </DropdownMenuItem>
+                </div>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -101,41 +99,66 @@ export default function Home() {
       </header>
 
       {/* Navigation Tabs */}
-      {currentView !== "settings" && (
-        <div className="sticky top-16 z-40 border-b border-border bg-background/95 backdrop-blur-sm">
-          <div className="container flex gap-1 h-12">
-            {[
-              { id: "dashboard", label: "Dashboard" },
-              { id: "kanban", label: "Kanban" },
-              { id: "calendar", label: "Calendar" },
-              { id: "analytics", label: "Analytics" },
-            ].map(tab => (
+      <div className="sticky top-16 z-40 border-b border-border bg-bg-main/60 backdrop-blur-md hidden md:block">
+        <div className="container flex gap-1 h-14">
+          {tabs.map(tab => {
+            const Icon = tab.icon;
+            const isActive = currentView === tab.id;
+            return (
               <button
                 key={tab.id}
                 onClick={() => setCurrentView(tab.id as any)}
-                className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                  currentView === tab.id
-                    ? "border-accent text-accent"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
-                }`}
+                className={cn(
+                  "relative flex items-center gap-2.5 px-6 py-3 text-sm font-black uppercase tracking-tight transition-all duration-300",
+                  isActive
+                     ? "text-primary"
+                     : "text-text-muted hover:text-text-main hover:bg-bg-card/50"
+                )}
               >
+                <Icon className={cn("w-4 h-4 transition-transform", isActive && "scale-110")} />
                 {tab.label}
+                {isActive && (
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary shadow-[0_0_12px_rgba(249,115,22,0.6)]" />
+                )}
               </button>
-            ))}
-          </div>
+            );
+          })}
         </div>
-      )}
+      </div>
 
       {/* Content */}
-      <main className="container py-8">
-        {currentView === "dashboard" && <DashboardView />}
-        {currentView === "kanban" && <KanbanView />}
-        {currentView === "calendar" && <CalendarView />}
-        {currentView === "analytics" && <AnalyticsDashboard />}
-        {currentView === "settings" && (
-          <SettingsPage onBack={() => setCurrentView("dashboard")} />
-        )}
+      <main className="container py-8 relative z-10">
+        <div className="max-w-6xl mx-auto">
+            {currentView === "dashboard" && <DashboardView />}
+            {currentView === "kanban" && <KanbanView />}
+            {currentView === "calendar" && <CalendarView />}
+            {currentView === "analytics" && <AnalyticsDashboard />}
+            {currentView === "profile" && <ApplicationProfileForm />}
+        </div>
       </main>
+
+      {/* Mobile Nav */}
+      <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-bg-card/95 backdrop-blur-2xl border-t border-border">
+        <div className="grid grid-cols-5 h-16">
+          {tabs.map(tab => {
+            const Icon = tab.icon;
+            const isActive = currentView === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setCurrentView(tab.id as any)}
+                className={cn(
+                  "flex flex-col items-center justify-center gap-1 transition-all duration-300",
+                  isActive ? "text-primary bg-primary/5" : "text-text-muted"
+                )}
+              >
+                <Icon className={cn("w-5 h-5", isActive && "drop-shadow-[0_0_8px_rgba(249,115,22,0.4)]")} />
+                <span className="text-[10px] font-black uppercase tracking-tighter">{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </nav>
     </div>
   );
 }

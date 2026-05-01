@@ -1,5 +1,5 @@
 import { Application } from "@/types/types";
-import { MoreVertical, ExternalLink, Trash2, Edit2 } from "lucide-react";
+import { MoreVertical, ExternalLink, Trash2, Edit2, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -19,7 +19,8 @@ import { applicationsApi } from "@/lib/api/applicationsApi";
 import { toast } from "sonner";
 import { useState } from "react";
 import AddApplicationModal from "./AddApplicationModal";
-import { DeadlineBadge } from "./DeadlineBadge";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
 
 interface ApplicationCardProps {
   application: Application;
@@ -28,10 +29,9 @@ interface ApplicationCardProps {
 const STATUSES = [
   "Interested",
   "Applied",
-  "Under Review",
+  "UnderReview",
   "Accepted",
   "Rejected",
-  "Withdrawn",
 ] as const;
 
 export default function ApplicationCard({ application }: ApplicationCardProps) {
@@ -44,125 +44,98 @@ export default function ApplicationCard({ application }: ApplicationCardProps) {
       queryClient.invalidateQueries({ queryKey: ["applications"] });
       toast.success("Status updated");
     },
-    onError: () => {
-      toast.error("Failed to update status");
-    },
+    onError: () => toast.error("Update failed"),
   });
 
   const deleteMutation = useMutation({
     mutationFn: applicationsApi.delete,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["applications"] });
-      toast.success("Application deleted");
+      toast.success("Deleted");
     },
-    onError: () => {
-      toast.error("Failed to delete application");
-    },
+    onError: () => toast.error("Delete failed"),
   });
 
   const handleStatusChange = (newStatus: string) => {
-    updateMutation.mutate({
-      ...application,
-      status: newStatus as any,
-    });
+    updateMutation.mutate({ ...application, status: newStatus as any });
   };
 
-  const handleDelete = () => {
-    if (confirm("Are you sure you want to delete this application?")) {
-      deleteMutation.mutate(application.id);
-    }
-  };
+  const deadlineDate = application.deadline ? new Date(application.deadline) : null;
+  const isUrgent = deadlineDate && (deadlineDate.getTime() - Date.now()) < 3 * 24 * 60 * 60 * 1000;
 
   return (
     <>
-      <div className="rounded-lg border border-border bg-card p-4 shadow-sm hover:shadow-md transition-shadow">
-        <div className="flex items-start justify-between gap-2 mb-3">
-          <div className="flex items-center gap-2 flex-1 min-w-0">
-            <h4 className="font-semibold text-sm text-foreground truncate flex-1">
-              {application.url ? (
-                <a
-                  href={application.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-primary hover:underline transition-colors"
-                >
-                  {application.eventName}
-                </a>
-              ) : (
-                application.eventName
-              )}
+      <div className="group relative rounded-2xl border border-border bg-bg-elevated p-4 shadow-sm hover:shadow-xl hover:border-primary/50 hover:-translate-y-1 transition-all duration-300">
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <div className="flex-1 min-w-0">
+            <h4 className="font-black text-[13px] text-text-main group-hover:text-primary transition-colors truncate tracking-tight">
+              {application.eventName}
             </h4>
-            {application.url && (
-              <a
-                href={application.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-shrink-0"
-                title="Open event page"
-              >
-                <ExternalLink className="w-3.5 h-3.5 text-muted-foreground hover:text-primary transition-colors" />
-              </a>
-            )}
+            <div className="flex items-center gap-2 mt-1.5">
+              <span className="text-[9px] text-text-muted font-black uppercase tracking-widest bg-bg-card px-2 py-0.5 rounded border border-border/50">
+                {application.eventType}
+              </span>
+              {application.url && (
+                <a 
+                  href={application.url} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-text-muted hover:text-accent transition-colors"
+                >
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              )}
+            </div>
           </div>
+          
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-6 w-6">
-                <MoreVertical className="w-4 h-4" />
+              <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg hover:bg-bg-card opacity-0 group-hover:opacity-100 transition-opacity">
+                <MoreVertical className="w-4 h-4 text-text-muted" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setShowEditModal(true)}>
-                <Edit2 className="w-4 h-4 mr-2" />
-                Edit
+            <DropdownMenuContent align="end" className="bg-bg-card border-border text-text-main shadow-2xl">
+              <DropdownMenuItem onClick={() => setShowEditModal(true)} className="hover:bg-bg-elevated cursor-pointer font-bold text-xs">
+                <Edit2 className="w-3.5 h-3.5 mr-2" /> Modify Entry
               </DropdownMenuItem>
-              {application.url && (
-                <DropdownMenuItem
-                  onClick={() => window.open(application.url!, "_blank")}
-                >
-                  <ExternalLink className="w-4 h-4 mr-2" />
-                  Open Link
-                </DropdownMenuItem>
-              )}
-              <DropdownMenuItem
-                onClick={handleDelete}
-                className="text-destructive"
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                Delete
+              <DropdownMenuItem onClick={() => deleteMutation.mutate(application.id)} className="text-danger hover:bg-danger/10 cursor-pointer font-bold text-xs">
+                <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete Item
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
 
-        <div className="space-y-2 mb-3">
-          <p className="text-xs text-muted-foreground">
-            {application.eventType}
-          </p>
-
-          {application.deadline && (
-            <DeadlineBadge deadline={application.deadline} showDate={true} />
-          )}
-        </div>
+        {deadlineDate && (
+          <div className={cn(
+            "flex items-center gap-2 mb-4 px-3 py-1.5 rounded-lg border w-fit transition-all duration-300",
+            isUrgent ? "bg-danger/10 border-danger/20 text-danger animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.2)]" : "bg-bg-card border-border text-text-muted group-hover:border-primary/20"
+          )}>
+            <Calendar className="w-3 h-3" />
+            <span className="text-[10px] font-black uppercase tracking-widest">
+              {format(deadlineDate, "MMM d, yyyy")}
+            </span>
+          </div>
+        )}
 
         {application.notes && (
-          <p className="text-xs text-muted-foreground mb-3 truncate">
-            {application.notes}
+          <p className="text-[11px] text-text-muted/60 mb-5 line-clamp-2 italic font-medium leading-relaxed border-l-2 border-border pl-3">
+            "{application.notes}"
           </p>
         )}
 
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2 pt-3 border-t border-border/40">
           <Select
             value={application.status}
             onValueChange={handleStatusChange}
             disabled={updateMutation.isPending}
           >
-            <SelectTrigger className="h-8 text-xs">
+            <SelectTrigger className="h-8 text-[9px] font-black uppercase tracking-widest bg-bg-card/50 border-border hover:bg-bg-card hover:border-primary/40 transition-all">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
-              {STATUSES.map(status => (
-                <SelectItem key={status} value={status}>
-                  {status}
+            <SelectContent className="bg-bg-card border-border text-text-main">
+              {STATUSES.map(s => (
+                <SelectItem key={s} value={s} className="text-xs hover:bg-bg-elevated cursor-pointer font-bold">
+                  {s === "UnderReview" ? "In Review" : s}
                 </SelectItem>
               ))}
             </SelectContent>

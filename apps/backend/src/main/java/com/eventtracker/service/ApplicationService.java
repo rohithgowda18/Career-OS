@@ -28,7 +28,6 @@ public class ApplicationService {
         app.setDeadline(dto.getDeadline());
         app.setNotes(dto.getNotes());
         app.setUrl(dto.getUrl());
-        app.setIsFavorite(dto.getIsFavorite() != null ? dto.getIsFavorite() : false);
 
         return applicationRepository.save(app);
     }
@@ -74,15 +73,6 @@ public class ApplicationService {
         if (dto.getUrl() != null) {
             app.setUrl(dto.getUrl());
         }
-        if (dto.getIsFavorite() != null) {
-            app.setIsFavorite(dto.getIsFavorite());
-        }
-        if (dto.getRejectionReason() != null) {
-            app.setRejectionReason(dto.getRejectionReason());
-        }
-        if (dto.getApplicationLink() != null) {
-            app.setApplicationLink(dto.getApplicationLink());
-        }
 
         return applicationRepository.save(app);
     }
@@ -102,11 +92,6 @@ public class ApplicationService {
         dto.setDeadline(app.getDeadline());
         dto.setNotes(app.getNotes());
         dto.setUrl(app.getUrl());
-        dto.setSuccessScore(app.getSuccessScore());
-        dto.setIsFavorite(app.getIsFavorite());
-        dto.setRejectionReason(app.getRejectionReason());
-        dto.setApplicationLink(app.getApplicationLink());
-        dto.setTags(app.getTags());
         dto.setCreatedAt(app.getCreatedAt());
         dto.setUpdatedAt(app.getUpdatedAt());
         return dto;
@@ -120,11 +105,6 @@ public class ApplicationService {
         app.setDeadline(dto.getDeadline());
         app.setNotes(dto.getNotes());
         app.setUrl(dto.getUrl());
-        app.setSuccessScore(dto.getSuccessScore());
-        app.setIsFavorite(dto.getIsFavorite() != null ? dto.getIsFavorite() : false);
-        app.setRejectionReason(dto.getRejectionReason());
-        app.setApplicationLink(dto.getApplicationLink());
-        app.setTags(dto.getTags());
         return app;
     }
 

@@ -28,17 +28,6 @@ public class ApplicationDTO {
 
     private String url;
 
-    private Double successScore;
-
-    private Boolean isFavorite;
-
-    private String rejectionReason;
-
-    private String applicationLink;
-
-    private String tags;
-
     private LocalDateTime createdAt;
-
     private LocalDateTime updatedAt;
 }
