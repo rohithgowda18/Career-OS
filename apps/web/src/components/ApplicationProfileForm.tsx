@@ -78,18 +78,18 @@ export default function ApplicationProfileForm() {
           </div>
 
           <div className="card-premium p-6 space-y-5 bg-bg-card/20">
-             <div className="flex items-center gap-4 text-text-muted group">
-                <div className="w-8 h-8 rounded-lg bg-bg-elevated border border-border flex items-center justify-center group-hover:border-primary/40 transition-colors">
-                   <Mail className="w-4 h-4" />
-                </div>
-                <span className="text-xs font-bold truncate tracking-tight">{profile?.email || "No email linked"}</span>
-             </div>
-             <div className="flex items-center gap-4 text-text-muted group">
-                <div className="w-8 h-8 rounded-lg bg-bg-elevated border border-border flex items-center justify-center group-hover:border-primary/40 transition-colors">
-                   <MapPin className="w-4 h-4" />
-                </div>
-                <span className="text-xs font-bold tracking-tight">{formData.location || "Location undefined"}</span>
-             </div>
+            <div className="flex items-center gap-4 text-text-muted group">
+              <div className="w-8 h-8 rounded-lg bg-bg-elevated border border-border flex items-center justify-center group-hover:border-primary/40 transition-colors">
+                <Mail className="w-4 h-4" />
+              </div>
+              <span className="text-xs font-bold truncate tracking-tight">{profile?.email || "No email linked"}</span>
+            </div>
+            <div className="flex items-center gap-4 text-text-muted group">
+              <div className="w-8 h-8 rounded-lg bg-bg-elevated border border-border flex items-center justify-center group-hover:border-primary/40 transition-colors">
+                <MapPin className="w-4 h-4" />
+              </div>
+              <span className="text-xs font-bold tracking-tight">{formData.location || "Location undefined"}</span>
+            </div>
           </div>
         </div>
 
@@ -181,14 +181,34 @@ export default function ApplicationProfileForm() {
             </div>
 
             <div className="pt-8">
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 disabled={updateMutation.isPending}
-                className="btn-primary w-full sm:w-auto px-12 h-14 text-base tracking-tight"
+                className="bg-[#f97316] hover:bg-[#ea580c] text-white font-bold h-12 px-8 rounded-lg transition-all"
               >
                 {updateMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 Commit Changes
               </Button>
+            </div>
+
+            {/* Flat Style Bookmarklet Section */}
+            <div className="pt-10 mt-10 border-t border-[#27272a]">
+              <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#a1a1aa] mb-4">Tools</h4>
+              <div className="p-6 rounded-xl bg-[#0f0f10] border border-[#27272a] flex flex-col md:flex-row items-center gap-6">
+                <div className="flex-1">
+                   <h5 className="text-sm font-bold text-[#e4e4e7] mb-1">Save Event Bookmarklet</h5>
+                   <p className="text-xs text-[#a1a1aa] leading-relaxed">
+                     Drag the button to your bookmarks bar. Use it on any site to instantly import event details.
+                   </p>
+                </div>
+                <a 
+                  href={`javascript:(function(){try{var d=document,w=window,l=w.location,t=d.title,u=l.href,date='',loc='',desc='';if(l.hostname.includes('unstop.com')){t=d.querySelector('h1')?.innerText||t;var text=d.body.innerText;var dm=text.match(/-->\\s*(\\d{1,2}\\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\\s+(\\d{4}|\\d{2}))/i);if(dm){date=dm[1];}else{var matches=text.match(/\\d{1,2}\\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\\s+(\\d{4}|\\d{2})/gi);if(matches)date=matches[0];}var ks=['remote','online','india','bangalore','delhi','mumbai'];var tl=text.toLowerCase();for(var k of ks){if(tl.includes(k)){loc=k.charAt(0).toUpperCase()+k.slice(1);break;}}}var p=new URLSearchParams({title:t,url:u,date:date,location:loc,description:desc});w.open('${window.location.origin}/add?'+p.toString(),'_blank');}catch(e){w.open('${window.location.origin}/add?url='+encodeURIComponent(l.href),'_blank');}})();`}
+                  className="px-6 py-3 bg-[#f97316] hover:bg-[#ea580c] text-white text-xs font-bold rounded-lg transition-all whitespace-nowrap"
+                  onClick={(e) => e.preventDefault()}
+                >
+                  Save to EventTracker
+                </a>
+              </div>
             </div>
           </form>
         </div>

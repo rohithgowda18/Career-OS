@@ -15,23 +15,31 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
 
   const queryClient = useQueryClient();
+  const searchParams = new URLSearchParams(window.location.search);
+  const redirectPath = searchParams.get("redirect") || "/dashboard";
 
   const loginMutation = useMutation({
     mutationFn: authApi.login,
-    onSuccess: async () => {
+    onSuccess: async (data: any) => {
+      if (data.token) {
+        localStorage.setItem("token", data.token);
+      }
       toast.success("Authentication successful");
       await queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
-      setLocation("/dashboard");
+      setLocation(redirectPath);
     },
     onError: (error: any) => toast.error(error.message || "Access denied"),
   });
 
   const registerMutation = useMutation({
     mutationFn: authApi.register,
-    onSuccess: () => {
+    onSuccess: (data: any) => {
+      if (data.token) {
+        localStorage.setItem("token", data.token);
+      }
       toast.success("Account initialized");
       queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
-      setLocation("/dashboard");
+      setLocation(redirectPath);
     },
     onError: (error: any) => toast.error(error.message || "Registration failed"),
   });

@@ -7,6 +7,8 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/LoginPage";
+import AddEventPage from "./pages/AddEventPage";
+
 
 function Router() {
   return (
@@ -14,6 +16,7 @@ function Router() {
       <Route path="/" component={LandingPage} />
       <Route path="/login" component={LoginPage} />
       <Route path="/dashboard" component={Home} />
+      <Route path="/add" component={AddEventPage} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

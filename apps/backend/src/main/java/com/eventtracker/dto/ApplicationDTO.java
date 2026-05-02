@@ -27,6 +27,7 @@ public class ApplicationDTO {
     private String notes;
 
     private String url;
+    private String location;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

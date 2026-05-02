@@ -34,9 +34,13 @@ CREATE TABLE IF NOT EXISTS applications (
     deadline TIMESTAMP,
     notes TEXT,
     event_url VARCHAR(255),
+    location VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_applications_user_id ON applications(user_id);
 CREATE INDEX IF NOT EXISTS idx_applications_status ON applications(status);
+
+-- Ensure user cannot save the same event URL twice (Idempotent)
+CREATE UNIQUE INDEX IF NOT EXISTS unique_user_event_url ON applications (user_id, event_url);

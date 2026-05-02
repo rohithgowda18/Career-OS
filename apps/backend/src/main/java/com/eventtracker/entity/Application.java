@@ -11,7 +11,9 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "applications")
+@Table(name = "applications", uniqueConstraints = {
+    @UniqueConstraint(columnNames = {"user_id", "event_url"})
+})
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -44,6 +46,9 @@ public class Application {
 
     @Column(name = "event_url")
     private String url;
+
+    @Column(name = "location")
+    private String location;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

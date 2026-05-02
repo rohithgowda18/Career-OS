@@ -3,6 +3,7 @@ package com.eventtracker.service;
 import com.eventtracker.dto.ApplicationDTO;
 import com.eventtracker.entity.Application;
 import com.eventtracker.entity.User;
+import com.eventtracker.exception.DuplicateEventException;
 import com.eventtracker.repository.ApplicationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,16 @@ public class ApplicationService {
     private final ApplicationRepository applicationRepository;
 
     public Application createApplication(User user, ApplicationDTO dto) {
+        String normalizedUrl = normalizeUrl(dto.getUrl());
+        
+        // Check for duplicates
+        if (normalizedUrl != null) {
+            applicationRepository.findByUserIdAndUrl(user.getId(), normalizedUrl)
+                .ifPresent(app -> {
+                    throw new DuplicateEventException("Event already saved in your tracker");
+                });
+        }
+
         Application app = new Application();
         app.setUser(user);
         app.setEventName(dto.getEventName());
@@ -27,9 +38,29 @@ public class ApplicationService {
         app.setStatus(Application.ApplicationStatus.valueOf(dto.getStatus().replaceAll(" ", "")));
         app.setDeadline(dto.getDeadline());
         app.setNotes(dto.getNotes());
-        app.setUrl(dto.getUrl());
+        app.setUrl(normalizedUrl);
+        app.setLocation(dto.getLocation());
 
         return applicationRepository.save(app);
+    }
+
+    private String normalizeUrl(String url) {
+        if (url == null || url.isBlank()) return null;
+        
+        String normalized = url.trim().toLowerCase();
+        
+        // Remove tracking params (?utm=...)
+        int queryIndex = normalized.indexOf('?');
+        if (queryIndex != -1) {
+            normalized = normalized.substring(0, queryIndex);
+        }
+        
+        // Remove trailing slash
+        if (normalized.endsWith("/")) {
+            normalized = normalized.substring(0, normalized.length() - 1);
+        }
+        
+        return normalized;
     }
 
     public Optional<Application> findById(Long id, Long userId) {
@@ -73,6 +104,9 @@ public class ApplicationService {
         if (dto.getUrl() != null) {
             app.setUrl(dto.getUrl());
         }
+        if (dto.getLocation() != null) {
+            app.setLocation(dto.getLocation());
+        }
 
         return applicationRepository.save(app);
     }
@@ -92,6 +126,7 @@ public class ApplicationService {
         dto.setDeadline(app.getDeadline());
         dto.setNotes(app.getNotes());
         dto.setUrl(app.getUrl());
+        dto.setLocation(app.getLocation());
         dto.setCreatedAt(app.getCreatedAt());
         dto.setUpdatedAt(app.getUpdatedAt());
         return dto;
@@ -105,6 +140,7 @@ public class ApplicationService {
         app.setDeadline(dto.getDeadline());
         app.setNotes(dto.getNotes());
         app.setUrl(dto.getUrl());
+        app.setLocation(dto.getLocation());
         return app;
     }
 
