@@ -44,6 +44,12 @@ public class JwtTokenProvider {
         return createToken(claims, "user:" + userId);
     }
 
+    public String generateToken(String email) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("email", email);
+        return createToken(claims, "oauth:" + email);
+    }
+
     private String createToken(Map<String, Object> claims, String subject) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + jwtExpirationMillis);

@@ -92,6 +92,12 @@
             <optional>true</optional>
         </dependency>
 
+        <!-- OAuth2 Client (Google/GitHub) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-oauth2-client</artifactId>
+        </dependency>
+
         <!-- Testing -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -107,6 +113,7 @@
 
 
     </dependencies>
+
 
     <build>
         <plugins>

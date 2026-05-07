@@ -8,6 +8,7 @@ import Home from "./pages/Home";
 import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/LoginPage";
 import AddEventPage from "./pages/AddEventPage";
+import OAuthSuccessPage from "./pages/OAuthSuccessPage";
 
 
 function Router() {
@@ -15,6 +16,7 @@ function Router() {
     <Switch>
       <Route path="/" component={LandingPage} />
       <Route path="/login" component={LoginPage} />
+      <Route path="/oauth-success" component={OAuthSuccessPage} />
       <Route path="/dashboard" component={Home} />
       <Route path="/add" component={AddEventPage} />
       <Route path="/404" component={NotFound} />

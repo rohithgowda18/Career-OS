@@ -15,10 +15,29 @@ spring:
     init:
       mode: always
 
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: 742367022475-6dim5k9uig9jcrcntok01vqq9710e82c.apps.googleusercontent.com
+            client-secret: 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
+            scope:
+              - email
+              - profile
+          github:
+            client-id: Ov23lizBJnN2MGUI91w2
+            client-secret: 7a3df557788d5c52cd62a3decd7da52ca5fdaa7b
+            scope:
+              - user:email
+              - read:user
+        provider:
+          github:
+            user-info-uri: https://api.github.com/user
+            user-name-attribute: name
+
 server:
   port: 8080
-  servlet:
-    context-path: /api
 
 app:
   jwt:
@@ -27,3 +46,4 @@ app:
 
   cors:
     allowed-origins: http://localhost:5173
+

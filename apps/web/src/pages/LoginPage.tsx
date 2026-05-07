@@ -125,10 +125,27 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <div className="mt-10 pt-8 border-t border-border flex flex-col items-center">
+          <div className="mt-10 pt-8 border-t border-border flex flex-col items-center gap-4">
+            <div className="grid grid-cols-2 gap-4 w-full">
+              <a 
+                href="http://localhost:8080/oauth2/authorization/google"
+                className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-[10px] font-black uppercase tracking-widest"
+              >
+                <img src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" alt="Google" className="w-4 h-4" />
+                Google
+              </a>
+              <a 
+                href="http://localhost:8080/oauth2/authorization/github"
+                className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-[10px] font-black uppercase tracking-widest"
+              >
+                <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="GitHub" className="w-4 h-4 invert" />
+                GitHub
+              </a>
+            </div>
+            
             <button
               onClick={() => setIsSignUp(!isSignUp)}
-              className="text-[10px] font-black text-primary hover:text-primary-hover transition-all uppercase tracking-[0.3em] hover:tracking-[0.4em]"
+              className="text-[10px] font-black text-primary hover:text-primary-hover transition-all uppercase tracking-[0.3em] hover:tracking-[0.4em] mt-4"
             >
               {isSignUp ? "Existing User? Auth Here" : "New User? Register Slot"}
             </button>
