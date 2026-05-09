@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -16,11 +16,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { applicationsApi } from "@/lib/api/applicationsApi";
 import { toast } from "sonner";
-import { Loader2, Wand2, AlertCircle } from "lucide-react";
-import { useApplicationProfile } from "@/hooks/useApplicationProfile";
+import { Loader2, Calendar as CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface AddApplicationModalProps {
   open: boolean;
@@ -35,436 +42,191 @@ export default function AddApplicationModal({
   applicationId,
   initialData,
 }: AddApplicationModalProps) {
-  const [isFetchingMetadata, setIsFetchingMetadata] = useState(false);
-  const [metadataError, setMetadataError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     eventName: initialData?.eventName || "",
     eventType: initialData?.eventType || "Hackathon",
     status: initialData?.status || "Interested",
-    deadline: initialData?.deadline
-      ? new Date(initialData.deadline).toISOString().split("T")[0]
-      : "",
+    deadline: initialData?.deadline ? new Date(initialData.deadline) : undefined,
     notes: initialData?.notes || "",
     url: initialData?.url || "",
   });
-  const debounceTimer = useRef<NodeJS.Timeout | null>(null);
-  const lastFetchedUrl = useRef<string>("");
-
-  // Application profile hook
-  const { profile, hasProfile, formatProfileForNotes } =
-    useApplicationProfile();
 
   const queryClient = useQueryClient();
+  
   const createMutation = useMutation({
     mutationFn: applicationsApi.create,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["applications"] });
-      toast.success("Application added successfully");
+      toast.success("Application added");
       onOpenChange(false);
-      setFormData({
-        eventName: "",
-        eventType: "Hackathon",
-        status: "Interested",
-        deadline: "",
-        notes: "",
-        url: "",
-      });
-      setMetadataError(null);
+      resetForm();
     },
-    onError: error => {
-      toast.error(error.message || "Failed to add application");
-    },
+    onError: (err: any) => toast.error(err.message || "Failed to add"),
   });
 
   const updateMutation = useMutation({
     mutationFn: applicationsApi.update,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["applications"] });
-      toast.success("Application updated successfully");
+      toast.success("Application updated");
       onOpenChange(false);
-      setMetadataError(null);
     },
-    onError: error => {
-      toast.error(error.message || "Failed to update application");
-    },
+    onError: (err: any) => toast.error(err.message || "Failed to update"),
   });
 
   const isLoading = createMutation.isPending || updateMutation.isPending;
-  const fetchMetadataMutation = useMutation({
-    mutationFn: applicationsApi.fetchMetadata,
-    onSuccess: (data: any) => {
-      console.log("[AddApplicationModal] Fetch metadata response:", data);
 
-      if (data.success) {
-        console.log("[AddApplicationModal] Metadata received:", {
-          title: data.title,
-          description: data.description,
-          deadline: data.deadline,
-          eventType: data.eventType,
-        });
-
-        // Smart autofill: only fill empty fields to avoid overwriting user input
-        setFormData(prev => {
-          const updated = {
-            ...prev,
-            eventName: prev.eventName || data.title || "",
-            notes: prev.notes || data.description || "",
-            deadline: prev.deadline || data.deadline || "",
-            eventType:
-              prev.eventType === "Hackathon" && data.eventType
-                ? data.eventType
-                : prev.eventType,
-          };
-          console.log("[AddApplicationModal] Updated form data:", updated);
-          return updated;
-        });
-
-        // Determine which fields were auto-filled
-        const filledFields = [];
-        if (!formData.eventName && data.title)
-          filledFields.push("Event Name");
-        if (!formData.notes && data.description)
-          filledFields.push("Description");
-        if (!formData.deadline && data.deadline)
-          filledFields.push("Deadline");
-        if (data.eventType && formData.eventType === "Hackathon")
-          filledFields.push("Event Type");
-
-        const message =
-          filledFields.length > 0
-            ? `Auto-filled: ${filledFields.join(", ")}. You can edit any field.`
-            : "Metadata fetched, but no new information found.";
-
-        console.log("[AddApplicationModal] Toast message:", message);
-        toast.success(message);
-        setMetadataError(null);
-      } else if (data.error) {
-        console.error("[AddApplicationModal] Fetch error:", data.error);
-        setMetadataError(data.error);
-        toast.error(data.error);
-      } else {
-        const errorMsg = "Failed to fetch metadata";
-        console.error("[AddApplicationModal]", errorMsg);
-        setMetadataError(errorMsg);
-        toast.error(errorMsg);
-      }
-      setIsFetchingMetadata(false);
-    },
-    onError: error => {
-      const errorMsg = error.message || "Failed to fetch event details";
-      console.error("[AddApplicationModal] Mutation error:", errorMsg);
-      setMetadataError(errorMsg);
-      toast.error(errorMsg);
-      setIsFetchingMetadata(false);
-    },
-  });
-
-  const handleFetchMetadata = async () => {
-    if (!formData.url.trim()) {
-      toast.error("Please enter a URL first");
-      return;
-    }
-
-    // Reset error state
-    setMetadataError(null);
-    setIsFetchingMetadata(true);
-
-    // Normalize URL
-    let url = formData.url.trim();
-    if (!url.startsWith("http://") && !url.startsWith("https://")) {
-      url = `https://${url}`;
-    }
-
-    fetchMetadataMutation.mutate({ url });
-  };
-
-  const handleAutofillProfile = () => {
-    if (!hasProfile) {
-      toast.error("Profile not set. Set up your profile in Settings first.");
-      return;
-    }
-
-    if (!profile) {
-      toast.error("Could not load profile data");
-      return;
-    }
-
-    // Append profile info to notes without overwriting
-    const profileText = formatProfileForNotes();
-    const newNotes = (formData.notes || "") + profileText;
-
-    setFormData({ ...formData, notes: newNotes });
-    toast.success("Profile information added to notes");
-    console.log("[AddApplicationModal] Profile autofilled:", profileText);
-  };
-
-  // Auto-fetch metadata when user finishes typing URL
-  const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newUrl = e.target.value;
-    setFormData({ ...formData, url: newUrl });
-    setMetadataError(null);
-
-    // Clear previous timer
-    if (debounceTimer.current) {
-      clearTimeout(debounceTimer.current);
-    }
-
-    // Only auto-fetch if URL looks valid and is different from last fetched
-    if (newUrl.trim() && newUrl !== lastFetchedUrl.current) {
-      let normalizedUrl = newUrl.trim();
-      if (
-        !normalizedUrl.startsWith("http://") &&
-        !normalizedUrl.startsWith("https://")
-      ) {
-        normalizedUrl = `https://${normalizedUrl}`;
-      }
-
-      // Check if it looks like a URL (has a dot or is already a full URL)
-      const looksLikeUrl =
-        normalizedUrl.includes(".") || normalizedUrl.startsWith("http");
-
-      if (looksLikeUrl && !formData.eventName.trim()) {
-        // Debounce: wait 1 second after user stops typing before auto-fetching
-        debounceTimer.current = setTimeout(() => {
-          setIsFetchingMetadata(true);
-          lastFetchedUrl.current = normalizedUrl;
-          fetchMetadataMutation.mutate({ url: normalizedUrl });
-        }, 1000);
-      }
-    }
-  };
-
-  const handleClear = () => {
+  const resetForm = () => {
     setFormData({
       eventName: "",
       eventType: "Hackathon",
       status: "Interested",
-      deadline: "",
+      deadline: undefined,
       notes: "",
       url: "",
     });
-    setMetadataError(null);
-    lastFetchedUrl.current = "";
-    if (debounceTimer.current) {
-      clearTimeout(debounceTimer.current);
-    }
-    console.log("[AddApplicationModal] Form cleared");
-    toast.success("Form cleared");
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!formData.eventName.trim()) {
-      toast.error(
-        "Please enter an event name or paste a URL and wait for auto-fill"
-      );
+      toast.error("Event name is required");
       return;
     }
 
-    const deadline = formData.deadline
-      ? new Date(formData.deadline)
-      : undefined;
+    const payload = {
+      ...formData,
+      deadline: formData.deadline ? formData.deadline : undefined,
+    };
 
     if (applicationId) {
-      updateMutation.mutate({
-        id: applicationId,
-        ...formData,
-        deadline,
-      });
+      updateMutation.mutate({ id: applicationId, ...payload });
     } else {
-      createMutation.mutate({
-        ...formData,
-        deadline,
-      });
+      createMutation.mutate(payload);
     }
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>
-            {applicationId ? "Edit Application" : "Add New Application"}
-          </DialogTitle>
+      <DialogContent className="max-w-md bg-bg-card border-border text-text-main p-0 overflow-hidden rounded-2xl shadow-2xl">
+        <DialogHeader className="p-6 bg-bg-hover/20 border-b border-border">
+          <DialogTitle className="text-xl font-black">{applicationId ? "Edit" : "New"} Application</DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Event Name */}
-          <div className="space-y-2">
-            <Label htmlFor="eventName">Event Name *</Label>
+        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+          <div className="space-y-1.5">
+            <Label htmlFor="eventName" className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Event Name</Label>
             <Input
               id="eventName"
-              placeholder="e.g., TechCrunch Disrupt 2024"
               value={formData.eventName}
-              onChange={e =>
-                setFormData({ ...formData, eventName: e.target.value })
-              }
+              onChange={e => setFormData({ ...formData, eventName: e.target.value })}
+              placeholder="e.g. Google Hash Code"
+              className="bg-bg-main border-border focus:border-primary/50 focus:ring-primary/20 h-11"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            {/* Event Type */}
-            <div className="space-y-2">
-              <Label htmlFor="eventType">Event Type</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="eventType" className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Type</Label>
               <Select
                 value={formData.eventType}
-                onValueChange={value =>
-                  setFormData({ ...formData, eventType: value })
-                }
+                onValueChange={v => setFormData({ ...formData, eventType: v })}
               >
-                <SelectTrigger id="eventType">
+                <SelectTrigger className="bg-bg-main border-border h-11">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Hackathon">Hackathon</SelectItem>
-                  <SelectItem value="Workshop">Workshop</SelectItem>
-                  <SelectItem value="Conference">Conference</SelectItem>
-                  <SelectItem value="Internship">Internship</SelectItem>
-                  <SelectItem value="Other">Other</SelectItem>
+                <SelectContent className="bg-bg-card border-border text-text-main">
+                  {["Hackathon", "Workshop", "Conference", "Internship", "Other"].map(t => (
+                    <SelectItem key={t} value={t} className="cursor-pointer">{t}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
 
-            {/* Status */}
-            <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="status" className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Status</Label>
               <Select
                 value={formData.status}
-                onValueChange={value =>
-                  setFormData({ ...formData, status: value })
-                }
+                onValueChange={v => setFormData({ ...formData, status: v })}
               >
-                <SelectTrigger id="status">
+                <SelectTrigger className="bg-bg-main border-border h-11">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Interested">Interested</SelectItem>
-                  <SelectItem value="Applied">Applied</SelectItem>
-                  <SelectItem value="Under Review">Under Review</SelectItem>
-                  <SelectItem value="Accepted">Accepted</SelectItem>
-                  <SelectItem value="Rejected">Rejected</SelectItem>
-                  <SelectItem value="Withdrawn">Withdrawn</SelectItem>
+                <SelectContent className="bg-bg-card border-border text-text-main">
+                  {["Interested", "Applied", "UnderReview", "Accepted", "Rejected"].map(s => (
+                    <SelectItem key={s} value={s} className="cursor-pointer">{s === "UnderReview" ? "Under Review" : s}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
           </div>
 
-          {/* Deadline */}
-          <div className="space-y-2">
-            <Label htmlFor="deadline">Deadline</Label>
+          <div className="space-y-1.5">
+            <Label className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Deadline</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant={"outline"}
+                  className={cn(
+                    "w-full justify-start text-left font-bold bg-bg-main border-border hover:bg-bg-hover hover:text-text-main h-11",
+                    !formData.deadline && "text-text-muted"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4 text-primary" />
+                  {formData.deadline ? format(formData.deadline, "PPP") : <span>Pick a date</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0 bg-bg-card border-border shadow-2xl" align="start">
+                <Calendar
+                  mode="single"
+                  selected={formData.deadline}
+                  onSelect={(date) => setFormData({ ...formData, deadline: date })}
+                  initialFocus
+                  className="bg-bg-card text-text-main"
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="url" className="text-[10px] font-bold uppercase tracking-widest text-text-muted">External URL</Label>
             <Input
-              id="deadline"
-              type="date"
-              value={formData.deadline}
-              onChange={e =>
-                setFormData({ ...formData, deadline: e.target.value })
-              }
+              id="url"
+              value={formData.url}
+              onChange={e => setFormData({ ...formData, url: e.target.value })}
+              placeholder="https://event-link.com"
+              className="bg-bg-main border-border focus:border-primary/50 focus:ring-primary/20 h-11"
             />
           </div>
 
-          {/* Event URL with Metadata Fetch */}
-          <div className="space-y-2">
-            <Label htmlFor="url">Event URL</Label>
-            <div className="flex gap-2">
-              <Input
-                id="url"
-                type="text"
-                placeholder="https://example.com/event (or just example.com)"
-                value={formData.url}
-                onChange={handleUrlChange}
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                onClick={handleFetchMetadata}
-                disabled={
-                  isFetchingMetadata || isLoading || !formData.url.trim()
-                }
-                title="Manually fetch event details from URL"
-              >
-                {isFetchingMetadata ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Wand2 className="w-4 h-4" />
-                )}
-              </Button>
-            </div>
-            {metadataError && (
-              <div className="flex gap-2 items-start text-sm text-amber-600 bg-amber-50 p-3 rounded-md">
-                <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="font-medium">Couldn't fetch details from URL</p>
-                  <p className="text-xs mt-1">{metadataError}</p>
-                  <p className="text-xs mt-2">
-                    You can still add the event manually - all fields can be
-                    edited.
-                  </p>
-                </div>
-              </div>
-            )}
-            {!metadataError && formData.url && (
-              <p className="text-xs text-gray-500 mt-1">
-                💡 Tip: Auto-fetches event name, description, type, and deadline
-                (if available).
-              </p>
-            )}
-          </div>
-
-          {/* Notes / Description */}
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <Label htmlFor="notes">Description / Notes</Label>
-              {hasProfile && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleAutofillProfile}
-                  className="text-xs h-6"
-                  title="Append your saved profile to notes"
-                >
-                  + Autofill From Profile
-                </Button>
-              )}
-            </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="notes" className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Internal Notes</Label>
             <Textarea
               id="notes"
-              placeholder="Add event description, notes, ideas, or important information..."
               value={formData.notes}
-              onChange={e =>
-                setFormData({ ...formData, notes: e.target.value })
-              }
-              rows={4}
+              onChange={e => setFormData({ ...formData, notes: e.target.value })}
+              placeholder="Any extra details, passwords, or prep notes..."
+              rows={3}
+              className="bg-bg-main border-border focus:border-primary/50 focus:ring-primary/20 min-h-[90px] resize-none"
             />
           </div>
 
-          {/* Form Actions */}
-          <div className="flex gap-3 justify-end pt-4 border-t">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                onOpenChange(false);
-                setMetadataError(null);
-              }}
-              disabled={isLoading}
+          <div className="flex justify-end gap-3 pt-4">
+            <Button 
+              type="button" 
+              variant="ghost" 
+              onClick={() => onOpenChange(false)}
+              className="text-text-muted hover:text-text-main hover:bg-bg-hover font-bold"
             >
               Cancel
             </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleClear}
+            <Button 
+              type="submit" 
               disabled={isLoading}
-              title="Clear all form fields"
+              className="bg-primary hover:bg-primary-hover text-white font-black px-8 h-11 shadow-lg shadow-primary/20"
             >
-              Clear
-            </Button>
-            <Button type="submit" disabled={isLoading}>
               {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              {applicationId ? "Update" : "Add"} Application
+              {applicationId ? "Save Changes" : "Create Application"}
             </Button>
           </div>
         </form>

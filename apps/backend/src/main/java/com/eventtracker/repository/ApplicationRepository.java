@@ -25,4 +25,6 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
     long countByUserIdAndStatus(Long userId, Application.ApplicationStatus status);
     
     List<Application> findByUserIdAndEventTypeOrderByDeadlineAsc(Long userId, Application.EventType eventType);
+
+    Optional<Application> findByUserIdAndUrl(Long userId, String url);
 }

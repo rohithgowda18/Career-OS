@@ -1,6 +1,5 @@
 package com.eventtracker.controller;
 
-import com.eventtracker.dto.MetadataRequestDTO;
 import com.eventtracker.dto.ApplicationDTO;
 import com.eventtracker.entity.Application;
 import com.eventtracker.entity.User;
@@ -21,11 +20,9 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/applications")
 @RequiredArgsConstructor
-@CrossOrigin
 public class ApplicationController {
 
     private final ApplicationService applicationService;
-    private final com.eventtracker.service.MetadataService metadataService;
 
     private User getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -33,16 +30,6 @@ public class ApplicationController {
             return (User) authentication.getPrincipal();
         }
         throw new RuntimeException("User not authenticated");
-    }
-
-    @PostMapping("/fetch-metadata")
-    public ResponseEntity<?> fetchMetadata(@Valid @RequestBody MetadataRequestDTO request) {
-        try {
-            return ResponseEntity.ok(metadataService.fetchMetadata(request.getUrl()));
-        } catch (Exception e) {
-            log.error("Error fetching metadata for URL: {}", request.getUrl(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
-        }
     }
 
     @GetMapping
@@ -108,26 +95,5 @@ public class ApplicationController {
         User user = getCurrentUser();
         List<ApplicationDTO> applications = applicationService.getUserApplicationsByStatus(user.getId(), status);
         return ResponseEntity.ok(applications);
-    }
-
-    @GetMapping("/type/{eventType}")
-    public ResponseEntity<List<ApplicationDTO>> getByEventType(@PathVariable String eventType) {
-        User user = getCurrentUser();
-        List<ApplicationDTO> applications = applicationService.getUserApplicationsByEventType(user.getId(), eventType);
-        return ResponseEntity.ok(applications);
-    }
-
-    @GetMapping("/stats/count")
-    public ResponseEntity<?> getApplicationCount() {
-        User user = getCurrentUser();
-        long count = applicationService.countUserApplications(user.getId());
-        return ResponseEntity.ok(count);
-    }
-
-    @GetMapping("/stats/count/status/{status}")
-    public ResponseEntity<?> getApplicationCountByStatus(@PathVariable String status) {
-        User user = getCurrentUser();
-        long count = applicationService.countUserApplicationsByStatus(user.getId(), status);
-        return ResponseEntity.ok(count);
     }
 }

@@ -1,137 +1,51 @@
 spring:
+  config:
+    import: optional:file:.env[.properties]
+
   application:
     name: event-app-tracker
 
-  main:
-    # REMOVED: allow-circular-references: true (forces eager proxying)
-    # REMOVED: allow-bean-definition-overriding: true
-    lazy-initialization: false
-    banner-mode: off
-  lifecycle:
-    timeout-per-shutdown-phase: 10s # REDUCED: was 20s
-
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/event_tracker_db}
-    username: ${SPRING_DATASOURCE_USERNAME:postgres}
-    password: ${SPRING_DATASOURCE_PASSWORD:Rohk_1265}
-    driver-class-name: org.postgresql.Driver
-    hikari:
-      maximum-pool-size: 2
-      minimum-idle: 1
-      connection-timeout: 10000
-      validation-timeout: 5000
-      idle-timeout: 240000
-      max-lifetime: 300000
-      initialization-fail-timeout: 5000 # Give it 5s to connect at startup
-      keepalive-time: 30000 # ADDED: prevents connection drops on Render
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/event_tracker_db}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:Rohk_1265}
 
   jpa:
-    open-in-view: false
-    database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
       ddl-auto: none
-    properties:
-      hibernate:
-        format_sql: false
-        use_sql_comments: false
-        generate_statistics: false
-        jdbc.lob.non_contextual_creation: true
-    show-sql: false
 
   sql:
     init:
-      mode: never
+      mode: always
 
-  flyway:
-    enabled: true
-    baseline-on-migrate: true
-    repair-on-migrate: true
-    validate-on-migrate: false
-    out-of-order: true
-
-  mail:
-    host: ${MAIL_HOST:localhost}
-    port: ${MAIL_PORT:1025}
-    username: ${MAIL_USERNAME:}
-    password: ${MAIL_PASSWORD:}
-    properties:
-      mail:
-        smtp:
-          auth: false
-          starttls:
-            enable: false
-    enabled: ${MAIL_ENABLED:false}
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            scope:
+              - email
+              - profile
+          github:
+            client-id: ${GITHUB_CLIENT_ID}
+            client-secret: ${GITHUB_CLIENT_SECRET}
+            scope:
+              - user:email
+              - read:user
+        provider:
+          github:
+            user-info-uri: https://api.github.com/user
+            user-name-attribute: name
 
 server:
-  port: ${PORT:8080}
-  address: 0.0.0.0
-  shutdown: graceful
-  servlet:
-    context-path: /api
-  error:
-    include-message: always
-    include-binding-errors: always
-  tomcat:
-    max-http-request-header-size: 20KB
-    max-http-post-size: 2MB
-    max-http-form-post-size: 2MB
-    threads:
-      max: ${TOMCAT_MAX_THREADS:50}
-      min-spare: 2 # REDUCED: was 5
-    processor-cache: 50
-    accept-count: 20 # REDUCED: was 50
-  compression:
-    enabled: true
-    mime-types: application/json,text/plain
-    min-response-size: 1024
-  http2:
-    enabled: false
-  forward-headers-strategy: framework
-
-management:
-  server:
-    port: ${PORT:8080}
-  endpoints:
-    enabled-by-default: false # ADDED: disable all by default
-    web:
-      exposure:
-        include: health # REDUCED: removed 'info'
-  endpoint:
-    health:
-      enabled: true # ADDED: re-enable health
-      probes:
-        enabled: true
-      show-details: never
-  health:
-    mail:
-      enabled: false
+  port: 8080
 
 app:
   jwt:
     secret: ${JWT_SECRET:this-is-a-very-long-secret-key-that-is-at-least-64-characters-long-to-satisfy-hs512-requirements}
-    expiration: 1800000 # 30 minutes in ms
+    expiration: 1800000
 
   cors:
-    allowed-origins: https://eventpulse-phi.vercel.app,https://eventpulse-phi-git-main-yourusername.vercel.app,http://localhost:5173,http://localhost:3000
-
-  oauth:
-    google:
-      client-id: ${GOOGLE_CLIENT_ID:dummy}
-      client-secret: ${GOOGLE_CLIENT_SECRET:dummy}
-      redirect-uri: http://localhost:3000/api/auth/google/callback
-    github:
-      client-id: ${GITHUB_CLIENT_ID:dummy}
-      client-secret: ${GITHUB_CLIENT_SECRET:dummy}
-      redirect-uri: http://localhost:3000/api/auth/github/callback
-
-logging:
-  level:
-    root: INFO
-    com.eventtracker: INFO
-    org.springframework.security: WARN
-    org.hibernate.SQL: INFO
-    org.hibernate.type.descriptor.sql: INFO
-    org.flywaydb: INFO
-    com.zaxxer.hikari: INFO
-  pattern:
-    console: "%p %c{1} - %m%n" # SIMPLIFIED: removed date prefix to reduce logging overhead
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}

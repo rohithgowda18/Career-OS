@@ -6,7 +6,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -17,7 +16,6 @@ import java.util.Map;
 @RestController
 @RequestMapping("/analytics")
 @RequiredArgsConstructor
-@CrossOrigin
 public class AnalyticsController {
 
     private final AnalyticsService analyticsService;
@@ -38,12 +36,6 @@ public class AnalyticsController {
     public ResponseEntity<Map<String, Object>> getAcceptanceRates() {
         Long userId = getCurrentUserId();
         return ResponseEntity.ok(analyticsService.getAcceptanceRates(userId));
-    }
-
-    @GetMapping("/trends")
-    public ResponseEntity<List<Map<String, Object>>> getSeasonalTrends() {
-        Long userId = getCurrentUserId();
-        return ResponseEntity.ok(analyticsService.getSeasonalTrends(userId));
     }
 
     private Long getCurrentUserId() {

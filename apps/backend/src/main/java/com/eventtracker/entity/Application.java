@@ -11,7 +11,9 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "applications")
+@Table(name = "applications", uniqueConstraints = {
+    @UniqueConstraint(columnNames = {"user_id", "event_url"})
+})
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -45,35 +47,8 @@ public class Application {
     @Column(name = "event_url")
     private String url;
 
-    @Column(name = "success_score")
-    private Double successScore;
-
-    @Column(name = "is_favorite")
-    private Boolean isFavorite = false;
-
-    @Column(name = "rejection_reason")
-    private String rejectionReason;
-
-    @Column(name = "application_link")
-    private String applicationLink;
-
-    @Column(name = "tags")
-    private String tags;
-
     @Column(name = "location")
     private String location;
-
-    @Column(name = "prize_pool")
-    private String prizePool;
-
-    @Column(name = "min_team_size")
-    private Integer minTeamSize;
-
-    @Column(name = "max_team_size")
-    private Integer maxTeamSize;
-
-    @OneToMany(mappedBy = "application", cascade = CascadeType.ALL, orphanRemoval = true)
-    private java.util.List<ApplicationTimeline> timeline = new java.util.ArrayList<>();
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -88,6 +63,6 @@ public class Application {
     }
 
     public enum ApplicationStatus {
-        Interested, Applied, UnderReview, Accepted, Rejected, Withdrawn
+        Interested, Applied, UnderReview, Accepted, Rejected
     }
 }

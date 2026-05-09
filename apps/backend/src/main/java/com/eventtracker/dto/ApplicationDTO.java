@@ -27,18 +27,8 @@ public class ApplicationDTO {
     private String notes;
 
     private String url;
-
-    private Double successScore;
-
-    private Boolean isFavorite;
-
-    private String rejectionReason;
-
-    private String applicationLink;
-
-    private String tags;
+    private String location;
 
     private LocalDateTime createdAt;
-
     private LocalDateTime updatedAt;
 }

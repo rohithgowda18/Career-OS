@@ -17,20 +17,6 @@ public class UserDTO {
     @Email(message = "Email should be valid")
     private String email;
 
-    private String username;
-
-    private String name;
-
-    private String firstName;
-
-    private String lastName;
-
-    private String bio;
-
-    private String profilePictureUrl;
-
-    private Boolean isActive;
-
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;

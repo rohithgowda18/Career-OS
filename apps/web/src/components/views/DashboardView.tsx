@@ -4,14 +4,14 @@ import {
   TrendingUp,
   CheckCircle2,
   AlertCircle,
-  ExternalLink,
+  Plus,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import AddApplicationModal from "@/components/AddApplicationModal";
-import RecommendationsPanel from "@/components/RecommendationsPanel";
 import { useQuery } from "@tanstack/react-query";
 import { applicationsApi } from "@/lib/api/applicationsApi";
+import { cn } from "@/lib/utils";
 
 export default function DashboardView() {
   const [showAddModal, setShowAddModal] = useState(false);
@@ -32,19 +32,16 @@ export default function DashboardView() {
     });
 
     const statusCounts = {
-      Interested: applications.filter((a: any) => a.status === "Interested")
-        .length,
+      Interested: applications.filter((a: any) => a.status === "Interested").length,
       Applied: applications.filter((a: any) => a.status === "Applied").length,
-      "Under Review": applications.filter(
-        (a: any) => a.status === "Under Review"
-      ).length,
+      UnderReview: applications.filter((a: any) => a.status === "UnderReview").length,
       Accepted: applications.filter((a: any) => a.status === "Accepted").length,
       Rejected: applications.filter((a: any) => a.status === "Rejected").length,
-      Withdrawn: applications.filter((a: any) => a.status === "Withdrawn")
-        .length,
     };
 
-    const recentActivity = applications.slice(0, 5);
+    const recentActivity = [...applications].sort((a: any, b: any) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    ).slice(0, 5);
 
     return {
       totalApplications: applications.length,
@@ -60,254 +57,184 @@ export default function DashboardView() {
 
   if (applicationsQuery.isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin text-accent" />
+      <div className="flex items-center justify-center py-24">
+        <Loader2 className="w-10 h-10 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 animate-in fade-in duration-500">
+      <div className="flex items-center justify-between">
+         <div>
+            <h2 className="text-2xl font-bold tracking-tight">Overview</h2>
+            <p className="text-sm text-text-muted">High-level snapshot of your application pipeline.</p>
+         </div>
+         <Button 
+           onClick={() => setShowAddModal(true)}
+           className="btn-primary"
+         >
+           <Plus className="w-4 h-4 mr-2" /> New Application
+         </Button>
+      </div>
+
       {/* Summary Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        {/* Total Applications */}
-        <div className="card-elevated p-6">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground font-medium">
-                Total Applications
-              </p>
-              <p className="text-3xl font-bold text-foreground mt-2">
-                {stats.totalApplications}
-              </p>
-            </div>
-            <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center">
-              <TrendingUp className="w-6 h-6 text-accent" />
-            </div>
-          </div>
-        </div>
-
-        {/* Upcoming Deadlines */}
-        <div className="card-elevated p-6">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground font-medium">
-                Upcoming (7 days)
-              </p>
-              <p className="text-3xl font-bold text-foreground mt-2">
-                {stats.upcomingDeadlines}
-              </p>
-            </div>
-            <div className="w-12 h-12 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-              <AlertCircle className="w-6 h-6 text-amber-600 dark:text-amber-400" />
-            </div>
-          </div>
-        </div>
-
-        {/* Accepted */}
-        <div className="card-elevated p-6">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground font-medium">
-                Accepted
-              </p>
-              <p className="text-3xl font-bold text-foreground mt-2">
-                {stats.statusCounts.Accepted}
-              </p>
-            </div>
-            <div className="w-12 h-12 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-              <CheckCircle2 className="w-6 h-6 text-green-600 dark:text-green-400" />
-            </div>
-          </div>
-        </div>
-
-        {/* Status Breakdown */}
-        <div className="card-elevated p-6">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground font-medium">
-                In Progress
-              </p>
-              <p className="text-3xl font-bold text-foreground mt-2">
-                {stats.statusCounts.Applied +
-                  stats.statusCounts["Under Review"]}
-              </p>
-            </div>
-            <div className="w-12 h-12 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-              <Calendar className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-            </div>
-          </div>
-        </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+        <StatCard 
+          label="Volume" 
+          value={stats.totalApplications} 
+          icon={<TrendingUp className="w-5 h-5 text-primary" />}
+        />
+        <StatCard 
+          label="Deadlines" 
+          value={stats.upcomingDeadlines} 
+          icon={<AlertCircle className="w-5 h-5 text-accent" />}
+        />
+        <StatCard 
+          label="Accepted" 
+          value={stats.statusCounts.Accepted} 
+          icon={<CheckCircle2 className="w-5 h-5 text-success" />}
+        />
+        <StatCard 
+          label="In Review" 
+          value={stats.statusCounts.UnderReview} 
+          icon={<Calendar className="w-5 h-5 text-amber-500" />}
+        />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Status Breakdown */}
-        <div className="lg:col-span-1 card-elevated p-6">
-          <h3 className="text-lg font-semibold text-foreground mb-4">
-            Status Breakdown
-          </h3>
-          <div className="space-y-3">
-            {Object.entries(stats.statusCounts).map(([status, count]) => (
-              <div key={status} className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">{status}</span>
-                <span className="text-sm font-semibold text-foreground">
-                  {count}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Upcoming Deadlines Widget */}
-        <div className="lg:col-span-2 card-elevated p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-foreground">
-              Upcoming Deadlines (Next 7 Days)
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
+        <div className="lg:col-span-2 space-y-6 md:space-y-8">
+          <section className="card-premium p-6">
+            <h3 className="text-lg font-bold mb-6 flex items-center gap-2 uppercase tracking-widest text-[11px] text-text-muted">
+              Immediate Deadlines
             </h3>
-            <Button
-              size="sm"
-              onClick={() => setShowAddModal(true)}
-              className="text-sm"
-            >
-              + Add Application
-            </Button>
-          </div>
-
-          {stats.allUpcomingDeadlines.length === 0 ? (
-            <div className="py-8 text-center">
-              <p className="text-muted-foreground">
-                No upcoming deadlines in the next 7 days
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {stats.allUpcomingDeadlines.map((app: any) => (
-                <div
-                  key={app.id}
-                  className="flex items-start justify-between p-3 rounded-lg bg-background/50 hover:bg-background transition-colors"
-                >
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <p className="font-medium text-foreground">
-                        {app.url ? (
-                          <a
-                            href={app.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="hover:text-primary hover:underline transition-colors"
-                          >
-                            {app.eventName}
-                          </a>
-                        ) : (
-                          app.eventName
-                        )}
+            {stats.allUpcomingDeadlines.length === 0 ? (
+              <EmptyState title="No applications yet" subtitle="Start by adding your first one 🚀" />
+            ) : (
+              <div className="space-y-3">
+                {stats.allUpcomingDeadlines.map((app: any) => (
+                  <div key={app.id} className="flex items-center justify-between p-4 rounded-xl bg-bg-elevated/40 border border-border group hover:border-primary/40 transition-all">
+                    <div className="min-w-0 flex-1 mr-4">
+                      <p className="font-bold text-sm text-text-main group-hover:text-primary transition-colors truncate">{app.eventName}</p>
+                      <p className="text-[10px] text-text-muted font-black uppercase tracking-widest mt-1">
+                        {app.eventType} • DUE {new Date(app.deadline!).toLocaleDateString()}
                       </p>
-                      {app.url && (
-                        <a
-                          href={app.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          title="Open event page"
-                        >
-                          <ExternalLink className="w-3.5 h-3.5 text-muted-foreground hover:text-primary transition-colors" />
-                        </a>
-                      )}
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {app.eventType} •{" "}
-                      {new Date(app.deadline!).toLocaleDateString()}
-                    </p>
+                    <span className={cn(
+                      "badge-status",
+                      getStatusBadgeClass(app.status)
+                    )}>{app.status}</span>
                   </div>
-                  <span className={`badge ${getStatusBadgeClass(app.status)}`}>
-                    {app.status}
-                  </span>
-                </div>
-              ))}
+                ))}
+              </div>
+            )}
+          </section>
+
+          <section className="card-premium p-6">
+            <h3 className="text-lg font-bold mb-6 uppercase tracking-widest text-[11px] text-text-muted">
+              Recent Activity
+            </h3>
+            {stats.recentActivity.length === 0 ? (
+              <EmptyState title="No recent activity" subtitle="Your journey starts with a single click." />
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {stats.recentActivity.map((app: any) => (
+                  <div key={app.id} className="p-4 rounded-xl bg-bg-elevated/20 border border-border hover:border-primary/20 transition-all group">
+                    <div className="flex items-center justify-between mb-3">
+                       <p className="text-[10px] font-black text-text-muted uppercase tracking-widest group-hover:text-primary transition-colors">{app.eventType}</p>
+                       <span className={cn("text-[8px] font-black px-2 py-0.5 rounded border uppercase", getStatusBadgeClass(app.status))}>
+                          {app.status}
+                       </span>
+                    </div>
+                    <p className="font-bold text-sm text-text-main truncate mb-1">{app.eventName}</p>
+                    <p className="text-[10px] text-text-muted">Created {new Date(app.createdAt).toLocaleDateString()}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        </div>
+
+        <div className="lg:col-span-1">
+          <section className="card-premium p-6 sticky top-36">
+            <h3 className="text-lg font-bold mb-6 uppercase tracking-widest text-[11px] text-text-muted">
+              Pipeline Distribution
+            </h3>
+            <div className="space-y-6">
+              {Object.entries(stats.statusCounts).map(([status, count]) => {
+                const percentage = stats.totalApplications > 0 ? (count / stats.totalApplications) * 100 : 0;
+                return (
+                  <div key={status} className="group">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[10px] font-black text-text-muted uppercase tracking-widest group-hover:text-text-main transition-colors">{status === "UnderReview" ? "Under Review" : status}</span>
+                      <span className="text-xs font-black text-text-main tabular-nums">{count}</span>
+                    </div>
+                    <div className="w-full h-1.5 rounded-full bg-bg-elevated border border-border overflow-hidden">
+                       <div className={cn("h-full transition-all duration-1000 shadow-[0_0_8px_rgba(249,115,22,0.4)]", getProgressBarColor(status))} style={{ width: `${percentage}%` }} />
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-          )}
+            <div className="mt-10 pt-6 border-t border-border flex flex-col items-center">
+               <p className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em]">Overall Success Rate</p>
+               <p className="text-4xl font-black text-primary mt-2 tabular-nums">
+                 {stats.totalApplications > 0 ? ((stats.statusCounts.Accepted / stats.totalApplications) * 100).toFixed(0) : 0}%
+               </p>
+            </div>
+          </section>
         </div>
       </div>
-
-      {/* Recent Activity */}
-      <div className="card-elevated p-6">
-        <h3 className="text-lg font-semibold text-foreground mb-4">
-          Recent Activity
-        </h3>
-        {stats.recentActivity.length === 0 ? (
-          <div className="py-8 text-center">
-            <p className="text-muted-foreground">
-              No applications yet. Start by adding your first one!
-            </p>
-            <Button onClick={() => setShowAddModal(true)} className="mt-4">
-              + Add Application
-            </Button>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {stats.recentActivity.map((app: any) => (
-              <div
-                key={app.id}
-                className="flex items-center justify-between p-3 rounded-lg bg-background/50 hover:bg-background transition-colors"
-              >
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className="font-medium text-foreground">
-                      {app.url ? (
-                        <a
-                          href={app.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="hover:text-primary hover:underline transition-colors"
-                        >
-                          {app.eventName}
-                        </a>
-                      ) : (
-                        app.eventName
-                      )}
-                    </p>
-                    {app.url && (
-                      <a
-                        href={app.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        title="Open event page"
-                      >
-                        <ExternalLink className="w-3.5 h-3.5 text-muted-foreground hover:text-primary transition-colors" />
-                      </a>
-                    )}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {app.eventType} • Added{" "}
-                    {new Date(app.createdAt).toLocaleDateString()}
-                  </p>
-                </div>
-                <span className={`badge ${getStatusBadgeClass(app.status)}`}>
-                  {app.status}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* AI Recommendations */}
-      {applications.length > 0 && <RecommendationsPanel />}
 
       <AddApplicationModal open={showAddModal} onOpenChange={setShowAddModal} />
     </div>
   );
 }
 
+function StatCard({ label, value, icon }: { label: string; value: number; icon: React.ReactNode }) {
+  return (
+    <div className="card-premium p-6 group">
+      <div className="flex items-start justify-between">
+        <div>
+          <p className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em]">{label}</p>
+          <p className="text-3xl font-black text-text-main mt-3 group-hover:text-primary transition-colors tabular-nums">{value}</p>
+        </div>
+        <div className="w-10 h-10 rounded-xl bg-bg-elevated flex items-center justify-center transition-all group-hover:scale-110 shadow-inner border border-border group-hover:border-primary/30">
+          {icon}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EmptyState({ title, subtitle }: { title: string; subtitle: string }) {
+  return (
+    <div className="py-16 flex flex-col items-center justify-center text-center border-2 border-dashed border-border rounded-2xl bg-bg-elevated/5 group">
+      <div className="w-12 h-12 rounded-full bg-bg-elevated flex items-center justify-center mb-4 transition-transform group-hover:scale-110">
+         <Plus className="w-6 h-6 text-text-muted/20" />
+      </div>
+      <p className="text-sm font-bold text-text-muted uppercase tracking-widest mb-1">{title}</p>
+      <p className="text-[11px] text-text-muted/50 font-medium">{subtitle}</p>
+    </div>
+  );
+}
+
 function getStatusBadgeClass(status: string): string {
   switch (status) {
-    case "Accepted":
-      return "badge-success";
-    case "Rejected":
-    case "Withdrawn":
-      return "badge-danger";
-    case "Under Review":
-      return "badge-warning";
-    default:
-      return "badge-neutral";
+    case "Accepted": return "bg-success/10 text-success border-success/20";
+    case "Rejected": return "bg-danger/10 text-danger border-danger/20";
+    case "UnderReview": return "bg-amber-500/10 text-amber-500 border-amber-500/20";
+    case "Applied": return "bg-primary/10 text-primary border-primary/20";
+    default: return "bg-bg-elevated text-text-muted border-border";
+  }
+}
+
+function getProgressBarColor(status: string): string {
+  switch (status) {
+    case "Accepted": return "bg-success";
+    case "Rejected": return "bg-danger";
+    case "UnderReview": return "bg-amber-500";
+    case "Applied": return "bg-primary";
+    default: return "bg-text-muted";
   }
 }

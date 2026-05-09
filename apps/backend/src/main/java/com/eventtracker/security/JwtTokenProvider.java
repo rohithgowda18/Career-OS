@@ -1,8 +1,6 @@
 package com.eventtracker.security;
 
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
 
 import javax.crypto.SecretKey;
 
@@ -38,19 +36,13 @@ public class JwtTokenProvider {
     }
 
     public String generateToken(Long userId, String email) {
-        Map<String, Object> claims = new HashMap<>();
-        claims.put("userId", userId);
-        claims.put("email", email);
-        return createToken(claims, "user:" + userId);
-    }
-
-    private String createToken(Map<String, Object> claims, String subject) {
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + jwtExpirationMillis);
 
         return Jwts.builder()
-                .setClaims(claims)
-                .setSubject(subject)
+                .claim("userId", userId)
+                .claim("email", email)
+                .setSubject(userId.toString())
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
                 .signWith(getSigningKey(), SignatureAlgorithm.HS512)

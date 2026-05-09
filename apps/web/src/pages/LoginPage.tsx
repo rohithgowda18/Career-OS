@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Sparkles, Loader2, Github, Mail, ArrowLeft, User } from "lucide-react";
+import { Sparkles, Loader2, ArrowLeft, Key, Mail } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { authApi } from "@/lib/api/authApi";
 import { toast } from "sonner";
@@ -13,274 +13,144 @@ export default function LoginPage() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [username, setUsername] = useState("");
-  const [showWakeMessage, setShowWakeMessage] = useState(false);
 
   const queryClient = useQueryClient();
+  const searchParams = new URLSearchParams(window.location.search);
+  const redirectPath = searchParams.get("redirect") || "/dashboard";
 
   const loginMutation = useMutation({
     mutationFn: authApi.login,
-    onSuccess: async () => {
-      toast.success("Login successful");
-      // Refetch the me query and wait for user to be hydrated before navigating
+    onSuccess: async (data: any) => {
+      if (data.token) {
+        localStorage.setItem("token", data.token);
+      }
+      toast.success("Authentication successful");
       await queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
-      // Wait for user to be available in cache
-      let tries = 0;
-      while (tries < 10) {
-        const user = queryClient.getQueryData(["auth", "me"]);
-        if (user) {
-          setLocation("/dashboard");
-          return;
-        }
-        await new Promise(res => setTimeout(res, 100));
-        tries++;
-      }
-      // Fallback: navigate anyway
-      setLocation("/dashboard");
+      setLocation(redirectPath);
     },
-    onError: (error: any) => {
-      if (error.response?.status === 401) {
-        toast.error("Invalid email or password");
-        return;
-      }
-      toast.error(
-        error.response?.status >= 500
-          ? "Server error"
-          : error.message || "Failed to log in"
-      );
-    },
+    onError: (error: any) => toast.error(error.message || "Access denied"),
   });
 
   const registerMutation = useMutation({
     mutationFn: authApi.register,
-    onSuccess: () => {
-      toast.success("Registration successful");
-      queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
-      setLocation("/dashboard");
-    },
-    onError: (error: any) => {
-      if (error.response?.status === 409) {
-        toast.error(error.message || "Email or username already exists");
-        return;
+    onSuccess: (data: any) => {
+      if (data.token) {
+        localStorage.setItem("token", data.token);
       }
-      toast.error(
-        error.response?.status >= 500
-          ? "Server error"
-          : error.message || "Failed to register"
-      );
+      toast.success("Account initialized");
+      queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
+      setLocation(redirectPath);
     },
+    onError: (error: any) => toast.error(error.message || "Registration failed"),
   });
 
   const isLoading = loginMutation.isPending || registerMutation.isPending;
-
-  useEffect(() => {
-    if (!isLoading) {
-      setShowWakeMessage(false);
-      return;
-    }
-
-    const timer = window.setTimeout(() => {
-      setShowWakeMessage(true);
-    }, 5000);
-
-    return () => window.clearTimeout(timer);
-  }, [isLoading]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (isLoading) return;
 
-    const normalizedEmail = email.trim().toLowerCase();
     if (isSignUp) {
       registerMutation.mutate({
-        username: username.trim(),
-        email: normalizedEmail,
+        email: email.trim().toLowerCase(),
         password,
       });
     } else {
-      loginMutation.mutate({ email: normalizedEmail, password });
+      loginMutation.mutate({ email: email.trim().toLowerCase(), password });
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#020203] text-white flex items-center justify-center p-4 selection:bg-accent/30 selection:text-accent-foreground relative overflow-hidden">
-      {/* Background radial glows */}
-      <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full bg-accent/10 blur-[130px]" />
-      <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] rounded-full bg-blue-600/10 blur-[130px]" />
+    <div className="min-h-screen bg-bg-main text-text-main flex items-center justify-center p-6 relative overflow-hidden font-sans">
+      {/* Background Ambience */}
+      <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full bg-primary/10 blur-[140px]" />
+      <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] rounded-full bg-accent/10 blur-[140px]" />
 
-      {/* Back button */}
       <button
         onClick={() => setLocation("/")}
-        disabled={isLoading}
-        className="absolute top-8 left-8 flex items-center gap-2 text-sm text-muted-foreground hover:text-white transition-colors"
+        className="absolute top-10 left-10 flex items-center gap-2.5 text-[10px] font-black uppercase tracking-[0.2em] text-text-muted hover:text-primary transition-colors"
       >
-        <ArrowLeft className="w-4 h-4" />
-        Back to Home
+        <ArrowLeft className="w-4 h-4" /> Return to Origin
       </button>
 
-      {/* Login Card */}
-      <div className="w-full max-w-[420px] z-10 animate-in fade-in zoom-in-95 duration-500">
+      <div className="w-full max-w-[440px] z-10 animate-in fade-in zoom-in duration-700">
         <div className="text-center mb-10">
-          <div
-            className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-accent to-blue-600 shadow-2xl shadow-accent/20 mb-6 group cursor-pointer"
-            onClick={() => setLocation("/")}
-          >
-            <Sparkles className="w-10 h-10 text-white" />
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-[1.5rem] bg-gradient-to-br from-primary to-accent mb-8 shadow-2xl shadow-primary/30 active:scale-95 transition-transform cursor-pointer">
+            <Sparkles className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-3xl font-black tracking-tight mb-2">
-            {isSignUp ? "Create Account" : "Welcome Back"}
-          </h1>
-          <p className="text-muted-foreground">
-            {isSignUp
-              ? "Sign up to start tracking your events."
-              : "Log in to your dashboard to manage your events."}
+          <h1 className="text-4xl font-black tracking-tighter mb-3">{isSignUp ? "Initialize Identity" : "Portal Access"}</h1>
+          <p className="text-[11px] font-bold text-text-muted uppercase tracking-[0.2em] opacity-60">
+            {isSignUp ? "Connect to the Application Grid" : "Resuming Tracking Protocol"}
           </p>
         </div>
 
-        <div className="rounded-[28px] border border-white/10 bg-[#0a0a0c]/80 backdrop-blur-2xl p-8 shadow-2xl">
+        <div className="card-premium p-10 bg-bg-card/40 backdrop-blur-3xl shadow-2xl">
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-4">
-              {isSignUp && (
-                <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-                  <Label htmlFor="username">Username</Label>
-                  <div className="relative group">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-accent transition-colors" />
-                    <Input
-                      id="username"
-                      type="text"
-                      placeholder="rohit18"
-                      value={username}
-                      onChange={e => setUsername(e.target.value)}
-                      required={isSignUp}
-                      disabled={isLoading}
-                      autoComplete="username"
-                      className="pl-10 h-12 bg-white/5 border-white/10 focus:border-accent/50 focus:ring-accent/20 transition-all rounded-xl"
-                    />
-                  </div>
-                </div>
-              )}
-              <div className="space-y-2">
-                <Label htmlFor="email">Email address</Label>
-                <div className="relative group">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-accent transition-colors" />
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="name@example.com"
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    required
-                    disabled={isLoading}
-                    autoComplete="email"
-                    className="pl-10 h-12 bg-white/5 border-white/10 focus:border-accent/50 focus:ring-accent/20 transition-all rounded-xl"
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password">Password</Label>
-                  {!isSignUp && (
-                    <button
-                      type="button"
-                      disabled={isLoading}
-                      className="text-xs text-accent hover:underline disabled:pointer-events-none disabled:opacity-50"
-                    >
-                      Forgot password?
-                    </button>
-                  )}
-                </div>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="Password"
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  required
-                  minLength={isSignUp ? 6 : undefined}
-                  disabled={isLoading}
-                  autoComplete={isSignUp ? "new-password" : "current-password"}
-                  className="h-12 bg-white/5 border-white/10 focus:border-accent/50 focus:ring-accent/20 transition-all rounded-xl"
-                />
-              </div>
+            <div className="space-y-2.5">
+              <Label htmlFor="email" className="text-[10px] font-black uppercase tracking-widest text-text-muted flex items-center gap-2">
+                 <Mail className="w-3.5 h-3.5" /> Identity Email
+              </Label>
+              <Input 
+                id="email" 
+                type="email" 
+                placeholder="identity@domain.com"
+                value={email} 
+                onChange={e => setEmail(e.target.value)} 
+                required 
+                className="input-premium h-14 text-sm font-bold" 
+              />
+            </div>
+            <div className="space-y-2.5">
+              <Label htmlFor="password" name="password" className="text-[10px] font-black uppercase tracking-widest text-text-muted flex items-center gap-2">
+                 <Key className="w-3.5 h-3.5" /> Access Key
+              </Label>
+              <Input 
+                id="password" 
+                type="password" 
+                placeholder="••••••••"
+                value={password} 
+                onChange={e => setPassword(e.target.value)} 
+                required 
+                className="input-premium h-14 text-sm font-bold" 
+              />
             </div>
 
-            <Button
-              type="submit"
-              disabled={isLoading}
-              className="w-full h-12 bg-accent hover:bg-accent/90 text-white rounded-xl font-bold text-base shadow-lg shadow-accent/20 transition-all"
+            <Button 
+              type="submit" 
+              disabled={isLoading} 
+              className="w-full btn-primary h-14 mt-6 text-base tracking-tight shadow-xl"
             >
-              {isLoading ? (
-                <>
-                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                  {isSignUp ? "Creating Account..." : "Signing in..."}
-                </>
-              ) : isSignUp ? (
-                "Create Account"
-              ) : (
-                "Log in"
-              )}
+              {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              {isSignUp ? "Establish Account" : "Authorize Access"}
             </Button>
-            {showWakeMessage && (
-              <p className="text-center text-sm text-muted-foreground">
-                Waking server, please wait...
-              </p>
-            )}
           </form>
 
-          <div className="relative my-8">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-white/10" />
+          <div className="mt-10 pt-8 border-t border-border flex flex-col items-center gap-4">
+            <div className="grid grid-cols-2 gap-4 w-full">
+              <a 
+                href="http://localhost:8080/oauth2/authorization/google"
+                className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-[10px] font-black uppercase tracking-widest"
+              >
+                <img src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" alt="Google" className="w-4 h-4" />
+                Google
+              </a>
+              <a 
+                href="http://localhost:8080/oauth2/authorization/github"
+                className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-[10px] font-black uppercase tracking-widest"
+              >
+                <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="GitHub" className="w-4 h-4 invert" />
+                GitHub
+              </a>
             </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-[#0a0a0c] px-4 text-muted-foreground leading-none">
-                Or continue with
-              </span>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
+            
             <button
-              type="button"
-              disabled={isLoading}
-              className="flex items-center justify-center h-12 rounded-xl border border-white/10 hover:bg-white/5 transition-all font-medium gap-2 disabled:pointer-events-none disabled:opacity-50"
+              onClick={() => setIsSignUp(!isSignUp)}
+              className="text-[10px] font-black text-primary hover:text-primary-hover transition-all uppercase tracking-[0.3em] hover:tracking-[0.4em] mt-4"
             >
-              <Github className="w-5 h-5" />
-              Github
-            </button>
-            <button
-              type="button"
-              disabled={isLoading}
-              className="flex items-center justify-center h-12 rounded-xl border border-white/10 hover:bg-white/5 transition-all font-medium gap-2 disabled:pointer-events-none disabled:opacity-50"
-            >
-              <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center">
-                <div className="w-3 h-3 bg-black rounded-sm" />
-              </div>
-              Google
+              {isSignUp ? "Existing User? Auth Here" : "New User? Register Slot"}
             </button>
           </div>
         </div>
-
-        <p className="text-center mt-8 text-sm text-muted-foreground">
-          {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
-          <button
-            onClick={() => setIsSignUp(!isSignUp)}
-            disabled={isLoading}
-            className="text-accent font-semibold hover:underline disabled:pointer-events-none disabled:opacity-50"
-          >
-            {isSignUp ? "Log in" : "Sign up for free"}
-          </button>
-        </p>
-      </div>
-
-      {/* Footer info */}
-      <div className="absolute bottom-8 text-xs text-muted-foreground/50 flex gap-6">
-        <span>© 2024 Event Tracker</span>
-        <a href="#" className="hover:text-white">
-          Privacy Policy
-        </a>
-        <a href="#" className="hover:text-white">
-          Terms of Service
-        </a>
       </div>
     </div>
   );

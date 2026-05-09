@@ -3,7 +3,6 @@ package com.eventtracker.controller;
 import com.eventtracker.dto.AuthDTO.LoginRequest;
 import com.eventtracker.dto.AuthDTO.RegisterRequest;
 import com.eventtracker.dto.AuthDTO.AuthResponse;
-import com.eventtracker.dto.UserDTO;
 import com.eventtracker.entity.User;
 import com.eventtracker.exception.DuplicateUserException;
 import com.eventtracker.security.JwtTokenProvider;
@@ -12,8 +11,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.core.NestedExceptionUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -31,7 +28,6 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
-@CrossOrigin
 public class AuthController {
 
     private final UserService userService;
@@ -41,13 +37,9 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request) {
         try {
-            NameParts nameParts = resolveNameParts(request);
             User user = userService.createUser(
                     request.getEmail(),
-                    request.getPassword(),
-                    nameParts.firstName(),
-                    nameParts.lastName(),
-                    request.getUsername()
+                    request.getPassword()
             );
 
             String token = tokenProvider.generateToken(user.getId(), user.getEmail());
@@ -59,17 +51,6 @@ public class AuthController {
             ));
         } catch (DuplicateUserException e) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(errorBody(HttpStatus.CONFLICT, e.getMessage()));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorBody(HttpStatus.BAD_REQUEST, e.getMessage()));
-        } catch (DataIntegrityViolationException e) {
-            if (isUserUniqueConstraintViolation(e)) {
-                log.warn("Registration rejected because of duplicate persisted user data", e);
-                return ResponseEntity.status(HttpStatus.CONFLICT)
-                        .body(errorBody(HttpStatus.CONFLICT, "Email or username already exists"));
-            }
-            log.error("Registration failed because persisted user data violated a non-duplicate constraint", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(errorBody(HttpStatus.INTERNAL_SERVER_ERROR, "Registration failed"));
         } catch (Exception e) {
             log.error("Registration error", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -108,11 +89,9 @@ public class AuthController {
             Object principal = authentication.getPrincipal();
             if (principal instanceof User) {
                 User user = (User) principal;
-                log.info("Getting current user: {}", user.getEmail());
                 return ResponseEntity.ok(userService.convertToDTO(user));
             }
         }
-        log.warn("No authenticated user found");
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
     }
 
@@ -138,50 +117,11 @@ public class AuthController {
         return ResponseEntity.badRequest().body(errors);
     }
 
-    private NameParts resolveNameParts(RegisterRequest request) {
-        String firstName = trimToNull(request.getFirstName());
-        String lastName = trimToNull(request.getLastName());
-        String fullName = trimToNull(request.getName());
-
-        if ((firstName == null || firstName.isBlank()) && fullName != null) {
-            String[] pieces = fullName.split("\\s+", 2);
-            firstName = pieces[0];
-            lastName = pieces.length > 1 ? pieces[1] : lastName;
-        }
-
-        return new NameParts(firstName, lastName);
-    }
-
-    private String trimToNull(String value) {
-        if (value == null) {
-            return null;
-        }
-        String trimmed = value.trim();
-        return trimmed.isEmpty() ? null : trimmed;
-    }
-
     private Map<String, Object> errorBody(HttpStatus status, String message) {
         Map<String, Object> body = new HashMap<>();
         body.put("status", status.value());
         body.put("error", status.getReasonPhrase());
         body.put("message", message);
         return body;
-    }
-
-    private boolean isUserUniqueConstraintViolation(DataIntegrityViolationException exception) {
-        Throwable rootCause = NestedExceptionUtils.getMostSpecificCause(exception);
-        String message = rootCause == null ? exception.getMessage() : rootCause.getMessage();
-        if (message == null) {
-            return false;
-        }
-
-        String normalizedMessage = message.toLowerCase();
-        return normalizedMessage.contains("users_email_key")
-                || normalizedMessage.contains("users_username_key")
-                || normalizedMessage.contains("uk_users_email")
-                || normalizedMessage.contains("uk_users_username");
-    }
-
-    private record NameParts(String firstName, String lastName) {
     }
 }
