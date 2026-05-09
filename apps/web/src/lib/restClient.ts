@@ -20,8 +20,10 @@ const normalizedUrl = getApiBaseUrl()
   .replace(/\/+$/, '')
   .replace(/\/api\/?$/, '');
 
+export const API_BASE_URL = normalizedUrl;
+
 const restClient = axios.create({
-  baseURL: normalizedUrl,
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
