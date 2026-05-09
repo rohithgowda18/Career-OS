@@ -1,11 +1,14 @@
 spring:
+  config:
+    import: optional:file:.env[.properties]
+
   application:
     name: event-app-tracker
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/event_tracker_db
-    username: postgres
-    password: Rohk_1265
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/event_tracker_db}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:Rohk_1265}
 
   jpa:
     hibernate:
@@ -20,14 +23,14 @@ spring:
       client:
         registration:
           google:
-            client-id: 742367022475-6dim5k9uig9jcrcntok01vqq9710e82c.apps.googleusercontent.com
-            client-secret: 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
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
             scope:
               - email
               - profile
           github:
-            client-id: Ov23lizBJnN2MGUI91w2
-            client-secret: 7a3df557788d5c52cd62a3decd7da52ca5fdaa7b
+            client-id: ${GITHUB_CLIENT_ID}
+            client-secret: ${GITHUB_CLIENT_SECRET}
             scope:
               - user:email
               - read:user
@@ -41,9 +44,8 @@ server:
 
 app:
   jwt:
-    secret: this-is-a-very-long-secret-key-that-is-at-least-64-characters-long-to-satisfy-hs512-requirements
+    secret: ${JWT_SECRET:this-is-a-very-long-secret-key-that-is-at-least-64-characters-long-to-satisfy-hs512-requirements}
     expiration: 1800000
 
   cors:
-    allowed-origins: http://localhost:5173
-
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}

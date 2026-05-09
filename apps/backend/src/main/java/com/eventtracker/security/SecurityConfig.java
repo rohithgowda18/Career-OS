@@ -79,7 +79,6 @@ public class SecurityConfig {
                 )
                 .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
                 .oauth2Login(oauth -> oauth
-                        .loginPage("http://localhost:5173/login")
                         .successHandler(oAuth2LoginSuccessHandler)
                 )
                 .httpBasic(basic -> basic.disable());

@@ -23,7 +23,6 @@ public class ApplicationService {
     public Application createApplication(User user, ApplicationDTO dto) {
         String normalizedUrl = normalizeUrl(dto.getUrl());
         
-        // Check for duplicates
         if (normalizedUrl != null) {
             applicationRepository.findByUserIdAndUrl(user.getId(), normalizedUrl)
                 .ifPresent(app -> {
@@ -34,8 +33,8 @@ public class ApplicationService {
         Application app = new Application();
         app.setUser(user);
         app.setEventName(dto.getEventName());
-        app.setEventType(Application.EventType.valueOf(dto.getEventType()));
-        app.setStatus(Application.ApplicationStatus.valueOf(dto.getStatus().replaceAll(" ", "")));
+        app.setEventType(parseEventType(dto.getEventType()));
+        app.setStatus(parseStatus(dto.getStatus()));
         app.setDeadline(dto.getDeadline());
         app.setNotes(dto.getNotes());
         app.setUrl(normalizedUrl);
@@ -44,18 +43,34 @@ public class ApplicationService {
         return applicationRepository.save(app);
     }
 
+    private Application.EventType parseEventType(String eventType) {
+        if (eventType == null) return Application.EventType.Other;
+        String normalized = eventType.trim().replaceAll(" ", "");
+        for (Application.EventType type : Application.EventType.values()) {
+            if (type.name().equalsIgnoreCase(normalized)) return type;
+        }
+        return Application.EventType.Other;
+    }
+
+    private Application.ApplicationStatus parseStatus(String status) {
+        if (status == null) return Application.ApplicationStatus.Interested;
+        String normalized = status.trim().replaceAll(" ", "");
+        for (Application.ApplicationStatus appStatus : Application.ApplicationStatus.values()) {
+            if (appStatus.name().equalsIgnoreCase(normalized)) return appStatus;
+        }
+        return Application.ApplicationStatus.Interested;
+    }
+
     private String normalizeUrl(String url) {
         if (url == null || url.isBlank()) return null;
         
         String normalized = url.trim().toLowerCase();
         
-        // Remove tracking params (?utm=...)
         int queryIndex = normalized.indexOf('?');
         if (queryIndex != -1) {
             normalized = normalized.substring(0, queryIndex);
         }
         
-        // Remove trailing slash
         if (normalized.endsWith("/")) {
             normalized = normalized.substring(0, normalized.length() - 1);
         }
@@ -75,7 +90,7 @@ public class ApplicationService {
     }
 
     public List<ApplicationDTO> getUserApplicationsByStatus(Long userId, String status) {
-        Application.ApplicationStatus appStatus = Application.ApplicationStatus.valueOf(status.replaceAll(" ", ""));
+        Application.ApplicationStatus appStatus = parseStatus(status);
         return applicationRepository.findByUserIdAndStatusOrderByDeadlineAsc(userId, appStatus)
                 .stream()
                 .map(this::convertToDTO)
@@ -90,10 +105,10 @@ public class ApplicationService {
             app.setEventName(dto.getEventName());
         }
         if (dto.getEventType() != null) {
-            app.setEventType(Application.EventType.valueOf(dto.getEventType()));
+            app.setEventType(parseEventType(dto.getEventType()));
         }
         if (dto.getStatus() != null) {
-            app.setStatus(Application.ApplicationStatus.valueOf(dto.getStatus().replaceAll(" ", "")));
+            app.setStatus(parseStatus(dto.getStatus()));
         }
         if (dto.getDeadline() != null) {
             app.setDeadline(dto.getDeadline());
@@ -135,8 +150,8 @@ public class ApplicationService {
     public Application convertFromDTO(ApplicationDTO dto) {
         Application app = new Application();
         app.setEventName(dto.getEventName());
-        app.setEventType(Application.EventType.valueOf(dto.getEventType()));
-        app.setStatus(Application.ApplicationStatus.valueOf(dto.getStatus().replaceAll(" ", "")));
+        app.setEventType(parseEventType(dto.getEventType()));
+        app.setStatus(parseStatus(dto.getStatus()));
         app.setDeadline(dto.getDeadline());
         app.setNotes(dto.getNotes());
         app.setUrl(dto.getUrl());
@@ -145,7 +160,7 @@ public class ApplicationService {
     }
 
     public List<ApplicationDTO> getUserApplicationsByEventType(Long userId, String eventType) {
-        Application.EventType type = Application.EventType.valueOf(eventType);
+        Application.EventType type = parseEventType(eventType);
         return applicationRepository.findByUserIdAndEventTypeOrderByDeadlineAsc(userId, type)
                 .stream()
                 .map(this::convertToDTO)
@@ -157,7 +172,7 @@ public class ApplicationService {
     }
 
     public long countUserApplicationsByStatus(Long userId, String status) {
-        Application.ApplicationStatus appStatus = Application.ApplicationStatus.valueOf(status.replaceAll(" ", ""));
+        Application.ApplicationStatus appStatus = parseStatus(status);
         return applicationRepository.countByUserIdAndStatus(userId, appStatus);
     }
 }
