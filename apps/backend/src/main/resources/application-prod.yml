@@ -13,5 +13,5 @@ spring:
       ddl-auto: validate
     show-sql: false
 
-  flyway:
-    baseline-on-migrate: true # Important if Render DB already has data but no flyway table
+app:
+  frontend-url: ${FRONTEND_URL:https://eventpulse-phi.vercel.app}
