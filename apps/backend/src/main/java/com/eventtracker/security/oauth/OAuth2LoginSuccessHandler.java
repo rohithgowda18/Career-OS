@@ -6,6 +6,7 @@ import com.eventtracker.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
@@ -16,6 +17,7 @@ import java.io.IOException;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
     private final JwtTokenProvider jwtTokenProvider;
@@ -27,23 +29,41 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
                                         Authentication authentication) throws IOException {
+        try {
+            log.info("OAuth2 login successful, processing principal...");
+            OAuth2User oauthUser = (OAuth2User) authentication.getPrincipal();
+            log.debug("OAuth2 Attributes: {}", oauthUser.getAttributes());
 
-        OAuth2User oauthUser = (OAuth2User) authentication.getPrincipal();
+            String email = oauthUser.getAttribute("email");
+            if (email == null) {
+                email = oauthUser.getAttribute("login");
+            }
 
-        String email = oauthUser.getAttribute("email");
-        if (email == null) {
-            email = oauthUser.getAttribute("login");
+            if (email == null || email.isBlank()) {
+                log.error("OAuth2 provider did not return an email or login attribute");
+                response.sendRedirect(frontendUrl + "/login?error=email_not_found");
+                return;
+            }
+
+            final String finalEmail = email;
+            log.info("Processing login for email: {}", finalEmail);
+
+            User user = userService.findByEmail(finalEmail)
+                    .orElseGet(() -> {
+                        log.info("Creating new user for OAuth email: {}", finalEmail);
+                        return userService.createUser(finalEmail, "oauth-user");
+                    });
+
+            String token = jwtTokenProvider.generateToken(user.getId(), user.getEmail());
+            String redirectUrl = frontendUrl + "/oauth-success?token=" + token;
+
+            log.info("Redirecting to frontend success page");
+            getRedirectStrategy().sendRedirect(request, response, redirectUrl);
+
+        } catch (Exception e) {
+            log.error("Critical error in OAuth2LoginSuccessHandler", e);
+            response.sendRedirect(frontendUrl + "/login?error=internal_server_error");
         }
-
-        final String finalEmail = email;
-        User user = userService.findByEmail(finalEmail)
-                .orElseGet(() -> userService.createUser(finalEmail, "oauth-user"));
-
-        String token = jwtTokenProvider.generateToken(user.getId(), user.getEmail());
-
-        String redirectUrl = frontendUrl + "/oauth-success?token=" + token;
-
-        getRedirectStrategy().sendRedirect(request, response, redirectUrl);
     }
 }
 
