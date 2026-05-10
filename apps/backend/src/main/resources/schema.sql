@@ -1,18 +1,4 @@
--- FORCE RESET (Deep Clean for Render database)
-DROP TABLE IF EXISTS application_timeline CASCADE;
-DROP TABLE IF EXISTS calendar_conflicts CASCADE;
-DROP TABLE IF EXISTS digest_logs CASCADE;
-DROP TABLE IF EXISTS event_success_scores CASCADE;
-DROP TABLE IF EXISTS flyway_schema_history CASCADE;
-DROP TABLE IF EXISTS notifications CASCADE;
-DROP TABLE IF EXISTS team_members CASCADE;
-DROP TABLE IF EXISTS teams CASCADE;
-DROP TABLE IF EXISTS user_application_profiles CASCADE;
-DROP TABLE IF EXISTS user_preferences CASCADE;
-DROP TABLE IF EXISTS applications CASCADE;
-DROP TABLE IF EXISTS user_profiles CASCADE;
-DROP TABLE IF EXISTS users CASCADE;
-
+-- DATABASE SCHEMA (Production Stable)
 -- USERS (Authentication only)
 CREATE TABLE IF NOT EXISTS users (
     id BIGSERIAL PRIMARY KEY,
