@@ -1,3 +1,8 @@
+-- FORCE RESET (One-time fix for Render database contamination)
+DROP TABLE IF EXISTS applications CASCADE;
+DROP TABLE IF EXISTS user_profiles CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
+
 -- USERS (Authentication only)
 CREATE TABLE IF NOT EXISTS users (
     id BIGSERIAL PRIMARY KEY,
@@ -44,3 +49,18 @@ CREATE INDEX IF NOT EXISTS idx_applications_status ON applications(status);
 
 -- Ensure user cannot save the same event URL twice (Idempotent)
 CREATE UNIQUE INDEX IF NOT EXISTS unique_user_event_url ON applications (user_id, event_url);
+
+-- FIX: Convert custom enum types to VARCHAR to match JPA/Hibernate expectations
+-- This resolves "column is of type event_type but expression is of type character varying"
+DO $$ 
+BEGIN
+    -- Fix event_type
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='applications' AND column_name='event_type') THEN
+        ALTER TABLE applications ALTER COLUMN event_type TYPE VARCHAR(50) USING event_type::VARCHAR;
+    END IF;
+
+    -- Fix status
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='applications' AND column_name='status') THEN
+        ALTER TABLE applications ALTER COLUMN status TYPE VARCHAR(50) USING status::VARCHAR;
+    END IF;
+END $$;

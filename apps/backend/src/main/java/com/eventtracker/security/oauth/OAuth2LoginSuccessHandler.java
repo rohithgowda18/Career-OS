@@ -30,7 +30,8 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
                                         Authentication authentication) throws IOException {
         try {
-            log.info("OAuth2 login successful, processing principal...");
+            String sanitizedFrontendUrl = frontendUrl.trim();
+            log.info("OAuth2 login successful, processing principal. Frontend URL: {}", sanitizedFrontendUrl);
             OAuth2User oauthUser = (OAuth2User) authentication.getPrincipal();
             log.debug("OAuth2 Attributes: {}", oauthUser.getAttributes());
 
@@ -41,7 +42,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 
             if (email == null || email.isBlank()) {
                 log.error("OAuth2 provider did not return an email or login attribute");
-                response.sendRedirect(frontendUrl + "/login?error=email_not_found");
+                response.sendRedirect(sanitizedFrontendUrl + "/login?error=email_not_found");
                 return;
             }
 
@@ -55,14 +56,14 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
                     });
 
             String token = jwtTokenProvider.generateToken(user.getId(), user.getEmail());
-            String redirectUrl = frontendUrl + "/oauth-success?token=" + token;
+            String redirectUrl = sanitizedFrontendUrl + "/oauth-success?token=" + token;
 
             log.info("Redirecting to frontend success page");
             getRedirectStrategy().sendRedirect(request, response, redirectUrl);
 
         } catch (Exception e) {
             log.error("Critical error in OAuth2LoginSuccessHandler", e);
-            response.sendRedirect(frontendUrl + "/login?error=internal_server_error");
+            response.sendRedirect(sanitizedFrontendUrl + "/login?error=internal_server_error");
         }
     }
 }

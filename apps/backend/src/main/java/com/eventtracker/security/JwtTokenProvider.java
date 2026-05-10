@@ -26,6 +26,9 @@ public class JwtTokenProvider {
 
     @PostConstruct
     void validateConfiguration() {
+        if (jwtSecret != null) {
+            jwtSecret = jwtSecret.trim();
+        }
         if (jwtSecret == null || jwtSecret.getBytes().length < 64) {
             throw new IllegalStateException("JWT_SECRET must be at least 64 bytes for HS512 signing");
         }
