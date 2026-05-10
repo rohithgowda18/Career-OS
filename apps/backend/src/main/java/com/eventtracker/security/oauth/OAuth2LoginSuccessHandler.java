@@ -29,8 +29,8 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
                                         Authentication authentication) throws IOException {
+        String sanitizedFrontendUrl = frontendUrl.trim();
         try {
-            String sanitizedFrontendUrl = frontendUrl.trim();
             log.info("OAuth2 login successful, processing principal. Frontend URL: {}", sanitizedFrontendUrl);
             OAuth2User oauthUser = (OAuth2User) authentication.getPrincipal();
             log.debug("OAuth2 Attributes: {}", oauthUser.getAttributes());
