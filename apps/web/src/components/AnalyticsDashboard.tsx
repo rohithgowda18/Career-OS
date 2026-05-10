@@ -20,11 +20,37 @@ export default function AnalyticsDashboard() {
   const summaryQuery = useQuery({ queryKey: ['analytics', 'summary'], queryFn: analyticsApi.summary });
 
   const isLoading = acceptanceRatesQuery.isLoading || statusDistributionQuery.isLoading || summaryQuery.isLoading;
+  const isError = acceptanceRatesQuery.isError || statusDistributionQuery.isError || summaryQuery.isError;
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-24">
         <Loader2 className="w-10 h-10 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 text-center">
+        <div className="w-16 h-16 rounded-3xl bg-danger/10 flex items-center justify-center mb-6">
+          <Activity className="w-8 h-8 text-danger" />
+        </div>
+        <h3 className="text-xl font-black text-text-main">Intelligence Offline</h3>
+        <p className="text-xs text-text-muted mt-3 uppercase tracking-widest font-bold opacity-60">
+          Analytics engine could not be synchronized
+        </p>
+        <Button 
+          onClick={() => {
+            acceptanceRatesQuery.refetch();
+            statusDistributionQuery.refetch();
+            summaryQuery.refetch();
+          }} 
+          variant="outline" 
+          className="mt-8 border-border hover:bg-bg-elevated font-black text-[10px] uppercase tracking-widest h-11 px-8"
+        >
+          Re-initialize Engine
+        </Button>
       </div>
     );
   }

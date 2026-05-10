@@ -19,7 +19,7 @@ export default function DashboardView() {
     queryKey: ["applications"],
     queryFn: applicationsApi.list,
   });
-  const applications = applicationsQuery.data || [];
+  const applications = Array.isArray(applicationsQuery.data) ? applicationsQuery.data : [];
 
   const stats = useMemo(() => {
     const now = new Date();
@@ -59,6 +59,23 @@ export default function DashboardView() {
     return (
       <div className="flex items-center justify-center py-24">
         <Loader2 className="w-10 h-10 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (applicationsQuery.isError) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 text-center">
+        <AlertCircle className="w-12 h-12 text-danger mb-4" />
+        <h3 className="text-lg font-bold text-text-main">Failed to load applications</h3>
+        <p className="text-sm text-text-muted mt-2">{(applicationsQuery.error as any)?.message || "Check your connection and try again."}</p>
+        <Button 
+          onClick={() => applicationsQuery.refetch()} 
+          variant="outline" 
+          className="mt-6 border-border hover:bg-bg-elevated"
+        >
+          Try Again
+        </Button>
       </div>
     );
   }

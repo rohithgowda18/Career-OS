@@ -1,0 +1,30 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: password
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+  sql:
+    init:
+      mode: never
+
+app:
+  jwt:
+    secret: this-is-a-very-long-test-secret-key-that-is-at-least-64-characters-long-to-satisfy-hs512-requirements
+    expiration: 3600000
+  frontend-url: http://localhost:5173
+  cors:
+    allowed-origins: http://localhost:5173
+
+logging:
+  level:
+    org.springframework: INFO
+
+GOOGLE_CLIENT_ID: dummy-id
+GOOGLE_CLIENT_SECRET: dummy-secret
+GITHUB_CLIENT_ID: dummy-id
+GITHUB_CLIENT_SECRET: dummy-secret

@@ -35,7 +35,7 @@ export default function CalendarView() {
     queryKey: ["applications"],
     queryFn: applicationsApi.list,
   });
-  const applications = applicationsQuery.data || [];
+  const applications = Array.isArray(applicationsQuery.data) ? applicationsQuery.data : [];
 
   const events = useMemo(() => {
     return applications
@@ -47,6 +47,35 @@ export default function CalendarView() {
         deadline: new Date(app.deadline!),
       }));
   }, [applications]);
+
+  if (applicationsQuery.isLoading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <Loader2 className="w-10 h-10 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (applicationsQuery.isError) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 text-center">
+        <div className="w-16 h-16 rounded-3xl bg-danger/10 flex items-center justify-center mb-6">
+          <CalendarIcon className="w-8 h-8 text-danger" />
+        </div>
+        <h3 className="text-xl font-black text-text-main">Calendar Sync Failed</h3>
+        <p className="text-xs text-text-muted mt-3 uppercase tracking-widest font-bold opacity-60">
+          {(applicationsQuery.error as any)?.message || "Connectivity issue detected"}
+        </p>
+        <Button 
+          onClick={() => applicationsQuery.refetch()} 
+          variant="outline" 
+          className="mt-8 border-border hover:bg-bg-elevated font-black text-[10px] uppercase tracking-widest h-11 px-8"
+        >
+          Retry Sync
+        </Button>
+      </div>
+    );
+  }
 
   const getDaysInMonth = (date: Date) => new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
   const getFirstDayOfMonth = (date: Date) => new Date(date.getFullYear(), date.getMonth(), 1).getDay();
