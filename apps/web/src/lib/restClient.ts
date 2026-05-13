@@ -7,30 +7,20 @@ const getApiBaseUrl = () => {
     return configuredApiUrl;
   }
 
-  // In production builds, we strictly require VITE_API_URL
-  if (import.meta.env.PROD && !configuredApiUrl) {
-    console.error('❌ VITE_API_URL is missing in production build! Falling back to current origin.');
-    return window.location.origin;
-  }
-
   if (import.meta.env.DEV) {
     return 'http://localhost:8080';
   }
 
-  return 'http://localhost:8080'; // Final fallback
+  throw new Error('VITE_API_URL is required for production builds');
 };
 
-// Remove trailing slashes and one /api suffix
-const rawBaseUrl = getApiBaseUrl();
-const normalizedUrl = rawBaseUrl
+// Remove trailing slashes and one /api suffix so callers may configure either
+// https://backend.example.com or https://backend.example.com/api.
+const normalizedUrl = getApiBaseUrl()
   .replace(/\/+$/, '')
   .replace(/\/api\/?$/, '');
 
 export const API_BASE_URL = normalizedUrl;
-
-if (import.meta.env.DEV || import.meta.env.PROD) {
-  console.log(`🚀 [EventTracker] API Base URL: ${API_BASE_URL}`);
-}
 
 const restClient = axios.create({
   baseURL: API_BASE_URL,

@@ -13,8 +13,5 @@ spring:
       ddl-auto: update
     show-sql: false
 
-server:
-  forward-headers-strategy: native
-
 app:
   frontend-url: ${FRONTEND_URL:https://eventpulse-phi.vercel.app}

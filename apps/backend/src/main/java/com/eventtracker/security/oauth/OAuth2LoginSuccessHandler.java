@@ -57,7 +57,8 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
 
             String token = jwtTokenProvider.generateToken(user.getId(), user.getEmail());
             String redirectUrl = sanitizedFrontendUrl + "/oauth-success?token=" + token;
-            log.info("OAuth2 Success: Redirecting to {}", redirectUrl);
+
+            log.info("Redirecting to frontend success page");
             getRedirectStrategy().sendRedirect(request, response, redirectUrl);
 
         } catch (Exception e) {
