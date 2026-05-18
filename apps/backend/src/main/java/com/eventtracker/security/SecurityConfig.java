@@ -73,7 +73,8 @@ public class SecurityConfig {
                                 "/auth/login",
                                 "/auth/register",
                                 "/oauth2/**",
-                                "/login/oauth2/**"
+                                "/login/oauth2/**",
+                                "/actuator/**"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
