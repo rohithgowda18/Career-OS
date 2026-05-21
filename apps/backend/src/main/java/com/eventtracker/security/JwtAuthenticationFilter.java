@@ -32,15 +32,30 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             String jwt = getJwtFromRequest(request);
 
-            if (StringUtils.hasText(jwt) && tokenProvider.validateToken(jwt)) {
-                Long userId = tokenProvider.getUserIdFromToken(jwt);
+            if (StringUtils.hasText(jwt)) {
+                log.debug("JWT token found in request");
+                if (tokenProvider.validateToken(jwt)) {
+                    log.debug("JWT token is valid");
+                    Long userId = tokenProvider.getUserIdFromToken(jwt);
+                    log.debug("UserId from token: {}", userId);
 
-                userService.findById(userId).ifPresent(user -> {
-                    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                            user, null, user.getAuthorities());
-                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    SecurityContextHolder.getContext().setAuthentication(authentication);
-                });
+                    var userOpt = userService.findById(userId);
+                    if (userOpt.isPresent()) {
+                        var user = userOpt.get();
+                        log.debug("User found: {}", user.getEmail());
+                        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                                user, null, user.getAuthorities());
+                        authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                        SecurityContextHolder.getContext().setAuthentication(authentication);
+                        log.debug("Authentication set for user: {}", user.getEmail());
+                    } else {
+                        log.warn("User not found with ID: {}", userId);
+                    }
+                } else {
+                    log.warn("JWT token validation failed");
+                }
+            } else {
+                log.debug("No JWT token found in request");
             }
         } catch (Exception ex) {
             log.error("JWT Authentication error", ex);

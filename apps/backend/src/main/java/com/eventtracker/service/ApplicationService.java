@@ -6,6 +6,11 @@ import com.eventtracker.entity.User;
 import com.eventtracker.exception.DuplicateEventException;
 import com.eventtracker.repository.ApplicationRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,17 +22,19 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class ApplicationService {
+
     private final ApplicationRepository applicationRepository;
 
     public Application createApplication(User user, ApplicationDTO dto) {
         String normalizedUrl = normalizeUrl(dto.getUrl());
-        
+
         if (normalizedUrl != null) {
             applicationRepository.findByUserIdAndUrl(user.getId(), normalizedUrl)
-                .ifPresent(app -> {
-                    throw new DuplicateEventException("Event already saved in your tracker");
-                });
+                    .ifPresent(app -> {
+                        throw new DuplicateEventException("Event already saved in your tracker");
+                    });
         }
 
         Application app = new Application();
@@ -44,37 +51,47 @@ public class ApplicationService {
     }
 
     private Application.EventType parseEventType(String eventType) {
-        if (eventType == null) return Application.EventType.Other;
+        if (eventType == null) {
+            return Application.EventType.OTHER;
+        }
         String normalized = eventType.trim().replaceAll(" ", "");
         for (Application.EventType type : Application.EventType.values()) {
-            if (type.name().equalsIgnoreCase(normalized)) return type;
+            if (type.name().equalsIgnoreCase(normalized)) {
+                return type;
+            }
         }
-        return Application.EventType.Other;
+        return Application.EventType.OTHER;
     }
 
     private Application.ApplicationStatus parseStatus(String status) {
-        if (status == null) return Application.ApplicationStatus.Interested;
+        if (status == null) {
+            return Application.ApplicationStatus.INTERESTED;
+        }
         String normalized = status.trim().replaceAll(" ", "");
         for (Application.ApplicationStatus appStatus : Application.ApplicationStatus.values()) {
-            if (appStatus.name().equalsIgnoreCase(normalized)) return appStatus;
+            if (appStatus.name().equalsIgnoreCase(normalized)) {
+                return appStatus;
+            }
         }
-        return Application.ApplicationStatus.Interested;
+        return Application.ApplicationStatus.INTERESTED;
     }
 
     private String normalizeUrl(String url) {
-        if (url == null || url.isBlank()) return null;
-        
+        if (url == null || url.isBlank()) {
+            return null;
+        }
+
         String normalized = url.trim().toLowerCase();
-        
+
         int queryIndex = normalized.indexOf('?');
         if (queryIndex != -1) {
             normalized = normalized.substring(0, queryIndex);
         }
-        
+
         if (normalized.endsWith("/")) {
             normalized = normalized.substring(0, normalized.length() - 1);
         }
-        
+
         return normalized;
     }
 
@@ -82,19 +99,38 @@ public class ApplicationService {
         return applicationRepository.findByIdAndUserId(id, userId);
     }
 
-    public List<ApplicationDTO> getUserApplications(Long userId) {
-        return applicationRepository.findByUserIdOrderByDeadlineAsc(userId)
-                .stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
+    public Page<ApplicationDTO> getUserApplications(
+            Long userId,
+            Pageable pageable) {
+        log.info("getUserApplications called for userId: {}, pageable: {}", userId, pageable);
+
+        try {
+            Page<Application> results = applicationRepository
+                    .findByUserIdOrderByDeadlineAsc(userId, pageable);
+            log.info("Query returned {} applications", results.getTotalElements());
+
+            Page<ApplicationDTO> dtos = results.map(this::convertToDTO);
+            log.info("Converted to {} DTOs", dtos.getNumberOfElements());
+            return dtos;
+        } catch (Exception e) {
+            log.error("Error in getUserApplications", e);
+            throw e;
+        }
     }
 
-    public List<ApplicationDTO> getUserApplicationsByStatus(Long userId, String status) {
+    public Page<ApplicationDTO> getUserApplicationsByStatus(
+            Long userId,
+            String status,
+            Pageable pageable) {
+
         Application.ApplicationStatus appStatus = parseStatus(status);
-        return applicationRepository.findByUserIdAndStatusOrderByDeadlineAsc(userId, appStatus)
-                .stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
+
+        return applicationRepository
+                .findByUserIdAndStatusOrderByDeadlineAsc(
+                        userId,
+                        appStatus,
+                        pageable)
+                .map(this::convertToDTO);
     }
 
     public Application updateApplication(Long id, Long userId, ApplicationDTO dto) {
@@ -145,34 +181,5 @@ public class ApplicationService {
         dto.setCreatedAt(app.getCreatedAt());
         dto.setUpdatedAt(app.getUpdatedAt());
         return dto;
-    }
-
-    public Application convertFromDTO(ApplicationDTO dto) {
-        Application app = new Application();
-        app.setEventName(dto.getEventName());
-        app.setEventType(parseEventType(dto.getEventType()));
-        app.setStatus(parseStatus(dto.getStatus()));
-        app.setDeadline(dto.getDeadline());
-        app.setNotes(dto.getNotes());
-        app.setUrl(dto.getUrl());
-        app.setLocation(dto.getLocation());
-        return app;
-    }
-
-    public List<ApplicationDTO> getUserApplicationsByEventType(Long userId, String eventType) {
-        Application.EventType type = parseEventType(eventType);
-        return applicationRepository.findByUserIdAndEventTypeOrderByDeadlineAsc(userId, type)
-                .stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
-    }
-
-    public long countUserApplications(Long userId) {
-        return applicationRepository.countByUserId(userId);
-    }
-
-    public long countUserApplicationsByStatus(Long userId, String status) {
-        Application.ApplicationStatus appStatus = parseStatus(status);
-        return applicationRepository.countByUserIdAndStatus(userId, appStatus);
     }
 }

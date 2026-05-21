@@ -18,6 +18,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Application {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -59,10 +60,17 @@ public class Application {
     private LocalDateTime updatedAt;
 
     public enum EventType {
-        Hackathon, Workshop, Conference, Other
+        hackathon,
+        workshop,
+        conference,
+        other
     }
 
     public enum ApplicationStatus {
-        Interested, Applied, UnderReview, Accepted, Rejected
+        interested,
+        applied,
+        under_review,
+        accepted,
+        rejected
     }
 }

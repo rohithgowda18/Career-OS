@@ -13,6 +13,11 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.data.domain.Sort;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -33,10 +38,26 @@ public class ApplicationController {
     }
 
     @GetMapping
-    public ResponseEntity<List<ApplicationDTO>> list() {
-        User user = getCurrentUser();
-        List<ApplicationDTO> applications = applicationService.getUserApplications(user.getId());
-        return ResponseEntity.ok(applications);
+    public ResponseEntity<Page<ApplicationDTO>> list(
+            @PageableDefault(size = 10, sort = "deadline", direction = Sort.Direction.ASC) Pageable pageable
+    ) {
+        log.info("GET /applications endpoint called");
+        log.info("Pageable: {}", pageable);
+
+        try {
+            User user = getCurrentUser();
+            log.info("Current user: {} (ID: {})", user.getEmail(), user.getId());
+
+            Page<ApplicationDTO> applications = applicationService.getUserApplications(
+                    user.getId(),
+                    pageable);
+
+            log.info("Applications retrieved: {} items on page {}", applications.getNumberOfElements(), applications.getNumber());
+            return ResponseEntity.ok(applications);
+        } catch (Exception e) {
+            log.error("Error in GET /applications", e);
+            throw e;
+        }
     }
 
     @GetMapping("/{id}")
@@ -91,9 +112,18 @@ public class ApplicationController {
     }
 
     @GetMapping("/status/{status}")
-    public ResponseEntity<List<ApplicationDTO>> getByStatus(@PathVariable String status) {
+    public ResponseEntity<Page<ApplicationDTO>> getByStatus(
+            @PathVariable String status,
+            @PageableDefault(size = 10, sort = "deadline", direction = Sort.Direction.ASC) Pageable pageable
+    ) {
+
         User user = getCurrentUser();
-        List<ApplicationDTO> applications = applicationService.getUserApplicationsByStatus(user.getId(), status);
+
+        Page<ApplicationDTO> applications = applicationService.getUserApplicationsByStatus(
+                user.getId(),
+                status,
+                pageable);
+
         return ResponseEntity.ok(applications);
     }
 }
