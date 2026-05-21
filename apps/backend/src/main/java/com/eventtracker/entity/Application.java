@@ -60,17 +60,10 @@ public class Application {
     private LocalDateTime updatedAt;
 
     public enum EventType {
-        hackathon,
-        workshop,
-        conference,
-        other
+        Hackathon, Workshop, Conference, Internship, Other
     }
 
     public enum ApplicationStatus {
-        interested,
-        applied,
-        under_review,
-        accepted,
-        rejected
+        Interested, Applied, UnderReview, Accepted, Rejected
     }
 }

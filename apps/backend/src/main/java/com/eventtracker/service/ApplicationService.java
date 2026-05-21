@@ -52,7 +52,7 @@ public class ApplicationService {
 
     private Application.EventType parseEventType(String eventType) {
         if (eventType == null) {
-            return Application.EventType.OTHER;
+            return Application.EventType.Other;
         }
         String normalized = eventType.trim().replaceAll(" ", "");
         for (Application.EventType type : Application.EventType.values()) {
@@ -60,12 +60,12 @@ public class ApplicationService {
                 return type;
             }
         }
-        return Application.EventType.OTHER;
+        return Application.EventType.Other;
     }
 
     private Application.ApplicationStatus parseStatus(String status) {
         if (status == null) {
-            return Application.ApplicationStatus.INTERESTED;
+            return Application.ApplicationStatus.Interested;
         }
         String normalized = status.trim().replaceAll(" ", "");
         for (Application.ApplicationStatus appStatus : Application.ApplicationStatus.values()) {
@@ -73,7 +73,7 @@ public class ApplicationService {
                 return appStatus;
             }
         }
-        return Application.ApplicationStatus.INTERESTED;
+        return Application.ApplicationStatus.Interested;
     }
 
     private String normalizeUrl(String url) {
