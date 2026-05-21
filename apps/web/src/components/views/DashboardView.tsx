@@ -17,9 +17,11 @@ export default function DashboardView() {
   const [showAddModal, setShowAddModal] = useState(false);
   const applicationsQuery = useQuery({
     queryKey: ["applications"],
-    queryFn: applicationsApi.list,
+    queryFn: () => applicationsApi.list(0, 1000),
   });
-  const applications = applicationsQuery.data || [];
+  const applications = Array.isArray(applicationsQuery.data)
+    ? applicationsQuery.data
+    : (applicationsQuery.data?.content || []);
 
   const stats = useMemo(() => {
     const now = new Date();

@@ -33,9 +33,11 @@ export default function CalendarView() {
   
   const applicationsQuery = useQuery({
     queryKey: ["applications"],
-    queryFn: applicationsApi.list,
+    queryFn: () => applicationsApi.list(0, 1000),
   });
-  const applications = applicationsQuery.data || [];
+  const applications = Array.isArray(applicationsQuery.data)
+    ? applicationsQuery.data
+    : (applicationsQuery.data?.content || []);
 
   const events = useMemo(() => {
     return applications
