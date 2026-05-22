@@ -1,8 +1,9 @@
-name: SonarQube
+ name: SonarQube
 on:
   push:
     branches:
-      - test
+      - master,test
+
   pull_request:
     types: [opened, synchronize, reopened]
 jobs:
@@ -33,4 +34,4 @@ jobs:
       - name: Build and analyze
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn -B verify -DskipTests org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=rohithgowdak_event-tracker
+        run: mvn -f apps/backend/pom.xml -B verify -DskipTests org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=rohithgowdak_event-tracker
