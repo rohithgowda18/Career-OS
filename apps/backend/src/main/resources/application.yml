@@ -30,7 +30,6 @@ spring:
           starttls:
             enable: true
 
-
   security:
     oauth2:
       client:
@@ -63,14 +62,24 @@ app:
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
 
+logging:
+  level:
+    com.eventtracker.security: DEBUG
+    com.eventtracker.controller: DEBUG
+    com.eventtracker.service: DEBUG
+    root: INFO
+
 management:
+  health:
+    mail:
+      enabled: false
   endpoints:
     web:
       exposure:
         include: "*"
 
   server:
-    port: 8081
+    port: 8080
 
   endpoint:
     health:

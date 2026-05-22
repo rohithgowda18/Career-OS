@@ -1,9 +1,7 @@
 package com.eventtracker.repository;
 
 import com.eventtracker.entity.Application;
-
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
+import com.eventtracker.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -12,14 +10,21 @@ import java.util.Optional;
 
 @Repository
 public interface ApplicationRepository extends JpaRepository<Application, Long> {
-        Page<Application> findByUserIdOrderByDeadlineAsc(Long userId, Pageable pageable);
+    List<Application> findByUserIdOrderByDeadlineAsc(Long userId);
+    
+    List<Application> findByUserId(Long userId);
+    
+    List<Application> findByUserIdAndStatusOrderByDeadlineAsc(Long userId, Application.ApplicationStatus status);
+    
+    Optional<Application> findByIdAndUserId(Long id, Long userId);
+    
+    boolean existsByIdAndUserId(Long id, Long userId);
+    
+    long countByUserId(Long userId);
+    
+    long countByUserIdAndStatus(Long userId, Application.ApplicationStatus status);
+    
+    List<Application> findByUserIdAndEventTypeOrderByDeadlineAsc(Long userId, Application.EventType eventType);
 
-        Page<Application> findByUserIdAndStatusOrderByDeadlineAsc(Long userId, Application.ApplicationStatus status,
-                        Pageable pageable);
-
-        List<Application> findByUserId(Long userId);
-
-        Optional<Application> findByIdAndUserId(Long id, Long userId);
-
-        Optional<Application> findByUserIdAndUrl(Long userId, String url);
+    Optional<Application> findByUserIdAndUrl(Long userId, String url);
 }

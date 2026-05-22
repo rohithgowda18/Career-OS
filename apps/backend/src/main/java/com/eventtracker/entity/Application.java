@@ -18,7 +18,6 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Application {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -60,7 +59,7 @@ public class Application {
     private LocalDateTime updatedAt;
 
     public enum EventType {
-        Hackathon, Workshop, Conference, Internship, Other
+        Hackathon, Workshop, Conference, Other
     }
 
     public enum ApplicationStatus {
