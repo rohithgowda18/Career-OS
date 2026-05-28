@@ -7,6 +7,7 @@ import com.eventtracker.service.ApplicationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -33,10 +34,9 @@ public class ApplicationController {
     }
 
     @GetMapping
-    public ResponseEntity<List<ApplicationDTO>> list() {
+    public ResponseEntity<?> list(Pageable pageable) {
         User user = getCurrentUser();
-        List<ApplicationDTO> applications = applicationService.getUserApplications(user.getId());
-        return ResponseEntity.ok(applications);
+        return ResponseEntity.ok(applicationService.getUserApplications(user.getId(), pageable));
     }
 
     @GetMapping("/{id}")

@@ -37,7 +37,7 @@ export default function Home() {
 
   const tabs = [
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { id: "kanban", label: "Pipeline", icon: Trello },
+    { id: "kanban", label: "Applications", icon: Trello },
     { id: "calendar", label: "Schedule", icon: Calendar },
     { id: "analytics", label: "Insights", icon: BarChart3 },
     { id: "profile", label: "Settings", icon: UserCircle },

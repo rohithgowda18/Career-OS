@@ -23,11 +23,17 @@ public class UserProfile {
     private Long id;
 
     @JsonIgnore
-    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @OneToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "user_id", nullable = false, unique = true)
     @ToString.Exclude
     @EqualsAndHashCode.Exclude
     private User user;
+
+    @Transient
+    @com.fasterxml.jackson.annotation.JsonProperty("email")
+    public String getEmail() {
+        return user != null ? user.getEmail() : null;
+    }
 
     private String college;
 
