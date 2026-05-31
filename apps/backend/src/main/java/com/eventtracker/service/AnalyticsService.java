@@ -5,6 +5,8 @@ import com.eventtracker.repository.ApplicationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -64,5 +66,53 @@ public class AnalyticsService {
         summary.put("rejected", rejected);
         summary.put("overallAcceptanceRate", Math.round(acceptanceRate));
         return summary;
+    }
+
+    public Map<String, Object> getDashboardData(Long userId) {
+        List<Application> allApps = applicationRepository.findByUserId(userId);
+        long total = allApps.size();
+
+        // Status distribution across ALL applications
+        Map<String, Long> statusDistribution = allApps.stream()
+                .collect(Collectors.groupingBy(
+                        a -> a.getStatus().name(),
+                        Collectors.counting()
+                ));
+
+        // Upcoming deadlines within 7 days (sorted by deadline ascending)
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime sevenDaysFromNow = now.plusDays(7);
+        List<Application> upcomingDeadlines = allApps.stream()
+                .filter(app -> app.getDeadline() != null)
+                .filter(app -> {
+                    LocalDateTime deadline = app.getDeadline();
+                    return deadline.isAfter(now) && deadline.isBefore(sevenDaysFromNow);
+                })
+                .sorted((a, b) -> a.getDeadline().compareTo(b.getDeadline()))
+                .limit(5)
+                .collect(Collectors.toList());
+
+        long upcomingDeadlinesCount = allApps.stream()
+                .filter(app -> app.getDeadline() != null)
+                .filter(app -> {
+                    LocalDateTime deadline = app.getDeadline();
+                    return deadline.isAfter(now) && deadline.isBefore(sevenDaysFromNow);
+                })
+                .count();
+
+        // Recent activity (5 most recently created)
+        List<Application> recentActivity = allApps.stream()
+                .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
+                .limit(5)
+                .collect(Collectors.toList());
+
+        // Build response
+        Map<String, Object> dashboard = new HashMap<>();
+        dashboard.put("totalApplications", total);
+        dashboard.put("upcomingDeadlines", upcomingDeadlinesCount);
+        dashboard.put("statusDistribution", statusDistribution);
+        dashboard.put("immediateDeadlines", upcomingDeadlines);
+        dashboard.put("recentActivity", recentActivity);
+        return dashboard;
     }
 }

@@ -46,10 +46,15 @@ interface CalendarEvent {
 export default function CalendarView() {
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [isListView, setIsListView] = useState(false);
+  const [page, setPage] = useState(0);
 
+  // TODO: Implement backend endpoint: GET /applications/calendar?startDate=X&endDate=Y
+  // For now, use paginated query with reasonable page size for calendar display
+  // Calendar view paginate through applications as needed
   const applicationsQuery = useQuery({
-    queryKey: ["applications"],
-    queryFn: applicationsApi.list,
+    queryKey: ["applications", { page, size: 100, sort: "deadline,asc" }],
+    queryFn: () =>
+      applicationsApi.list({ page, size: 100, sort: "deadline,asc" }),
   });
   const applicationsData = applicationsQuery.data || { content: [] };
   const applications = applicationsData.content || [];

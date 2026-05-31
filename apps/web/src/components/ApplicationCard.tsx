@@ -1,5 +1,11 @@
 import { Application } from "@/types/types";
-import { MoreVertical, ExternalLink, Trash2, Edit2, Calendar } from "lucide-react";
+import {
+  MoreVertical,
+  ExternalLink,
+  Trash2,
+  Edit2,
+  Calendar,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -60,8 +66,12 @@ export default function ApplicationCard({ application }: ApplicationCardProps) {
     updateMutation.mutate({ ...application, status: newStatus as any });
   };
 
-  const deadlineDate = application.deadline ? new Date(application.deadline) : null;
-  const isUrgent = deadlineDate && (deadlineDate.getTime() - Date.now()) < 3 * 24 * 60 * 60 * 1000;
+  const deadlineDate = application.deadline
+    ? new Date(application.deadline)
+    : null;
+  const isUrgent =
+    deadlineDate &&
+    deadlineDate.getTime() - Date.now() < 3 * 24 * 60 * 60 * 1000;
 
   return (
     <>
@@ -76,9 +86,9 @@ export default function ApplicationCard({ application }: ApplicationCardProps) {
                 {application.eventType}
               </span>
               {application.url && (
-                <a 
-                  href={application.url} 
-                  target="_blank" 
+                <a
+                  href={application.url}
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="text-text-muted hover:text-accent transition-colors"
                 >
@@ -87,18 +97,31 @@ export default function ApplicationCard({ application }: ApplicationCardProps) {
               )}
             </div>
           </div>
-          
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg hover:bg-bg-card opacity-0 group-hover:opacity-100 transition-opacity">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 rounded-lg hover:bg-bg-card opacity-0 group-hover:opacity-100 transition-opacity"
+              >
                 <MoreVertical className="w-4 h-4 text-text-muted" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="bg-bg-card border-border text-text-main shadow-2xl">
-              <DropdownMenuItem onClick={() => setShowEditModal(true)} className="hover:bg-bg-elevated cursor-pointer font-bold text-xs">
+            <DropdownMenuContent
+              align="end"
+              className="bg-bg-card border-border text-text-main shadow-2xl"
+            >
+              <DropdownMenuItem
+                onClick={() => setShowEditModal(true)}
+                className="hover:bg-bg-elevated cursor-pointer font-bold text-xs"
+              >
                 <Edit2 className="w-3.5 h-3.5 mr-2" /> Modify Entry
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => deleteMutation.mutate(application.id)} className="text-danger hover:bg-danger/10 cursor-pointer font-bold text-xs">
+              <DropdownMenuItem
+                onClick={() => deleteMutation.mutate(application.id)}
+                className="text-danger hover:bg-danger/10 cursor-pointer font-bold text-xs"
+              >
                 <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete Item
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -106,14 +129,23 @@ export default function ApplicationCard({ application }: ApplicationCardProps) {
         </div>
 
         {deadlineDate && (
-          <div className={cn(
-            "flex items-center gap-2 mb-4 px-3 py-1.5 rounded-lg border w-fit transition-all duration-300",
-            isUrgent ? "bg-danger/10 border-danger/20 text-danger animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.2)]" : "bg-bg-card border-border text-text-muted group-hover:border-primary/20"
-          )}>
-            <Calendar className="w-3 h-3" />
-            <span className="text-[10px] font-black uppercase tracking-widest">
-              {format(deadlineDate, "MMM d, yyyy")}
-            </span>
+          <div
+            className={cn(
+              "flex items-center gap-2 mb-4 px-3 py-2 rounded-lg border text-xs font-black uppercase tracking-wider transition-all duration-300",
+              isUrgent
+                ? "bg-danger/10 border-danger/20 text-danger animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.2)]"
+                : "bg-blue-500/10 border-blue-500/20 text-blue-600 dark:text-blue-400"
+            )}
+          >
+            <Calendar className="w-3.5 h-3.5 flex-shrink-0" />
+            <span>{format(deadlineDate, "MMM d, yyyy")}</span>
+          </div>
+        )}
+
+        {!deadlineDate && (
+          <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-lg border bg-bg-card border-border/30 text-text-muted text-xs font-bold uppercase tracking-wider">
+            <Calendar className="w-3.5 h-3.5 flex-shrink-0 opacity-50" />
+            <span className="opacity-60">No deadline set</span>
           </div>
         )}
 
@@ -134,7 +166,11 @@ export default function ApplicationCard({ application }: ApplicationCardProps) {
             </SelectTrigger>
             <SelectContent className="bg-bg-card border-border text-text-main">
               {STATUSES.map(s => (
-                <SelectItem key={s} value={s} className="text-xs hover:bg-bg-elevated cursor-pointer font-bold">
+                <SelectItem
+                  key={s}
+                  value={s}
+                  className="text-xs hover:bg-bg-elevated cursor-pointer font-bold"
+                >
                   {s === "UnderReview" ? "In Review" : s}
                 </SelectItem>
               ))}

@@ -24,30 +24,29 @@ const STATUSES = [
 
 export default function KanbanView() {
   const [showAddModal, setShowAddModal] = useState(false);
-  const [page, setPage] = useState(0);
   const PAGE_SIZE = 6;
+  const [page, setPage] = useState(0);
 
+  // Backend pagination with sorting: sort by deadline ascending (earliest/most urgent first)
   const applicationsQuery = useQuery({
-    queryKey: ["applications"],
-    queryFn: applicationsApi.list,
+    queryKey: ["applications", { page, size: PAGE_SIZE, sort: "deadline,asc" }],
+    queryFn: () =>
+      applicationsApi.list({ page, size: PAGE_SIZE, sort: "deadline,asc" }),
   });
 
-  const applicationsData = applicationsQuery.data || { content: [] };
+  const applicationsData = applicationsQuery.data || {
+    content: [],
+    totalElements: 0,
+    totalPages: 0,
+    currentPage: 0,
+    size: PAGE_SIZE,
+  };
+
+  // Data is already sorted by backend - no need for frontend sorting
   const applications = applicationsData.content || [];
 
-  const sortedApplications = useMemo(() => {
-    return [...applications].sort(
-      (a: any, b: any) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
-  }, [applications]);
-
-  const paginatedApplications = useMemo(() => {
-    return sortedApplications.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
-  }, [sortedApplications, page]);
-
-  const totalElements = sortedApplications.length;
-  const totalPages = Math.ceil(totalElements / PAGE_SIZE);
+  const totalElements = applicationsData.totalElements;
+  const totalPages = applicationsData.totalPages;
 
   const getPageNumbers = () => {
     const pages: (number | string)[] = [];
@@ -114,7 +113,7 @@ export default function KanbanView() {
         </Button>
       </div>
 
-      {sortedApplications.length === 0 ? (
+      {totalElements === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 text-center border-2 border-dashed border-border/40 rounded-3xl bg-bg-elevated/5 group">
           <div className="w-16 h-16 rounded-[1.5rem] bg-bg-elevated border border-border flex items-center justify-center mb-6 transition-all group-hover:border-primary/30 group-hover:scale-110">
             <Rocket className="w-8 h-8 text-text-muted/20" />
@@ -129,7 +128,7 @@ export default function KanbanView() {
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            {paginatedApplications.map((app: any) => (
+            {applications.map((app: any) => (
               <ApplicationCard key={app.id} application={app} />
             ))}
           </div>

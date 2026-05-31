@@ -10,61 +10,58 @@ import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import AddApplicationModal from "@/components/AddApplicationModal";
 import { useQuery } from "@tanstack/react-query";
-import { applicationsApi } from "@/lib/api/applicationsApi";
+import { analyticsApi } from "@/lib/api/analyticsApi";
 import { cn } from "@/lib/utils";
 
 export default function DashboardView() {
   const [showAddModal, setShowAddModal] = useState(false);
-  const applicationsQuery = useQuery({
-    queryKey: ["applications"],
-    queryFn: applicationsApi.list,
+
+  // Single backend query for all dashboard data
+  // Backend returns:
+  // - totalApplications (total count across ALL applications)
+  // - upcomingDeadlines (count within 7 days)
+  // - statusDistribution (status counts across ALL applications)
+  // - immediateDeadlines (up to 5 items within 7 days, sorted by deadline asc)
+  // - recentActivity (up to 5 items, sorted by createdAt desc)
+  const dashboardQuery = useQuery({
+    queryKey: ["analytics", "dashboard"],
+    queryFn: () => analyticsApi.dashboard(),
   });
-  const applicationsData = applicationsQuery.data || {
-    content: [],
-    totalElements: 0,
+
+  const dashboardData = dashboardQuery.data || {
+    totalApplications: 0,
+    upcomingDeadlines: 0,
+    statusDistribution: {
+      Interested: 0,
+      Applied: 0,
+      UnderReview: 0,
+      Accepted: 0,
+      Rejected: 0,
+    },
+    immediateDeadlines: [],
+    recentActivity: [],
   };
-  const applications = applicationsData.content || [];
 
   const stats = useMemo(() => {
-    const now = new Date();
-    const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-
-    const upcomingDeadlines = applications.filter((app: any) => {
-      if (!app.deadline) return false;
-      const deadline = new Date(app.deadline);
-      return deadline >= now && deadline <= sevenDaysFromNow;
-    });
-
+    // All data comes from backend - no frontend calculations needed
     const statusCounts = {
-      Interested: applications.filter((a: any) => a.status === "Interested")
-        .length,
-      Applied: applications.filter((a: any) => a.status === "Applied").length,
-      UnderReview: applications.filter((a: any) => a.status === "UnderReview")
-        .length,
-      Accepted: applications.filter((a: any) => a.status === "Accepted").length,
-      Rejected: applications.filter((a: any) => a.status === "Rejected").length,
+      Interested: dashboardData.statusDistribution?.Interested || 0,
+      Applied: dashboardData.statusDistribution?.Applied || 0,
+      UnderReview: dashboardData.statusDistribution?.UnderReview || 0,
+      Accepted: dashboardData.statusDistribution?.Accepted || 0,
+      Rejected: dashboardData.statusDistribution?.Rejected || 0,
     };
-
-    const recentActivity = [...applications]
-      .sort(
-        (a: any, b: any) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      )
-      .slice(0, 5);
 
     return {
-      totalApplications: applicationsData.totalElements || applications.length,
-      upcomingDeadlines: upcomingDeadlines.length,
+      totalApplications: dashboardData.totalApplications || 0,
+      upcomingDeadlines: dashboardData.upcomingDeadlines || 0,
       statusCounts,
-      recentActivity,
-      allUpcomingDeadlines: upcomingDeadlines.sort(
-        (a: any, b: any) =>
-          new Date(a.deadline!).getTime() - new Date(b.deadline!).getTime()
-      ),
+      recentActivity: dashboardData.recentActivity || [],
+      allUpcomingDeadlines: dashboardData.immediateDeadlines || [],
     };
-  }, [applications, applicationsData.totalElements]);
+  }, [dashboardData]);
 
-  if (applicationsQuery.isLoading) {
+  if (dashboardQuery.isLoading) {
     return (
       <div className="flex items-center justify-center py-24">
         <Loader2 className="w-10 h-10 animate-spin text-primary" />

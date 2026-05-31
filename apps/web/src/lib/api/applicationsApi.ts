@@ -1,19 +1,28 @@
 import restClient from '../restClient';
 
+export interface ApplicationListParams {
+  page?: number;
+  size?: number;
+  sort?: string; // e.g., "deadline,asc" or "createdAt,desc"
+}
+
 export const applicationsApi = {
-  list: async (params?: { page?: number; size?: number }) => {
-    // Use size=100 by default to fetch more items for pagination
-    const queryParams = (params && 'queryKey' in params) 
-      ? { page: 0, size: 100 } 
-      : (params || { page: 0, size: 100 });
+  list: async (params?: ApplicationListParams) => {
+    // Use Spring Boot Pageable defaults: page=0, size=20, sort=deadline,asc
+    const queryParams = {
+      page: params?.page ?? 0,
+      size: params?.size ?? 20,
+      sort: params?.sort ?? 'deadline,asc', // Default sort by deadline ascending
+    };
     const response = (await restClient.get('/applications', { params: queryParams })).data;
-    // Return full page object with content and totalElements
+    
+    // Return Spring Page response structure
     return {
-      content: Array.isArray(response) ? response : (response?.content || []),
+      content: response?.content || [],
       totalElements: response?.totalElements || 0,
       totalPages: response?.totalPages || 0,
       currentPage: response?.number || 0,
-      size: response?.size || 100,
+      size: response?.size || 20,
     };
   },
   create: async (data: any) => (await restClient.post('/applications', data)).data,
