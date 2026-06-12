@@ -44,6 +44,12 @@ public class AnalyticsController {
         return ResponseEntity.ok(analyticsService.getDashboardData(userId));
     }
 
+    @GetMapping("/placements")
+    public ResponseEntity<Map<String, Object>> getPlacements() {
+        Long userId = getCurrentUserId();
+        return ResponseEntity.ok(analyticsService.getPlacementAnalytics(userId));
+    }
+
     private Long getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User user = (User) authentication.getPrincipal();

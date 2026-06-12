@@ -1,0 +1,31 @@
+import restClient from '../restClient';
+
+export interface PlacementListParams {
+  page?: number;
+  size?: number;
+  sort?: string;
+}
+
+export const placementsApi = {
+  list: async (params?: PlacementListParams) => {
+    const queryParams = {
+      page: params?.page ?? 0,
+      size: params?.size ?? 20,
+      sort: params?.sort ?? 'registrationDeadline,asc',
+    };
+    const response = (await restClient.get('/api/placements', { params: queryParams })).data;
+    
+    return {
+      content: response?.content || [],
+      totalElements: response?.totalElements || 0,
+      totalPages: response?.totalPages || 0,
+      currentPage: response?.number || 0,
+      size: response?.size || 20,
+    };
+  },
+  create: async (data: any) => (await restClient.post('/api/placements', data)).data,
+  update: async ({ id, ...data }: { id: string | number; [key: string]: any }) => (await restClient.put(`/api/placements/${id}`, data)).data,
+  delete: async (id: string | number) => (await restClient.delete(`/api/placements/${id}`)).data,
+  getByStatus: async (status: string) => (await restClient.get(`/api/placements/status/${status}`)).data,
+  getAnalytics: async () => (await restClient.get('/analytics/placements')).data,
+};

@@ -1,7 +1,10 @@
 package com.eventtracker.service;
 
 import com.eventtracker.entity.Application;
+import com.eventtracker.entity.Placement;
+import com.eventtracker.entity.PlacementStatus;
 import com.eventtracker.repository.ApplicationRepository;
+import com.eventtracker.repository.PlacementRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -17,6 +20,8 @@ import java.util.stream.Collectors;
 public class AnalyticsService {
 
     private final ApplicationRepository applicationRepository;
+    private final PlacementRepository placementRepository;
+
 
     public Map<String, Object> getStatusDistribution(Long userId) {
         List<Application> apps = applicationRepository.findByUserId(userId);
@@ -115,4 +120,54 @@ public class AnalyticsService {
         dashboard.put("recentActivity", recentActivity);
         return dashboard;
     }
+
+    public Map<String, Object> getPlacementAnalytics(Long userId) {
+        List<Placement> placements = placementRepository.findByUserId(userId);
+        long total = placements.size();
+
+        long saved = placements.stream().filter(p -> p.getStatus() == PlacementStatus.SAVED).count();
+        long applied = placements.stream().filter(p -> p.getStatus() == PlacementStatus.APPLIED).count();
+        long assessmentScheduled = placements.stream().filter(p -> p.getStatus() == PlacementStatus.ASSESSMENT_SCHEDULED).count();
+        long assessmentCompleted = placements.stream().filter(p -> p.getStatus() == PlacementStatus.ASSESSMENT_COMPLETED).count();
+        long interviewScheduled = placements.stream().filter(p -> p.getStatus() == PlacementStatus.INTERVIEW_SCHEDULED).count();
+        long interviewCompleted = placements.stream().filter(p -> p.getStatus() == PlacementStatus.INTERVIEW_COMPLETED).count();
+        long offerReceived = placements.stream().filter(p -> p.getStatus() == PlacementStatus.OFFER_RECEIVED).count();
+        long rejected = placements.stream().filter(p -> p.getStatus() == PlacementStatus.REJECTED).count();
+
+        // Applications Submitted = total - saved
+        long submitted = total - saved;
+
+        // Assessments reached/scheduled = assessmentScheduled + assessmentCompleted + interviewScheduled + interviewCompleted + offerReceived
+        long assessments = assessmentScheduled + assessmentCompleted + interviewScheduled + interviewCompleted + offerReceived;
+
+        // Interviews reached/scheduled = interviewScheduled + interviewCompleted + offerReceived
+        long interviews = interviewScheduled + interviewCompleted + offerReceived;
+
+        double assessmentConversion = submitted > 0 ? (double) assessments / submitted * 100 : 0;
+        double interviewConversion = assessments > 0 ? (double) interviews / assessments * 100 : 0;
+        double offerConversion = submitted > 0 ? (double) offerReceived / submitted * 100 : 0;
+
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("totalPlacements", total);
+        stats.put("saved", saved);
+        stats.put("applied", applied);
+        stats.put("assessmentScheduled", assessmentScheduled);
+        stats.put("assessmentCompleted", assessmentCompleted);
+        stats.put("interviewScheduled", interviewScheduled);
+        stats.put("interviewCompleted", interviewCompleted);
+        stats.put("offerReceived", offerReceived);
+        stats.put("rejected", rejected);
+        stats.put("submitted", submitted);
+        stats.put("assessmentConversion", Math.round(assessmentConversion));
+        stats.put("interviewConversion", Math.round(interviewConversion));
+        stats.put("offerConversion", Math.round(offerConversion));
+
+        // Status distribution map
+        Map<String, Long> statusDistribution = placements.stream()
+                .collect(Collectors.groupingBy(p -> p.getStatus().name(), Collectors.counting()));
+        stats.put("statusDistribution", statusDistribution);
+
+        return stats;
+    }
 }
+

@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { applicationsApi } from "@/lib/api/applicationsApi";
+import { placementsApi } from "@/lib/api/placementsApi";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -34,10 +35,13 @@ const STATUS_COLORS: Record<string, string> = {
   UnderReview: "bg-amber-500/10 text-amber-500 border-amber-500/20",
   Accepted: "bg-success/10 text-success border-success/20",
   Rejected: "bg-danger/10 text-danger border-danger/20",
+  PlacementDeadline: "bg-purple-500/10 text-purple-400 border-purple-500/20",
+  PlacementAssessment: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+  PlacementInterview: "bg-cyan-500/10 text-cyan-400 border-cyan-500/20",
 };
 
 interface CalendarEvent {
-  id: number;
+  id: string | number;
   eventName: string;
   status: string;
   deadline: Date;
@@ -48,9 +52,6 @@ export default function CalendarView() {
   const [isListView, setIsListView] = useState(false);
   const [page, setPage] = useState(0);
 
-  // TODO: Implement backend endpoint: GET /applications/calendar?startDate=X&endDate=Y
-  // For now, use paginated query with reasonable page size for calendar display
-  // Calendar view paginate through applications as needed
   const applicationsQuery = useQuery({
     queryKey: ["applications", { page, size: 100, sort: "deadline,asc" }],
     queryFn: () =>
@@ -59,16 +60,55 @@ export default function CalendarView() {
   const applicationsData = applicationsQuery.data || { content: [] };
   const applications = applicationsData.content || [];
 
+  const placementsQuery = useQuery({
+    queryKey: ["placements", { page: 0, size: 100, sort: "registrationDeadline,asc" }],
+    queryFn: () =>
+      placementsApi.list({ page: 0, size: 100, sort: "registrationDeadline,asc" }),
+  });
+  const placementsData = placementsQuery.data || { content: [] };
+  const placements = placementsData.content || [];
+
   const events = useMemo(() => {
-    return applications
+    const appEvents = applications
       .filter((app: any) => app.deadline)
       .map((app: any) => ({
-        id: app.id,
+        id: `app-${app.id}`,
         eventName: app.eventName,
         status: app.status,
         deadline: new Date(app.deadline!),
       }));
-  }, [applications]);
+
+    const placementEvents = placements.flatMap((p: any) => {
+      const items: any[] = [];
+      if (p.registrationDeadline) {
+        items.push({
+          id: `place-dl-${p.id}`,
+          eventName: `📅 ${p.companyName} - Deadline`,
+          status: "PlacementDeadline",
+          deadline: new Date(p.registrationDeadline),
+        });
+      }
+      if (p.assessmentDate) {
+        items.push({
+          id: `place-as-${p.id}`,
+          eventName: `📝 ${p.companyName} - Assessment`,
+          status: "PlacementAssessment",
+          deadline: new Date(p.assessmentDate),
+        });
+      }
+      if (p.interviewDate) {
+        items.push({
+          id: `place-it-${p.id}`,
+          eventName: `🎤 ${p.companyName} - Interview`,
+          status: "PlacementInterview",
+          deadline: new Date(p.interviewDate),
+        });
+      }
+      return items;
+    });
+
+    return [...appEvents, ...placementEvents];
+  }, [applications, placements]);
 
   const getDaysInMonth = (date: Date) =>
     new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
@@ -103,7 +143,7 @@ export default function CalendarView() {
           .toISOString()
           .split("T")[0]
           .replace(/-/g, "");
-        icalContent += `BEGIN:VEVENT\nUID:app-${event.id}@eventtracker\nDTSTART;VALUE=DATE:${dateStr}\nSUMMARY:${event.eventName} - ${event.status}\nEND:VEVENT\n`;
+        icalContent += `BEGIN:VEVENT\nUID:${event.id}@eventtracker\nDTSTART;VALUE=DATE:${dateStr}\nSUMMARY:${event.eventName} - ${event.status}\nEND:VEVENT\n`;
       });
       icalContent += `END:VCALENDAR`;
 
@@ -308,19 +348,27 @@ export default function CalendarView() {
       )}
 
       <div className="flex flex-wrap gap-4 md:gap-10 p-7 card-premium bg-bg-card/20 border-dashed">
-        {Object.entries(STATUS_COLORS).map(([status, colors]) => (
-          <div key={status} className="flex items-center gap-3.5 group">
-            <div
-              className={cn(
-                "w-2.5 h-2.5 rounded-full shadow-lg ring-2 ring-white/5",
-                colors.split(" ")[0].replace("/10", "")
-              )}
-            />
-            <span className="text-[9px] font-black text-text-muted uppercase tracking-[0.2em] group-hover:text-text-main transition-colors">
-              {status === "UnderReview" ? "In Review" : status}
-            </span>
-          </div>
-        ))}
+        {Object.entries(STATUS_COLORS).map(([status, colors]) => {
+          let label = status;
+          if (status === "UnderReview") label = "In Review";
+          else if (status === "PlacementDeadline") label = "Placement Deadline 📅";
+          else if (status === "PlacementAssessment") label = "Placement Assessment 📝";
+          else if (status === "PlacementInterview") label = "Placement Interview 🎤";
+
+          return (
+            <div key={status} className="flex items-center gap-3.5 group">
+              <div
+                className={cn(
+                  "w-2.5 h-2.5 rounded-full shadow-lg ring-2 ring-white/5",
+                  colors.split(" ")[0].replace("/10", "")
+                )}
+              />
+              <span className="text-[9px] font-black text-text-muted uppercase tracking-[0.2em] group-hover:text-text-main transition-colors">
+                {label}
+              </span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
