@@ -84,8 +84,14 @@ public class ApplicationService {
         return applicationRepository.findByIdAndUserId(id, userId);
     }
 
-    public Page<ApplicationDTO> getUserApplications(Long userId, Pageable pageable) {
-        return applicationRepository.findByUserId(userId, pageable)
+    public Page<ApplicationDTO> getUserApplications(Long userId, String status, String search, Pageable pageable) {
+        Application.ApplicationStatus appStatus = null;
+        if (status != null && !status.trim().isEmpty() && !status.equalsIgnoreCase("ALL")) {
+            appStatus = parseStatus(status);
+        }
+        String searchPattern = (search != null && !search.trim().isEmpty()) ? search.trim() : null;
+
+        return applicationRepository.findFiltered(userId, appStatus, searchPattern, pageable)
                 .map(this::convertToDTO);
     }
 

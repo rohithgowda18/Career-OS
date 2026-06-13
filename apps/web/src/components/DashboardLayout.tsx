@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { Loader2, LogOut, LayoutDashboard, Trello, Briefcase, Calendar, BarChart3, UserCircle } from "lucide-react";
+import { Loader2, LogOut, LayoutDashboard, Trello, Briefcase, Calendar, BarChart3, UserCircle, Smartphone } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -10,6 +11,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { useLocation } from "wouter";
+import { usePWAInstall } from "@/hooks/usePWAInstall";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 interface DashboardLayoutProps {
   activeTab: "dashboard" | "kanban" | "placements" | "calendar" | "analytics" | "profile";
@@ -19,6 +25,22 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({ activeTab, children }: DashboardLayoutProps) {
   const { user, loading, logout } = useAuth();
   const [, setLocation] = useLocation();
+  const [showInstallDialog, setShowInstallDialog] = useState(false);
+  const { isInstallable, triggerInstall } = usePWAInstall();
+
+  const handleConfirmInstall = async () => {
+    setShowInstallDialog(false);
+    try {
+      const outcome = await triggerInstall();
+      if (outcome === "accepted") {
+        toast.success("App installed successfully.");
+      } else {
+        toast.info("Installation cancelled.");
+      }
+    } catch (error) {
+      toast.error("Failed to trigger installation.");
+    }
+  };
 
   if (loading) {
     return (
@@ -97,6 +119,26 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
                 </div>
               </DropdownMenuContent>
             </DropdownMenu>
+
+            {isInstallable && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setShowInstallDialog(true)}
+                      className="h-8 w-8 text-text-muted hover:text-text-main hover:bg-bg-elevated/40 rounded-xl border border-border/60 transition-colors"
+                    >
+                      <Smartphone className="w-4.5 h-4.5 text-primary" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-bg-card border-border text-text-main font-bold text-xs">
+                    Install App
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
           </div>
         </div>
       </header>
@@ -158,6 +200,35 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
           })}
         </div>
       </nav>
+      <Dialog open={showInstallDialog} onOpenChange={setShowInstallDialog}>
+        <DialogContent className="max-w-md bg-bg-card border-border text-text-main rounded-2xl shadow-2xl p-6">
+          <DialogHeader className="space-y-3">
+            <DialogTitle className="text-xl font-black">
+              Install Opportunity Management Platform?
+            </DialogTitle>
+            <DialogDescription className="text-sm text-text-muted">
+              Install this app on your device for faster access and a better experience.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex justify-end gap-3 pt-4 border-t border-border/40 mt-6">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setShowInstallDialog(false)}
+              className="text-text-muted hover:text-text-main hover:bg-bg-hover font-bold"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleConfirmInstall}
+              className="bg-primary hover:bg-primary-hover text-white font-black px-6 h-10 shadow-lg shadow-primary/20"
+            >
+              Install
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

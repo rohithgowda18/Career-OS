@@ -13,6 +13,14 @@ import java.util.Optional;
 @Repository
 public interface ApplicationRepository extends JpaRepository<Application, Long> {
     Page<Application> findByUserId(Long userId, Pageable pageable);
+
+    @org.springframework.data.jpa.repository.Query("SELECT a FROM Application a WHERE a.user.id = :userId " +
+           "AND (:status IS NULL OR a.status = :status) " +
+           "AND (:search IS NULL OR LOWER(a.eventName) LIKE LOWER(CONCAT('%', :search, '%')) OR LOWER(a.location) LIKE LOWER(CONCAT('%', :search, '%')) OR LOWER(a.notes) LIKE LOWER(CONCAT('%', :search, '%')))")
+    Page<Application> findFiltered(@org.springframework.data.repository.query.Param("userId") Long userId, 
+                                  @org.springframework.data.repository.query.Param("status") Application.ApplicationStatus status, 
+                                  @org.springframework.data.repository.query.Param("search") String search, 
+                                  Pageable pageable);
     
     List<Application> findByUserIdOrderByDeadlineAsc(Long userId);
     

@@ -1,7 +1,5 @@
 package com.eventtracker.service;
 
-import com.eventtracker.dto.CreatePlacementRequest;
-import com.eventtracker.dto.UpdatePlacementRequest;
 import com.eventtracker.dto.PlacementDTO;
 import com.eventtracker.entity.Placement;
 import com.eventtracker.entity.PlacementStatus;
@@ -25,10 +23,11 @@ import java.util.stream.Collectors;
 public class PlacementService {
     private final PlacementRepository placementRepository;
 
-    public Placement createPlacement(User user, CreatePlacementRequest request) {
-        placementRepository.findByUserIdAndCompanyNameAndRole(user.getId(), request.getCompanyName(), request.getRole())
+    public Placement createPlacement(User user, PlacementDTO request) {
+        String normLink = normalizeUrl(request.getApplicationLink());
+        placementRepository.findDuplicate(user.getId(), request.getCompanyName(), request.getRole(), normLink)
             .ifPresent(p -> {
-                throw new DuplicatePlacementException("Placement for this company and role is already saved in your tracker");
+                throw new DuplicatePlacementException("Placement for this company and role with this link is already saved in your tracker");
             });
 
         Placement placement = new Placement();
@@ -38,8 +37,7 @@ public class PlacementService {
         placement.setLocation(request.getLocation());
         placement.setStipend(request.getStipend());
         placement.setCtc(request.getCtc());
-        placement.setApplicationLink(normalizeUrl(request.getApplicationLink()));
-        placement.setRegistrationDeadline(request.getRegistrationDeadline());
+        placement.setApplicationLink(normLink);
         placement.setAssessmentDate(request.getAssessmentDate());
         placement.setInterviewDate(request.getInterviewDate());
         placement.setStatus(parseStatus(request.getStatus()));
@@ -51,28 +49,35 @@ public class PlacementService {
         return placementRepository.findByIdAndUserId(id, userId);
     }
 
-    public Page<PlacementDTO> getUserPlacements(Long userId, Pageable pageable) {
-        return placementRepository.findByUserId(userId, pageable)
+    public Page<PlacementDTO> getUserPlacements(Long userId, String status, String search, Pageable pageable) {
+        PlacementStatus placementStatus = null;
+        if (status != null && !status.trim().isEmpty() && !status.equalsIgnoreCase("ALL")) {
+            placementStatus = parseStatus(status);
+        }
+        String searchPattern = (search != null && !search.trim().isEmpty()) ? search.trim() : null;
+
+        return placementRepository.findFiltered(userId, placementStatus, searchPattern, pageable)
                 .map(this::convertToDTO);
     }
 
     public List<PlacementDTO> getUserPlacementsByStatus(Long userId, String status) {
         PlacementStatus placementStatus = parseStatus(status);
-        return placementRepository.findByUserIdAndStatusOrderByRegistrationDeadlineAsc(userId, placementStatus)
+        return placementRepository.findByUserIdAndStatusOrderByIdDesc(userId, placementStatus)
                 .stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
 
-    public Placement updatePlacement(Long id, Long userId, UpdatePlacementRequest request) {
+    public Placement updatePlacement(Long id, Long userId, PlacementDTO request) {
         Placement placement = placementRepository.findByIdAndUserId(id, userId)
                 .orElseThrow(() -> new IllegalArgumentException("Placement not found"));
 
-        // Check if there is another entry with the same company & role
-        placementRepository.findByUserIdAndCompanyNameAndRole(userId, request.getCompanyName(), request.getRole())
+        // Check if there is another entry with the same company, role & link
+        String normLink = normalizeUrl(request.getApplicationLink());
+        placementRepository.findDuplicate(userId, request.getCompanyName(), request.getRole(), normLink)
             .ifPresent(p -> {
                 if (!p.getId().equals(id)) {
-                    throw new DuplicatePlacementException("Placement for this company and role is already saved in your tracker");
+                    throw new DuplicatePlacementException("Placement for this company and role with this link is already saved in your tracker");
                 }
             });
 
@@ -81,8 +86,7 @@ public class PlacementService {
         placement.setLocation(request.getLocation());
         placement.setStipend(request.getStipend());
         placement.setCtc(request.getCtc());
-        placement.setApplicationLink(normalizeUrl(request.getApplicationLink()));
-        placement.setRegistrationDeadline(request.getRegistrationDeadline());
+        placement.setApplicationLink(normLink);
         placement.setAssessmentDate(request.getAssessmentDate());
         placement.setInterviewDate(request.getInterviewDate());
         placement.setStatus(parseStatus(request.getStatus()));
@@ -97,12 +101,12 @@ public class PlacementService {
     }
 
     private PlacementStatus parseStatus(String status) {
-        if (status == null) return PlacementStatus.SAVED;
+        if (status == null) return PlacementStatus.APPLIED;
         String normalized = status.trim().replaceAll(" ", "").replaceAll("_", "");
         for (PlacementStatus s : PlacementStatus.values()) {
             if (s.name().replaceAll("_", "").equalsIgnoreCase(normalized)) return s;
         }
-        return PlacementStatus.SAVED;
+        return PlacementStatus.APPLIED;
     }
 
     private String normalizeUrl(String url) {
@@ -128,7 +132,6 @@ public class PlacementService {
         dto.setStipend(p.getStipend());
         dto.setCtc(p.getCtc());
         dto.setApplicationLink(p.getApplicationLink());
-        dto.setRegistrationDeadline(p.getRegistrationDeadline());
         dto.setAssessmentDate(p.getAssessmentDate());
         dto.setInterviewDate(p.getInterviewDate());
         dto.setStatus(p.getStatus().toString());

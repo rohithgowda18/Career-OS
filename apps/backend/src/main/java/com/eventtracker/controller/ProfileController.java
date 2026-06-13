@@ -1,8 +1,9 @@
 package com.eventtracker.controller;
 
+import com.eventtracker.dto.UserProfileDTO;
 import com.eventtracker.entity.User;
-import com.eventtracker.entity.UserProfile;
 import com.eventtracker.service.ProfileService;
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -10,19 +11,21 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/profile")
+@RequestMapping("/api/profile")
 @RequiredArgsConstructor
 public class ProfileController {
 
     private final ProfileService profileService;
 
-    @GetMapping("/me")
-    public ResponseEntity<UserProfile> getMyProfile() {
+    @GetMapping
+    @Operation(operationId = "getProfile", summary = "Get current user profile")
+    public ResponseEntity<UserProfileDTO> getMyProfile() {
         return ResponseEntity.of(profileService.getProfileByUserId(getCurrentUserId()));
     }
 
-    @PutMapping("/me")
-    public ResponseEntity<UserProfile> updateMyProfile(@RequestBody UserProfile updates) {
+    @PutMapping
+    @Operation(operationId = "updateProfile", summary = "Update current user profile")
+    public ResponseEntity<UserProfileDTO> updateMyProfile(@RequestBody UserProfileDTO updates) {
         return ResponseEntity.ok(profileService.updateProfile(getCurrentUserId(), updates));
     }
 

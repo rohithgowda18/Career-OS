@@ -13,12 +13,20 @@ import java.util.Optional;
 @Repository
 public interface PlacementRepository extends JpaRepository<Placement, Long> {
     Page<Placement> findByUserId(Long userId, Pageable pageable);
+
+    @org.springframework.data.jpa.repository.Query("SELECT p FROM Placement p WHERE p.user.id = :userId " +
+           "AND (:status IS NULL OR p.status = :status) " +
+           "AND (:search IS NULL OR LOWER(p.companyName) LIKE LOWER(CONCAT('%', :search, '%')) OR LOWER(p.role) LIKE LOWER(CONCAT('%', :search, '%')) OR LOWER(p.location) LIKE LOWER(CONCAT('%', :search, '%')))")
+    Page<Placement> findFiltered(@org.springframework.data.repository.query.Param("userId") Long userId, 
+                                @org.springframework.data.repository.query.Param("status") PlacementStatus status, 
+                                @org.springframework.data.repository.query.Param("search") String search, 
+                                Pageable pageable);
     
-    List<Placement> findByUserIdOrderByRegistrationDeadlineAsc(Long userId);
+    List<Placement> findByUserIdOrderByIdDesc(Long userId);
     
     List<Placement> findByUserId(Long userId);
     
-    List<Placement> findByUserIdAndStatusOrderByRegistrationDeadlineAsc(Long userId, PlacementStatus status);
+    List<Placement> findByUserIdAndStatusOrderByIdDesc(Long userId, PlacementStatus status);
     
     Optional<Placement> findByIdAndUserId(Long id, Long userId);
     
@@ -28,5 +36,10 @@ public interface PlacementRepository extends JpaRepository<Placement, Long> {
     
     long countByUserIdAndStatus(Long userId, PlacementStatus status);
 
-    Optional<Placement> findByUserIdAndCompanyNameAndRole(Long userId, String companyName, String role);
+    @org.springframework.data.jpa.repository.Query("SELECT p FROM Placement p WHERE p.user.id = :userId AND p.companyName = :companyName AND p.role = :role AND " +
+           "((:applicationLink IS NULL AND p.applicationLink IS NULL) OR p.applicationLink = :applicationLink)")
+    Optional<Placement> findDuplicate(@org.springframework.data.repository.query.Param("userId") Long userId, 
+                                      @org.springframework.data.repository.query.Param("companyName") String companyName, 
+                                      @org.springframework.data.repository.query.Param("role") String role, 
+                                      @org.springframework.data.repository.query.Param("applicationLink") String applicationLink);
 }

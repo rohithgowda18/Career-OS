@@ -55,7 +55,6 @@ CREATE TABLE IF NOT EXISTS placements (
     stipend VARCHAR(255),
     ctc VARCHAR(255),
     application_link VARCHAR(255),
-    registration_deadline TIMESTAMP,
     assessment_date TIMESTAMP,
     interview_date TIMESTAMP,
     status VARCHAR(50) NOT NULL,
@@ -65,5 +64,8 @@ CREATE TABLE IF NOT EXISTS placements (
 
 CREATE INDEX IF NOT EXISTS idx_placements_user_id ON placements(user_id);
 CREATE INDEX IF NOT EXISTS idx_placements_status ON placements(status);
-CREATE UNIQUE INDEX IF NOT EXISTS unique_user_company_role ON placements (user_id, company_name, role);
+DROP INDEX IF EXISTS unique_user_company_role;
+CREATE UNIQUE INDEX IF NOT EXISTS unique_user_company_role_link ON placements (user_id, company_name, role, application_link);
+
+UPDATE placements SET status = 'APPLIED' WHERE status = 'SAVED';
 

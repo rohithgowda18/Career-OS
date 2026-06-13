@@ -17,7 +17,6 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 const PLACEMENT_STATUS_COLORS: Record<string, string> = {
-  SAVED: "#71717A",
   APPLIED: "#F97316",
   ASSESSMENT_SCHEDULED: "#F59E0B",
   ASSESSMENT_COMPLETED: "#10B981",
@@ -29,7 +28,6 @@ const PLACEMENT_STATUS_COLORS: Record<string, string> = {
 };
 
 const PLACEMENT_STATUS_LABELS: Record<string, string> = {
-  SAVED: "Saved",
   APPLIED: "Applied",
   ASSESSMENT_SCHEDULED: "Assessment Scheduled",
   ASSESSMENT_COMPLETED: "Assessment Completed",

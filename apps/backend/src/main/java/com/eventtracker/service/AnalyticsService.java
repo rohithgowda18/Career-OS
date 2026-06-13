@@ -125,7 +125,7 @@ public class AnalyticsService {
         List<Placement> placements = placementRepository.findByUserId(userId);
         long total = placements.size();
 
-        long saved = placements.stream().filter(p -> p.getStatus() == PlacementStatus.SAVED).count();
+        long saved = 0;
         long applied = placements.stream().filter(p -> p.getStatus() == PlacementStatus.APPLIED).count();
         long assessmentScheduled = placements.stream().filter(p -> p.getStatus() == PlacementStatus.ASSESSMENT_SCHEDULED).count();
         long assessmentCompleted = placements.stream().filter(p -> p.getStatus() == PlacementStatus.ASSESSMENT_COMPLETED).count();
@@ -145,7 +145,7 @@ public class AnalyticsService {
 
         double assessmentConversion = submitted > 0 ? (double) assessments / submitted * 100 : 0;
         double interviewConversion = assessments > 0 ? (double) interviews / assessments * 100 : 0;
-        double offerConversion = submitted > 0 ? (double) offerReceived / submitted * 100 : 0;
+        double offerConversion = applied > 0 ? (double) offerReceived / applied * 100 : 0;
 
         Map<String, Object> stats = new HashMap<>();
         stats.put("totalPlacements", total);
@@ -168,6 +168,81 @@ public class AnalyticsService {
         stats.put("statusDistribution", statusDistribution);
 
         return stats;
+    }
+
+    public Map<String, Object> getPlacementSummary(Long userId) {
+        List<Placement> placements = placementRepository.findByUserId(userId);
+        long total = placements.size();
+        long applied = placements.stream().filter(p -> p.getStatus() == PlacementStatus.APPLIED).count();
+        long assessmentScheduled = placements.stream().filter(p -> p.getStatus() == PlacementStatus.ASSESSMENT_SCHEDULED).count();
+        long assessmentCompleted = placements.stream().filter(p -> p.getStatus() == PlacementStatus.ASSESSMENT_COMPLETED).count();
+        long interviewScheduled = placements.stream().filter(p -> p.getStatus() == PlacementStatus.INTERVIEW_SCHEDULED).count();
+        long interviewCompleted = placements.stream().filter(p -> p.getStatus() == PlacementStatus.INTERVIEW_COMPLETED).count();
+        long offerReceived = placements.stream().filter(p -> p.getStatus() == PlacementStatus.OFFER_RECEIVED).count();
+        long rejected = placements.stream().filter(p -> p.getStatus() == PlacementStatus.REJECTED).count();
+
+        Map<String, Object> summary = new HashMap<>();
+        summary.put("totalPlacements", total);
+        summary.put("saved", 0L);
+        summary.put("applied", applied);
+        summary.put("assessmentScheduled", assessmentScheduled);
+        summary.put("assessmentCompleted", assessmentCompleted);
+        summary.put("interviewScheduled", interviewScheduled);
+        summary.put("interviewCompleted", interviewCompleted);
+        summary.put("offerReceived", offerReceived);
+        summary.put("rejected", rejected);
+        summary.put("submitted", total);
+        return summary;
+    }
+
+    public Map<String, Long> getPlacementStatusDistribution(Long userId) {
+        List<Placement> placements = placementRepository.findByUserId(userId);
+        return placements.stream()
+                .collect(Collectors.groupingBy(p -> p.getStatus().name(), Collectors.counting()));
+    }
+
+    public Map<String, Object> getPlacementConversionRates(Long userId) {
+        List<Placement> placements = placementRepository.findByUserId(userId);
+        long total = placements.size();
+
+        long applied = placements.stream().filter(p -> p.getStatus() == PlacementStatus.APPLIED).count();
+        long assessmentScheduled = placements.stream().filter(p -> p.getStatus() == PlacementStatus.ASSESSMENT_SCHEDULED).count();
+        long assessmentCompleted = placements.stream().filter(p -> p.getStatus() == PlacementStatus.ASSESSMENT_COMPLETED).count();
+        long interviewScheduled = placements.stream().filter(p -> p.getStatus() == PlacementStatus.INTERVIEW_SCHEDULED).count();
+        long interviewCompleted = placements.stream().filter(p -> p.getStatus() == PlacementStatus.INTERVIEW_COMPLETED).count();
+        long offerReceived = placements.stream().filter(p -> p.getStatus() == PlacementStatus.OFFER_RECEIVED).count();
+
+        long assessments = assessmentScheduled + assessmentCompleted + interviewScheduled + interviewCompleted + offerReceived;
+        long interviews = interviewScheduled + interviewCompleted + offerReceived;
+
+        double assessmentConversion = total > 0 ? (double) assessments / total * 100 : 0;
+        double interviewConversion = assessments > 0 ? (double) interviews / assessments * 100 : 0;
+        double offerConversion = applied > 0 ? (double) offerReceived / applied * 100 : 0;
+
+        Map<String, Object> conversion = new HashMap<>();
+        conversion.put("assessmentConversion", Math.round(assessmentConversion));
+        conversion.put("interviewConversion", Math.round(interviewConversion));
+        conversion.put("offerConversion", Math.round(offerConversion));
+        return conversion;
+    }
+
+    public List<Map<String, Object>> getPlacementTrends(Long userId) {
+        List<Placement> placements = placementRepository.findByUserId(userId);
+        Map<String, Long> trendsMap = placements.stream()
+                .filter(p -> p.getCreatedAt() != null)
+                .collect(Collectors.groupingBy(
+                        p -> p.getCreatedAt().getYear() + "-" + String.format("%02d", p.getCreatedAt().getMonthValue()),
+                        Collectors.counting()
+                ));
+        return trendsMap.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .map(entry -> {
+                    Map<String, Object> point = new HashMap<>();
+                    point.put("month", entry.getKey());
+                    point.put("count", entry.getValue());
+                    return point;
+                })
+                .collect(Collectors.toList());
     }
 }
 

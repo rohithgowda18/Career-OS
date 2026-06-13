@@ -35,7 +35,6 @@ const STATUS_COLORS: Record<string, string> = {
   UnderReview: "bg-amber-500/10 text-amber-500 border-amber-500/20",
   Accepted: "bg-success/10 text-success border-success/20",
   Rejected: "bg-danger/10 text-danger border-danger/20",
-  PlacementDeadline: "bg-purple-500/10 text-purple-400 border-purple-500/20",
   PlacementAssessment: "bg-blue-500/10 text-blue-400 border-blue-500/20",
   PlacementInterview: "bg-cyan-500/10 text-cyan-400 border-cyan-500/20",
 };
@@ -61,9 +60,9 @@ export default function CalendarView() {
   const applications = applicationsData.content || [];
 
   const placementsQuery = useQuery({
-    queryKey: ["placements", { page: 0, size: 100, sort: "registrationDeadline,asc" }],
+    queryKey: ["placements", { page: 0, size: 100, sort: "id,desc" }],
     queryFn: () =>
-      placementsApi.list({ page: 0, size: 100, sort: "registrationDeadline,asc" }),
+      placementsApi.list({ page: 0, size: 100, sort: "id,desc" }),
   });
   const placementsData = placementsQuery.data || { content: [] };
   const placements = placementsData.content || [];
@@ -80,14 +79,6 @@ export default function CalendarView() {
 
     const placementEvents = placements.flatMap((p: any) => {
       const items: any[] = [];
-      if (p.registrationDeadline) {
-        items.push({
-          id: `place-dl-${p.id}`,
-          eventName: `📅 ${p.companyName} - Deadline`,
-          status: "PlacementDeadline",
-          deadline: new Date(p.registrationDeadline),
-        });
-      }
       if (p.assessmentDate) {
         items.push({
           id: `place-as-${p.id}`,

@@ -4,7 +4,9 @@ import { placementsApi } from "@/lib/api/placementsApi";
 import { Button } from "@/components/ui/button";
 import DashboardLayout from "@/components/DashboardLayout";
 import PlacementTable from "@/components/PlacementTable";
+import PlacementKanbanView from "@/components/views/PlacementKanbanView";
 import AddPlacementModal from "@/components/AddPlacementModal";
+import { cn } from "@/lib/utils";
 import {
   TrendingUp,
   FileCheck,
@@ -19,6 +21,7 @@ import {
 
 export default function PlacementsPage() {
   const [showAddModal, setShowAddModal] = useState(false);
+  const [viewMode, setViewMode] = useState<"table" | "kanban">("table");
   const [page, setPage] = useState(0);
   const PAGE_SIZE = 10;
 
@@ -43,7 +46,7 @@ export default function PlacementsPage() {
     <DashboardLayout activeTab="placements">
       <div className="space-y-8 animate-in fade-in duration-500">
         {/* Title / Action bar */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-2xl bg-bg-elevated border border-border flex items-center justify-center shadow-lg group hover:border-primary/50 transition-colors">
               <Briefcase className="w-5 h-5 text-primary group-hover:scale-110 transition-transform" />
@@ -55,13 +58,38 @@ export default function PlacementsPage() {
               </p>
             </div>
           </div>
-          <Button
-            onClick={() => setShowAddModal(true)}
-            className="btn-primary flex h-11 px-8 shadow-primary/20"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add Placement
-          </Button>
+          
+          <div className="flex items-center gap-3 self-end sm:self-auto">
+            {/* View Mode Toggle */}
+            <div className="flex gap-1 p-1 border border-border rounded-xl bg-bg-card/40">
+              <button
+                onClick={() => setViewMode("table")}
+                className={cn(
+                  "py-1.5 px-3.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all",
+                  viewMode === "table" ? "bg-primary text-white shadow-md shadow-primary/20" : "text-text-muted hover:text-text-main"
+                )}
+              >
+                Table
+              </button>
+              <button
+                onClick={() => setViewMode("kanban")}
+                className={cn(
+                  "py-1.5 px-3.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all",
+                  viewMode === "kanban" ? "bg-primary text-white shadow-md shadow-primary/20" : "text-text-muted hover:text-text-main"
+                )}
+              >
+                Kanban
+              </button>
+            </div>
+
+            <Button
+              onClick={() => setShowAddModal(true)}
+              className="btn-primary flex h-11 px-8 shadow-primary/20"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add Placement
+            </Button>
+          </div>
         </div>
 
         {/* Analytics Stats Grid */}
@@ -116,8 +144,12 @@ export default function PlacementsPage() {
           </div>
         )}
 
-        {/* Data Table */}
-        <PlacementTable page={page} setPage={setPage} pageSize={PAGE_SIZE} />
+        {/* Data View */}
+        {viewMode === "table" ? (
+          <PlacementTable page={page} setPage={setPage} pageSize={PAGE_SIZE} />
+        ) : (
+          <PlacementKanbanView />
+        )}
 
         {/* Add Modal */}
         <AddPlacementModal open={showAddModal} onOpenChange={setShowAddModal} />

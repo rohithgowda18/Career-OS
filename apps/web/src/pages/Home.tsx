@@ -6,9 +6,47 @@ import CalendarView from "@/components/views/CalendarView";
 import AnalyticsDashboard from "@/components/AnalyticsDashboard";
 import ApplicationProfileForm from "@/components/ApplicationProfileForm";
 import DashboardLayout from "@/components/DashboardLayout";
+import { useState, useEffect } from "react";
+
+// Patch history methods to dispatch custom locationchange events on navigation
+if (typeof window !== "undefined" && !(window.history as any)._patched) {
+  (window.history as any)._patched = true;
+
+  const pushState = window.history.pushState;
+  window.history.pushState = function (...args) {
+    const result = pushState.apply(this, args);
+    window.dispatchEvent(new Event("pushstate"));
+    window.dispatchEvent(new Event("locationchange"));
+    return result;
+  };
+
+  const replaceState = window.history.replaceState;
+  window.history.replaceState = function (...args) {
+    const result = replaceState.apply(this, args);
+    window.dispatchEvent(new Event("replacestate"));
+    window.dispatchEvent(new Event("locationchange"));
+    return result;
+  };
+
+  window.addEventListener("popstate", () => {
+    window.dispatchEvent(new Event("locationchange"));
+  });
+}
 
 export default function Home() {
   const { user, loading } = useAuth();
+  const [searchParams, setSearchParams] = useState(new URLSearchParams(window.location.search));
+
+  useEffect(() => {
+    const handleLocationChange = () => {
+      setSearchParams(new URLSearchParams(window.location.search));
+    };
+
+    window.addEventListener("locationchange", handleLocationChange);
+    return () => {
+      window.removeEventListener("locationchange", handleLocationChange);
+    };
+  }, []);
 
   if (loading) {
     return (
@@ -23,7 +61,6 @@ export default function Home() {
     return null;
   }
 
-  const searchParams = new URLSearchParams(window.location.search);
   const currentView = (searchParams.get("view") || "dashboard") as
     | "dashboard"
     | "kanban"

@@ -25,7 +25,6 @@ interface PlacementTableProps {
 }
 
 const STATUS_CLASSES: Record<string, string> = {
-  SAVED: "bg-bg-elevated text-text-muted border-border",
   APPLIED: "bg-primary/10 text-primary border-primary/20",
   ASSESSMENT_SCHEDULED: "bg-amber-500/10 text-amber-500 border-amber-500/20",
   ASSESSMENT_COMPLETED: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
@@ -36,7 +35,6 @@ const STATUS_CLASSES: Record<string, string> = {
 };
 
 const STATUS_LABELS: Record<string, string> = {
-  SAVED: "Saved",
   APPLIED: "Applied",
   ASSESSMENT_SCHEDULED: "Assessment Scheduled",
   ASSESSMENT_COMPLETED: "Assessment Completed",
@@ -52,8 +50,8 @@ export default function PlacementTable({ page, setPage, pageSize }: PlacementTab
   const queryClient = useQueryClient();
 
   const placementsQuery = useQuery({
-    queryKey: ["placements", { page, size: pageSize, sort: "registrationDeadline,asc" }],
-    queryFn: () => placementsApi.list({ page, size: pageSize, sort: "registrationDeadline,asc" }),
+    queryKey: ["placements", { page, size: pageSize, sort: "id,desc" }],
+    queryFn: () => placementsApi.list({ page, size: pageSize, sort: "id,desc" }),
   });
 
   const deleteMutation = useMutation({
@@ -134,7 +132,6 @@ export default function PlacementTable({ page, setPage, pageSize }: PlacementTab
                 <th className="p-4 text-[10px] font-black uppercase tracking-wider text-text-muted">Stipend</th>
                 <th className="p-4 text-[10px] font-black uppercase tracking-wider text-text-muted">CTC</th>
                 <th className="p-4 text-[10px] font-black uppercase tracking-wider text-text-muted">Status</th>
-                <th className="p-4 text-[10px] font-black uppercase tracking-wider text-text-muted">Deadline</th>
                 <th className="p-4 text-[10px] font-black uppercase tracking-wider text-text-muted">Assessment</th>
                 <th className="p-4 text-[10px] font-black uppercase tracking-wider text-text-muted">Interview</th>
                 <th className="p-4 text-[10px] font-black uppercase tracking-wider text-text-muted text-right">Actions</th>
@@ -180,16 +177,7 @@ export default function PlacementTable({ page, setPage, pageSize }: PlacementTab
                       {STATUS_LABELS[p.status] || p.status}
                     </span>
                   </td>
-                  <td className="p-4 text-xs font-semibold text-text-muted">
-                    {p.registrationDeadline ? (
-                      <span className="flex items-center gap-1.5">
-                        <Calendar className="w-3.5 h-3.5 text-primary shrink-0" />
-                        {format(new Date(p.registrationDeadline), "MMM dd, yyyy")}
-                      </span>
-                    ) : (
-                      <span className="opacity-30">-</span>
-                    )}
-                  </td>
+
                   <td className="p-4 text-xs font-semibold text-text-muted">
                     {p.assessmentDate ? (
                       <span className="flex items-center gap-1.5">
@@ -245,7 +233,7 @@ export default function PlacementTable({ page, setPage, pageSize }: PlacementTab
 
               {placements.length === 0 && (
                 <tr>
-                  <td colSpan={10} className="p-8 text-center text-xs font-bold text-text-muted uppercase tracking-widest opacity-40">
+                  <td colSpan={9} className="p-8 text-center text-xs font-bold text-text-muted uppercase tracking-widest opacity-40">
                     No placement opportunities recorded yet
                   </td>
                 </tr>

@@ -4,6 +4,8 @@ export interface ApplicationListParams {
   page?: number;
   size?: number;
   sort?: string; // e.g., "deadline,asc" or "createdAt,desc"
+  status?: string;
+  search?: string;
 }
 
 export const applicationsApi = {
@@ -13,8 +15,10 @@ export const applicationsApi = {
       page: params?.page ?? 0,
       size: params?.size ?? 20,
       sort: params?.sort ?? 'deadline,asc', // Default sort by deadline ascending
+      status: params?.status,
+      search: params?.search,
     };
-    const response = (await restClient.get('/applications', { params: queryParams })).data;
+    const response = (await restClient.get('/api/applications', { params: queryParams })).data;
     
     // Return Spring Page response structure
     return {
@@ -25,7 +29,7 @@ export const applicationsApi = {
       size: response?.size || 20,
     };
   },
-  create: async (data: any) => (await restClient.post('/applications', data)).data,
-  update: async ({ id, ...data }: { id: string | number; [key: string]: any }) => (await restClient.put(`/applications/${id}`, data)).data,
-  delete: async (id: string | number) => (await restClient.delete(`/applications/${id}`)).data,
+  create: async (data: any) => (await restClient.post('/api/applications', data)).data,
+  update: async ({ id, ...data }: { id: string | number; [key: string]: any }) => (await restClient.put(`/api/applications/${id}`, data)).data,
+  delete: async (id: string | number) => (await restClient.delete(`/api/applications/${id}`)).data,
 };

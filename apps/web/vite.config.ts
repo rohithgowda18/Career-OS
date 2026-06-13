@@ -15,15 +15,40 @@ export default defineConfig({
     jsxLocPlugin(),
     VitePWA({
       registerType: "autoUpdate",
+      devOptions: {
+        enabled: true,
+        type: "module",
+      },
+      workbox: {
+        globPatterns: ["**/*.{js,css,html,ico,png,svg,webmanifest}"],
+      },
       manifest: {
-        name: "Event Application Tracker",
-        short_name: "Event Tracker",
-        description: "Track and manage your event applications with ease",
-        theme_color: "#000000",
-        background_color: "#ffffff",
+        name: "Opportunity Management Platform",
+        short_name: "OMP",
+        description: "Track and manage your event applications and placements with ease",
+        theme_color: "#0f172a",
+        background_color: "#020617",
         display: "standalone",
         scope: "/",
         start_url: "/",
+        icons: [
+          {
+            src: "icon-192.png",
+            sizes: "192x192",
+            type: "image/png"
+          },
+          {
+            src: "icon-512.png",
+            sizes: "512x512",
+            type: "image/png"
+          },
+          {
+            src: "icon-maskable.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "maskable"
+          }
+        ]
       },
     }),
   ],

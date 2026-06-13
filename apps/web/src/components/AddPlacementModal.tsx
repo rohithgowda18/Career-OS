@@ -44,7 +44,6 @@ const placementFormSchema = z.object({
   stipend: z.string().optional(),
   ctc: z.string().optional(),
   applicationLink: z.string().url("Invalid URL").or(z.literal("")).optional(),
-  registrationDeadline: z.date().optional(),
   assessmentDate: z.date().optional(),
   interviewDate: z.date().optional(),
   status: z.string().min(1, "Status is required"),
@@ -52,70 +51,7 @@ const placementFormSchema = z.object({
 
 type FormValues = z.infer<typeof placementFormSchema>;
 
-const ignorePatterns = [
-  /dear\s+students/i,
-  /regards/i,
-  /placement\s+department/i,
-  /kindly\s+go\s+through\s+the\s+details/i,
-  /thank\s+you/i,
-  /^rit$/i,
-  /^msrit$/i
-];
 
-const parsePlacementEmail = (text: string) => {
-  const result = {
-    companyName: "",
-    role: "",
-    stipend: "",
-    ctc: "",
-    applicationLink: ""
-  };
-  
-  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-  let foundUrl = false;
-
-  for (const line of lines) {
-    // Ignore lines that match any of the ignore patterns
-    if (ignorePatterns.some(pattern => pattern.test(line))) {
-      continue;
-    }
-
-    // Company Name: "Campus recruitment by <Company>", "Recruitment by <Company>", "Hiring by <Company>"
-    const companyMatch = line.match(/^(?:Campus recruitment by|Recruitment by|Hiring by)\s+(.+)$/i);
-    if (companyMatch && !result.companyName) {
-      result.companyName = companyMatch[1].trim();
-    }
-
-    // Role: "Job Designation:", "Role:", "Position:"
-    const roleMatch = line.match(/^(?:Job Designation|Role|Position)\s*:\s*(.+)$/i);
-    if (roleMatch && !result.role) {
-      result.role = roleMatch[1].trim();
-    }
-
-    // Stipend: "Stipend:", "Internship Stipend:", "Monthly Stipend:"
-    const stipendMatch = line.match(/^(?:Stipend|Internship Stipend|Monthly Stipend)\s*:\s*(.+)$/i);
-    if (stipendMatch && !result.stipend) {
-      result.stipend = stipendMatch[1].trim();
-    }
-
-    // CTC: "CTC:", "Package:", "Compensation:", "Salary:"
-    const ctcMatch = line.match(/^(?:CTC|Package|Compensation|Salary)\s*:\s*(.+)$/i);
-    if (ctcMatch && !result.ctc) {
-      result.ctc = ctcMatch[1].trim();
-    }
-
-    // Application Link: first valid URL
-    if (!foundUrl) {
-      const urlMatch = line.match(/(https?:\/\/[^\s]+)/i);
-      if (urlMatch) {
-        result.applicationLink = urlMatch[1].trim();
-        foundUrl = true;
-      }
-    }
-  }
-
-  return result;
-};
 
 export default function AddPlacementModal({ open, onOpenChange }: AddPlacementModalProps) {
   const [emailText, setEmailText] = useState("");
@@ -131,7 +67,7 @@ export default function AddPlacementModal({ open, onOpenChange }: AddPlacementMo
       stipend: "",
       ctc: "",
       applicationLink: "",
-      status: "SAVED",
+      status: "APPLIED",
     },
   });
 
@@ -153,20 +89,31 @@ export default function AddPlacementModal({ open, onOpenChange }: AddPlacementMo
     setShowQuickEntry(false);
   };
 
+  const extractMutation = useMutation({
+    mutationFn: placementsApi.extract,
+    onSuccess: (extracted: any) => {
+      if (extracted.companyName) setValue("companyName", extracted.companyName);
+      if (extracted.role) setValue("role", extracted.role);
+      if (extracted.location) setValue("location", extracted.location);
+      if (extracted.stipend) setValue("stipend", extracted.stipend);
+      if (extracted.ctc) setValue("ctc", extracted.ctc);
+      if (extracted.applicationLink) setValue("applicationLink", extracted.applicationLink);
+      if (extracted.assessmentDate) setValue("assessmentDate", extracted.assessmentDate ? new Date(extracted.assessmentDate) : undefined);
+      if (extracted.interviewDate) setValue("interviewDate", extracted.interviewDate ? new Date(extracted.interviewDate) : undefined);
+      if (extracted.status) setValue("status", extracted.status);
+      toast.success("Extracted details pre-filled. Please verify and save.");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to extract placement details using AI");
+    }
+  });
+
   const handleExtract = () => {
     if (!emailText.trim()) {
       toast.error("Please paste email/announcement content first");
       return;
     }
-    const extracted = parsePlacementEmail(emailText);
-    
-    setValue("companyName", extracted.companyName);
-    setValue("role", extracted.role);
-    setValue("stipend", extracted.stipend);
-    setValue("ctc", extracted.ctc);
-    setValue("applicationLink", extracted.applicationLink);
-    
-    toast.success("Extracted details pre-filled. Please verify and save.");
+    extractMutation.mutate(emailText);
   };
 
   const onSubmitForm = (data: FormValues) => {
@@ -174,7 +121,6 @@ export default function AddPlacementModal({ open, onOpenChange }: AddPlacementMo
   };
 
   const statusVal = watch("status");
-  const deadlineVal = watch("registrationDeadline");
   const assessDateVal = watch("assessmentDate");
   const interviewDateVal = watch("interviewDate");
 
@@ -207,19 +153,32 @@ export default function AddPlacementModal({ open, onOpenChange }: AddPlacementMo
                 variant="ghost"
                 size="sm"
                 onClick={handleExtract}
+                disabled={extractMutation.isPending}
                 className="text-xs text-primary font-bold hover:text-primary-hover hover:bg-primary/5 h-7"
               >
-                <Clipboard className="w-3.5 h-3.5 mr-1" />
-                Auto-Extract
+                {extractMutation.isPending ? (
+                  <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+                ) : (
+                  <Clipboard className="w-3.5 h-3.5 mr-1" />
+                )}
+                Extract Using AI
               </Button>
             </div>
             <Textarea
               value={emailText}
               onChange={(e) => setEmailText(e.target.value)}
+              disabled={extractMutation.isPending}
               placeholder="Dear Students&#10;Campus recruitment by WorkIndia&#10;Job Designation: Software Development Engineer&#10;Stipend: 40k per month&#10;CTC: 16 LPA&#10;https://forms.gle/..."
               className="bg-bg-main border-border focus:border-primary/50 focus:ring-primary/20 min-h-[120px] text-xs leading-relaxed"
             />
-            <p className="text-[9px] text-text-muted/60 italic">We will extract details using keyword-based matching to pre-fill the form.</p>
+            {extractMutation.isPending && (
+              <p className="text-[10px] text-primary font-bold animate-pulse">
+                Extracting details using AI... Please wait.
+              </p>
+            )}
+            {!extractMutation.isPending && (
+              <p className="text-[9px] text-text-muted/60 italic">We will extract details using Gemini AI to pre-fill the form.</p>
+            )}
           </div>
         )}
 
@@ -270,7 +229,6 @@ export default function AddPlacementModal({ open, onOpenChange }: AddPlacementMo
                 </SelectTrigger>
                 <SelectContent className="bg-bg-card border-border text-text-main">
                   {[
-                    { val: "SAVED", label: "Saved" },
                     { val: "APPLIED", label: "Applied" },
                     { val: "ASSESSMENT_SCHEDULED", label: "Assessment Scheduled" },
                     { val: "ASSESSMENT_COMPLETED", label: "Assessment Completed" },
@@ -319,9 +277,8 @@ export default function AddPlacementModal({ open, onOpenChange }: AddPlacementMo
             {errors.applicationLink && <p className="text-xs text-danger">{errors.applicationLink.message}</p>}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {[
-              { id: "registrationDeadline", val: deadlineVal, label: "Deadline" },
               { id: "assessmentDate", val: assessDateVal, label: "Assessment Date" },
               { id: "interviewDate", val: interviewDateVal, label: "Interview Date" },
             ].map((d) => (

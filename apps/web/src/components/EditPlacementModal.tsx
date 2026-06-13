@@ -45,7 +45,6 @@ const placementFormSchema = z.object({
   stipend: z.string().optional(),
   ctc: z.string().optional(),
   applicationLink: z.string().url("Invalid URL").or(z.literal("")).optional(),
-  registrationDeadline: z.date().optional(),
   assessmentDate: z.date().optional(),
   interviewDate: z.date().optional(),
   status: z.string().min(1, "Status is required"),
@@ -69,10 +68,9 @@ export default function EditPlacementModal({ open, onOpenChange, placementId, in
         stipend: initialData.stipend || "",
         ctc: initialData.ctc || "",
         applicationLink: initialData.applicationLink || "",
-        registrationDeadline: initialData.registrationDeadline ? new Date(initialData.registrationDeadline) : undefined,
         assessmentDate: initialData.assessmentDate ? new Date(initialData.assessmentDate) : undefined,
         interviewDate: initialData.interviewDate ? new Date(initialData.interviewDate) : undefined,
-        status: initialData.status || "SAVED",
+        status: initialData.status || "APPLIED",
       });
     }
   }, [initialData, reset]);
@@ -93,7 +91,6 @@ export default function EditPlacementModal({ open, onOpenChange, placementId, in
   };
 
   const statusVal = watch("status");
-  const deadlineVal = watch("registrationDeadline");
   const assessDateVal = watch("assessmentDate");
   const interviewDateVal = watch("interviewDate");
 
@@ -148,7 +145,6 @@ export default function EditPlacementModal({ open, onOpenChange, placementId, in
                 </SelectTrigger>
                 <SelectContent className="bg-bg-card border-border text-text-main">
                   {[
-                    { val: "SAVED", label: "Saved" },
                     { val: "APPLIED", label: "Applied" },
                     { val: "ASSESSMENT_SCHEDULED", label: "Assessment Scheduled" },
                     { val: "ASSESSMENT_COMPLETED", label: "Assessment Completed" },
@@ -196,9 +192,8 @@ export default function EditPlacementModal({ open, onOpenChange, placementId, in
             {errors.applicationLink && <p className="text-xs text-danger">{errors.applicationLink.message}</p>}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {[
-              { id: "registrationDeadline", val: deadlineVal, label: "Deadline" },
               { id: "assessmentDate", val: assessDateVal, label: "Assessment Date" },
               { id: "interviewDate", val: interviewDateVal, label: "Interview Date" },
             ].map((d) => (

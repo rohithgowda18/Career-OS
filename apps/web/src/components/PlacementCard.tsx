@@ -8,7 +8,6 @@ interface PlacementCardProps {
 }
 
 const STATUS_CLASSES: Record<string, string> = {
-  SAVED: "bg-bg-elevated text-text-muted border-border",
   APPLIED: "bg-primary/10 text-primary border-primary/20",
   ASSESSMENT_SCHEDULED: "bg-amber-500/10 text-amber-500 border-amber-500/20",
   ASSESSMENT_COMPLETED: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
@@ -19,7 +18,6 @@ const STATUS_CLASSES: Record<string, string> = {
 };
 
 const STATUS_LABELS: Record<string, string> = {
-  SAVED: "Saved",
   APPLIED: "Applied",
   ASSESSMENT_SCHEDULED: "Assessment Scheduled",
   ASSESSMENT_COMPLETED: "Assessment Completed",
@@ -30,9 +28,6 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 export default function PlacementCard({ placement, onEdit }: PlacementCardProps) {
-  const formattedDeadline = placement.registrationDeadline
-    ? format(new Date(placement.registrationDeadline), "PPP")
-    : null;
 
   return (
     <div 
@@ -80,19 +75,8 @@ export default function PlacementCard({ placement, onEdit }: PlacementCardProps)
         </div>
       </div>
 
-      {/* Footer info (Dates & links) */}
-      <div className="mt-6 pt-4 border-t border-border/40 flex items-center justify-between text-[10px] text-text-muted font-black uppercase tracking-widest">
-        {formattedDeadline ? (
-          <div className="flex items-center gap-1.5">
-            <Calendar className="w-3.5 h-3.5 text-primary shrink-0" />
-            <span>Apply by: {formattedDeadline}</span>
-          </div>
-        ) : (
-          <div className="flex items-center gap-1.5 opacity-40">
-            <Calendar className="w-3.5 h-3.5 shrink-0" />
-            <span>No deadline</span>
-          </div>
-        )}
+      {/* Footer info (Links) */}
+      <div className="mt-6 pt-4 border-t border-border/40 flex items-center justify-end text-[10px] text-text-muted font-black uppercase tracking-widest">
 
         {placement.applicationLink && (
           <a

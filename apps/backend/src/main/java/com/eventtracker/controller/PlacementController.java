@@ -1,11 +1,11 @@
 package com.eventtracker.controller;
 
-import com.eventtracker.dto.CreatePlacementRequest;
-import com.eventtracker.dto.UpdatePlacementRequest;
 import com.eventtracker.dto.PlacementDTO;
 import com.eventtracker.entity.Placement;
 import com.eventtracker.entity.User;
 import com.eventtracker.service.PlacementService;
+import com.eventtracker.service.GeminiExtractionService;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,15 +17,34 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Slf4j
 @RestController
-@RequestMapping({"/api/placements", "/placements"})
+@RequestMapping("/api/placements")
 @RequiredArgsConstructor
 public class PlacementController {
     
     private final PlacementService placementService;
+    private final GeminiExtractionService geminiExtractionService;
+
+    @PostMapping("/extract")
+    @Operation(operationId = "extractPlacement", summary = "Extract placement details using AI")
+    public ResponseEntity<?> extract(@RequestBody Map<String, String> request) {
+        String emailContent = request.get("emailContent");
+        if (emailContent == null || emailContent.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body("emailContent is required");
+        }
+        try {
+            PlacementDTO result = geminiExtractionService.extractPlacementDetails(emailContent);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            log.error("AI Extraction failed", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to extract placement details: " + e.getMessage());
+        }
+    }
 
     private User getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -36,12 +55,17 @@ public class PlacementController {
     }
 
     @GetMapping
-    public ResponseEntity<?> list(Pageable pageable) {
+    @Operation(operationId = "listPlacements", summary = "List placements with optional status filtering and full-text search")
+    public ResponseEntity<?> list(
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String search,
+            Pageable pageable) {
         User user = getCurrentUser();
-        return ResponseEntity.ok(placementService.getUserPlacements(user.getId(), pageable));
+        return ResponseEntity.ok(placementService.getUserPlacements(user.getId(), status, search, pageable));
     }
 
     @GetMapping("/{id}")
+    @Operation(operationId = "getPlacement", summary = "Get a placement by ID")
     public ResponseEntity<?> get(@PathVariable Long id) {
         User user = getCurrentUser();
         Optional<Placement> placement = placementService.findById(id, user.getId());
@@ -52,7 +76,8 @@ public class PlacementController {
     }
 
     @PostMapping
-    public ResponseEntity<?> create(@Valid @RequestBody CreatePlacementRequest request) {
+    @Operation(operationId = "createPlacement", summary = "Create a new placement record")
+    public ResponseEntity<?> create(@Valid @RequestBody PlacementDTO request) {
         try {
             User user = getCurrentUser();
             Placement placement = placementService.createPlacement(user, request);
@@ -65,7 +90,8 @@ public class PlacementController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> update(@PathVariable Long id, @Valid @RequestBody UpdatePlacementRequest request) {
+    @Operation(operationId = "updatePlacement", summary = "Update an existing placement record")
+    public ResponseEntity<?> update(@PathVariable Long id, @Valid @RequestBody PlacementDTO request) {
         try {
             User user = getCurrentUser();
             Placement placement = placementService.updatePlacement(id, user.getId(), request);
@@ -79,6 +105,7 @@ public class PlacementController {
     }
 
     @DeleteMapping("/{id}")
+    @Operation(operationId = "deletePlacement", summary = "Delete a placement record")
     public ResponseEntity<?> delete(@PathVariable Long id) {
         try {
             User user = getCurrentUser();
@@ -90,12 +117,5 @@ public class PlacementController {
             log.error("Error deleting placement", e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
-    }
-
-    @GetMapping("/status/{status}")
-    public ResponseEntity<List<PlacementDTO>> getByStatus(@PathVariable String status) {
-        User user = getCurrentUser();
-        List<PlacementDTO> placements = placementService.getUserPlacementsByStatus(user.getId(), status);
-        return ResponseEntity.ok(placements);
     }
 }

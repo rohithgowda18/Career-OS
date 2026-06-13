@@ -1,7 +1,6 @@
 package com.eventtracker.entity;
 
 public enum PlacementStatus {
-    SAVED,
     APPLIED,
     ASSESSMENT_SCHEDULED,
     ASSESSMENT_COMPLETED,

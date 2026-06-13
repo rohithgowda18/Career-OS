@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "placements", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"user_id", "company_name", "role"})
+    @UniqueConstraint(columnNames = {"user_id", "company_name", "role", "application_link"})
 })
 @Data
 @NoArgsConstructor
@@ -44,9 +44,6 @@ public class Placement {
 
     @Column(name = "application_link")
     private String applicationLink;
-
-    @Column(name = "registration_deadline")
-    private LocalDateTime registrationDeadline;
 
     @Column(name = "assessment_date")
     private LocalDateTime assessmentDate;
