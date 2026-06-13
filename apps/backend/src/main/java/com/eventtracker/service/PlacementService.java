@@ -111,15 +111,39 @@ public class PlacementService {
 
     private String normalizeUrl(String url) {
         if (url == null || url.isBlank()) return null;
-        String normalized = url.trim().toLowerCase();
-        int queryIndex = normalized.indexOf('?');
+        
+        String trimmed = url.trim();
+        int doubleSlashIndex = trimmed.indexOf("://");
+        int pathStartIndex;
+        if (doubleSlashIndex != -1) {
+            pathStartIndex = trimmed.indexOf('/', doubleSlashIndex + 3);
+        } else {
+            pathStartIndex = trimmed.indexOf('/');
+        }
+        
+        String protocolAndDomain;
+        String pathAndQuery;
+        
+        if (pathStartIndex != -1) {
+            protocolAndDomain = trimmed.substring(0, pathStartIndex).toLowerCase();
+            pathAndQuery = trimmed.substring(pathStartIndex);
+        } else {
+            protocolAndDomain = trimmed.toLowerCase();
+            pathAndQuery = "";
+        }
+        
+        int queryIndex = pathAndQuery.indexOf('?');
         if (queryIndex != -1) {
-            normalized = normalized.substring(0, queryIndex);
+            pathAndQuery = pathAndQuery.substring(0, queryIndex);
         }
-        if (normalized.endsWith("/")) {
-            normalized = normalized.substring(0, normalized.length() - 1);
+        
+        if (pathAndQuery.endsWith("/") && pathAndQuery.length() > 1) {
+            pathAndQuery = pathAndQuery.substring(0, pathAndQuery.length() - 1);
+        } else if (pathAndQuery.equals("/")) {
+            pathAndQuery = "";
         }
-        return normalized;
+        
+        return protocolAndDomain + pathAndQuery;
     }
 
     public PlacementDTO convertToDTO(Placement p) {
