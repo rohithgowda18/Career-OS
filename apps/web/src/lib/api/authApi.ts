@@ -11,14 +11,14 @@ export type RegisterPayload = {
 };
 
 export const authApi = {
-  me: async () => (await restClient.get('/auth/me')).data,
+  me: async () => (await restClient.get('/api/auth/me')).data,
   login: async (data: LoginPayload) => {
-    const res = await restClient.post('/auth/login', data);
+    const res = await restClient.post('/api/auth/login', data);
     if (res.data.token) localStorage.setItem('token', res.data.token);
     return res.data;
   },
   register: async (data: RegisterPayload) => {
-    const res = await restClient.post('/auth/register', data);
+    const res = await restClient.post('/api/auth/register', data);
     if (res.data.token) localStorage.setItem('token', res.data.token);
     return res.data;
   },

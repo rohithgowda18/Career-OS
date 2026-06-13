@@ -80,6 +80,16 @@ export default function AddEventPage() {
     },
   });
 
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-[#0f0f10] flex items-center justify-center">
+        <Loader2 className="w-10 h-10 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) return null;
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.eventName.trim()) {
@@ -93,124 +103,144 @@ export default function AddEventPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0f0f10] text-[#e4e4e7] flex items-center justify-center p-6 font-sans">
-      <div className="w-full max-w-[500px]">
-        <button
-          onClick={() => setLocation("/dashboard")}
-          className="flex items-center gap-2 text-[#a1a1aa] hover:text-[#e4e4e7] transition-colors mb-8 text-xs font-bold uppercase tracking-widest"
-        >
-          <ArrowLeft className="w-4 h-4" /> Cancel
-        </button>
+    <div className="min-h-screen bg-bg-main text-text-main font-sans selection:bg-primary/30 relative overflow-hidden">
+      {/* Background Glow */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-primary/5 blur-[120px]" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-accent/5 blur-[120px]" />
+      </div>
 
-        <div className="bg-[#18181b] border border-[#27272a] rounded-xl p-8 shadow-xl">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-lg bg-[#f97316] flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-white" />
+      <div className="container relative z-10 min-h-screen flex items-center justify-center py-12 px-6">
+        <div className="w-full max-w-[550px] animate-in fade-in slide-in-from-bottom-4 duration-700">
+          <button
+            onClick={() => setLocation("/dashboard")}
+            className="group flex items-center gap-2 text-text-muted hover:text-primary transition-all mb-8 text-[10px] font-black uppercase tracking-[0.2em]"
+          >
+            <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" /> 
+            Back to Pipeline
+          </button>
+
+          <div className="bg-bg-card/40 backdrop-blur-2xl border border-border rounded-3xl p-8 md:p-10 shadow-2xl relative overflow-hidden group">
+            {/* Card Inner Glow */}
+            <div className="absolute -top-24 -right-24 w-48 h-48 bg-primary/10 blur-[80px] rounded-full transition-opacity group-hover:opacity-100 opacity-50" />
+            
+            <div className="flex items-center gap-4 mb-10">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/20">
+                <Sparkles className="w-7 h-7 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-black tracking-tight uppercase">Import Protocol</h1>
+                <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest mt-1 opacity-60">Extracting intelligence from active terminal</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-xl font-bold">Import Application</h1>
-              <p className="text-xs text-[#a1a1aa] font-medium mt-0.5">Imported from current page</p>
-            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-text-muted ml-1">Objective Name</Label>
+                <Input
+                  value={formData.eventName}
+                  onChange={e => setFormData({ ...formData, eventName: e.target.value })}
+                  placeholder={formData.eventName ? "" : "Data missing..."}
+                  className="bg-bg-elevated/50 border-border focus:border-primary/50 focus:ring-0 h-12 text-sm font-bold rounded-xl transition-all"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-5">
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-text-muted ml-1">Classification</Label>
+                  <Select
+                    value={formData.eventType}
+                    onValueChange={v => setFormData({ ...formData, eventType: v })}
+                  >
+                    <SelectTrigger className="bg-bg-elevated/50 border-border h-12 text-sm font-bold rounded-xl">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-bg-card border-border text-text-main backdrop-blur-xl">
+                      {["Hackathon", "Workshop", "Conference", "Internship", "Other"].map(t => (
+                        <SelectItem key={t} value={t} className="font-bold text-xs uppercase tracking-widest">{t}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-text-muted ml-1">Current Status</Label>
+                  <Select
+                    value={formData.status}
+                    onValueChange={v => setFormData({ ...formData, status: v })}
+                  >
+                    <SelectTrigger className="bg-bg-elevated/50 border-border h-12 text-sm font-bold rounded-xl">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-bg-card border-border text-text-main backdrop-blur-xl">
+                      {["Interested", "Applied", "UnderReview", "Accepted", "Rejected"].map(s => (
+                        <SelectItem key={s} value={s} className="font-bold text-xs uppercase tracking-widest">
+                          {s === "UnderReview" ? "Under Review" : s}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-text-muted ml-1">Temporal Deadline</Label>
+                <Input
+                  type="date"
+                  value={formData.deadline}
+                  onChange={e => setFormData({ ...formData, deadline: e.target.value })}
+                  className="bg-bg-elevated/50 border-border focus:border-primary/50 focus:ring-0 h-12 text-sm font-bold rounded-xl [color-scheme:dark] transition-all"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-text-muted ml-1 flex items-center gap-2">
+                  <ExternalLink className="w-3 h-3" /> Resource Identifier (URL)
+                </Label>
+                <Input
+                  value={formData.url}
+                  onChange={e => setFormData({ ...formData, url: e.target.value })}
+                  placeholder={formData.url ? "" : "Link not detected..."}
+                  className="bg-bg-elevated/50 border-border focus:border-primary/50 focus:ring-0 h-12 text-[10px] font-bold text-text-muted rounded-xl transition-all"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-text-muted ml-1">Coordinates (Location)</Label>
+                <Input
+                  value={formData.location}
+                  onChange={e => setFormData({ ...formData, location: e.target.value })}
+                  placeholder={formData.location ? "" : "Scanning..."}
+                  className="bg-bg-elevated/50 border-border focus:border-primary/50 focus:ring-0 h-12 text-sm font-bold rounded-xl transition-all"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-text-muted ml-1">Strategic Notes</Label>
+                <Textarea
+                  value={formData.notes}
+                  onChange={e => setFormData({ ...formData, notes: e.target.value })}
+                  placeholder="Inject additional intelligence here..."
+                  className="bg-bg-elevated/50 border-border focus:border-primary/50 focus:ring-0 min-h-[100px] text-sm font-medium rounded-xl resize-none transition-all"
+                />
+              </div>
+
+              <Button
+                type="submit"
+                disabled={createMutation.isPending}
+                className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90 text-white font-black uppercase tracking-[0.2em] text-xs h-14 mt-6 rounded-2xl transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-3"
+              >
+                {createMutation.isPending ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4" />
+                    Secure in Pipeline
+                  </>
+                )}
+              </Button>
+            </form>
           </div>
-
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="space-y-1.5">
-              <Label className="text-[10px] font-bold uppercase tracking-widest text-[#a1a1aa]">Event Name</Label>
-              <Input
-                value={formData.eventName}
-                onChange={e => setFormData({ ...formData, eventName: e.target.value })}
-                placeholder={formData.eventName ? "" : "Not detected"}
-                className="bg-[#0f0f10] border-[#27272a] focus:border-[#f97316] focus:ring-0 h-11 text-sm font-medium"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-bold uppercase tracking-widest text-[#a1a1aa]">Event Type</Label>
-                <Select
-                  value={formData.eventType}
-                  onValueChange={v => setFormData({ ...formData, eventType: v })}
-                >
-                  <SelectTrigger className="bg-[#0f0f10] border-[#27272a] h-11 text-sm">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-[#18181b] border-[#27272a] text-[#e4e4e7]">
-                    {["Hackathon", "Workshop", "Conference", "Internship", "Other"].map(t => (
-                      <SelectItem key={t} value={t}>{t}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-[10px] font-bold uppercase tracking-widest text-[#a1a1aa]">Status</Label>
-                <Select
-                  value={formData.status}
-                  onValueChange={v => setFormData({ ...formData, status: v })}
-                >
-                  <SelectTrigger className="bg-[#0f0f10] border-[#27272a] h-11 text-sm">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-[#18181b] border-[#27272a] text-[#e4e4e7]">
-                    {["Interested", "Applied", "UnderReview", "Accepted", "Rejected"].map(s => (
-                      <SelectItem key={s} value={s}>{s === "UnderReview" ? "Under Review" : s}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-[10px] font-bold uppercase tracking-widest text-[#a1a1aa]">Deadline (Optional)</Label>
-              <Input
-                type="date"
-                value={formData.deadline}
-                onChange={e => setFormData({ ...formData, deadline: e.target.value })}
-                className="bg-[#0f0f10] border-[#27272a] focus:border-[#f97316] focus:ring-0 h-11 text-sm [color-scheme:dark]"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-[10px] font-bold uppercase tracking-widest text-[#a1a1aa] flex items-center gap-2">
-                <ExternalLink className="w-3 h-3" /> Event URL
-              </Label>
-              <Input
-                value={formData.url}
-                onChange={e => setFormData({ ...formData, url: e.target.value })}
-                placeholder={formData.url ? "" : "Not detected"}
-                className="bg-[#0f0f10] border-[#27272a] focus:border-[#f97316] focus:ring-0 h-11 text-xs text-[#a1a1aa]"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-[10px] font-bold uppercase tracking-widest text-[#a1a1aa]">Location</Label>
-              <Input
-                value={formData.location}
-                onChange={e => setFormData({ ...formData, location: e.target.value })}
-                placeholder={formData.location ? "" : "Not detected"}
-                className="bg-[#0f0f10] border-[#27272a] focus:border-[#f97316] focus:ring-0 h-11 text-sm font-medium"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-[10px] font-bold uppercase tracking-widest text-[#a1a1aa]">Notes</Label>
-              <Textarea
-                value={formData.notes}
-                onChange={e => setFormData({ ...formData, notes: e.target.value })}
-                placeholder="Add any extra details..."
-                className="bg-[#0f0f10] border-[#27272a] focus:border-[#f97316] focus:ring-0 min-h-[80px] text-sm resize-none"
-              />
-            </div>
-
-            <Button
-              type="submit"
-              disabled={createMutation.isPending}
-              className="w-full bg-[#f97316] hover:bg-[#ea580c] text-white font-bold h-12 mt-4 rounded-lg transition-all"
-            >
-              {createMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              Save to Dashboard
-            </Button>
-          </form>
         </div>
       </div>
     </div>

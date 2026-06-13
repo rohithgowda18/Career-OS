@@ -45,6 +45,13 @@ public class User implements UserDetails {
     private Set<Application> applications = new HashSet<>();
 
     @JsonIgnore
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private Set<Placement> placements = new HashSet<>();
+
+
+    @JsonIgnore
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
     @EqualsAndHashCode.Exclude

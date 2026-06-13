@@ -4,9 +4,11 @@ import com.eventtracker.dto.ApplicationDTO;
 import com.eventtracker.entity.Application;
 import com.eventtracker.entity.User;
 import com.eventtracker.service.ApplicationService;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -18,7 +20,7 @@ import java.util.Optional;
 
 @Slf4j
 @RestController
-@RequestMapping("/applications")
+@RequestMapping("/api/applications")
 @RequiredArgsConstructor
 public class ApplicationController {
 
@@ -33,13 +35,17 @@ public class ApplicationController {
     }
 
     @GetMapping
-    public ResponseEntity<List<ApplicationDTO>> list() {
+    @Operation(operationId = "listApplications", summary = "List event applications with optional status filtering and full-text search")
+    public ResponseEntity<?> list(
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String search,
+            Pageable pageable) {
         User user = getCurrentUser();
-        List<ApplicationDTO> applications = applicationService.getUserApplications(user.getId());
-        return ResponseEntity.ok(applications);
+        return ResponseEntity.ok(applicationService.getUserApplications(user.getId(), status, search, pageable));
     }
 
     @GetMapping("/{id}")
+    @Operation(operationId = "getApplication", summary = "Get an event application by ID")
     public ResponseEntity<?> get(@PathVariable Long id) {
         User user = getCurrentUser();
         Optional<Application> application = applicationService.findById(id, user.getId());
@@ -50,6 +56,7 @@ public class ApplicationController {
     }
 
     @PostMapping
+    @Operation(operationId = "createApplication", summary = "Create a new event application")
     public ResponseEntity<?> create(@Valid @RequestBody ApplicationDTO dto) {
         try {
             User user = getCurrentUser();
@@ -63,6 +70,7 @@ public class ApplicationController {
     }
 
     @PutMapping("/{id}")
+    @Operation(operationId = "updateApplication", summary = "Update an existing event application")
     public ResponseEntity<?> update(@PathVariable Long id, @Valid @RequestBody ApplicationDTO dto) {
         try {
             User user = getCurrentUser();
@@ -77,6 +85,7 @@ public class ApplicationController {
     }
 
     @DeleteMapping("/{id}")
+    @Operation(operationId = "deleteApplication", summary = "Delete an event application")
     public ResponseEntity<?> delete(@PathVariable Long id) {
         try {
             User user = getCurrentUser();
@@ -88,12 +97,5 @@ public class ApplicationController {
             log.error("Error deleting application", e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
-    }
-
-    @GetMapping("/status/{status}")
-    public ResponseEntity<List<ApplicationDTO>> getByStatus(@PathVariable String status) {
-        User user = getCurrentUser();
-        List<ApplicationDTO> applications = applicationService.getUserApplicationsByStatus(user.getId(), status);
-        return ResponseEntity.ok(applications);
     }
 }

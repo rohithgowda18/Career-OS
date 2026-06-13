@@ -70,14 +70,27 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                                "/auth/login",
-                                "/auth/register",
+                                "/api/auth/login",
+                                "/api/auth/register",
                                 "/oauth2/**",
-                                "/login/oauth2/**"
+                                "/login/oauth2/**",
+                                "/actuator/**",
+                                "/v3/api-docs/**",
+                                "/swagger-ui.html",
+                                "/swagger-ui/**",
+                                "/swagger-resources/**",
+                                "/webjars/**"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
+                .exceptionHandling(exceptions -> exceptions
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            response.setStatus(401);
+                            response.setContentType("application/json");
+                            response.getWriter().write("{\"status\":401,\"error\":\"Unauthorized\",\"message\":\"Authentication required\"}");
+                        })
+                )
                 .oauth2Login(oauth -> oauth
                         .successHandler(oAuth2LoginSuccessHandler)
                 )

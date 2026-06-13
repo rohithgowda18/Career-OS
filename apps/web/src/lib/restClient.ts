@@ -20,10 +20,9 @@ const normalizedUrl = getApiBaseUrl()
   .replace(/\/+$/, '')
   .replace(/\/api\/?$/, '');
 
-export const API_BASE_URL = normalizedUrl;
-
 const restClient = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: normalizedUrl,
+  timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -46,7 +45,17 @@ restClient.interceptors.request.use(
 
 // Add a response interceptor to handle authentication errors
 restClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // If the response is HTML but we expected JSON (or any data), it's likely a redirect to a login page
+    if (typeof response.data === 'string' && response.data.trim().startsWith('<!DOCTYPE')) {
+      return Promise.reject({
+        message: 'Backend returned an HTML page instead of JSON. You may need to log in again.',
+        response,
+        status: 401
+      });
+    }
+    return response;
+  },
   (error) => {
     if (error.response?.status === 401) {
       // Clear token and redirect to login if unauthorized
@@ -68,4 +77,6 @@ restClient.interceptors.response.use(
   }
 );
 
+export { normalizedUrl as BACKEND_URL };
 export default restClient;
+

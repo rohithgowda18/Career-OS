@@ -59,7 +59,7 @@ public class Application {
     private LocalDateTime updatedAt;
 
     public enum EventType {
-        Hackathon, Workshop, Conference, Other
+        Hackathon, Workshop, Conference, Internship, Other
     }
 
     public enum ApplicationStatus {

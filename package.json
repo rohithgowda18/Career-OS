@@ -101,9 +101,5 @@
     "vite-plugin-manus-runtime": "^0.0.57",
     "vite-plugin-pwa": "^1.2.0",
     "vitest": "^2.1.4"
-  },
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ]
+  }
 }
