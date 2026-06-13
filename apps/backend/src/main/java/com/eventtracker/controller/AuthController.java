@@ -7,6 +7,7 @@ import com.eventtracker.entity.User;
 import com.eventtracker.exception.DuplicateUserException;
 import com.eventtracker.security.JwtTokenProvider;
 import com.eventtracker.service.UserService;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +27,7 @@ import java.util.Optional;
 
 @Slf4j
 @RestController
-@RequestMapping("/auth")
+@RequestMapping("/api/auth")
 @RequiredArgsConstructor
 public class AuthController {
 
@@ -35,6 +36,7 @@ public class AuthController {
     private final PasswordEncoder passwordEncoder;
 
     @PostMapping("/register")
+    @Operation(operationId = "register", summary = "Register a new user")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request) {
         try {
             User user = userService.createUser(
@@ -59,6 +61,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
+    @Operation(operationId = "login", summary = "Login to obtain JWT token")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
         try {
             Optional<User> user = userService.findByEmail(request.getEmail());
@@ -83,6 +86,7 @@ public class AuthController {
     }
 
     @GetMapping("/me")
+    @Operation(operationId = "getCurrentUser", summary = "Get current authenticated user info")
     public ResponseEntity<?> getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication.isAuthenticated()) {
@@ -96,6 +100,7 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
+    @Operation(operationId = "logout", summary = "Logout current user session")
     public ResponseEntity<?> logout(HttpServletRequest request) {
         SecurityContextHolder.clearContext();
         return ResponseEntity.ok("Logout successful");

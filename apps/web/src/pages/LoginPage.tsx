@@ -3,16 +3,19 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Sparkles, Loader2, ArrowLeft, Key, Mail } from "lucide-react";
+import { Sparkles, Loader2, ArrowLeft, Key, Mail, Eye, EyeOff } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { authApi } from "@/lib/api/authApi";
+import { BACKEND_URL } from "@/lib/restClient";
 import { toast } from "sonner";
+
 
 export default function LoginPage() {
   const [, setLocation] = useLocation();
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const queryClient = useQueryClient();
   const searchParams = new URLSearchParams(window.location.search);
@@ -104,15 +107,28 @@ export default function LoginPage() {
               <Label htmlFor="password" name="password" className="text-[10px] font-black uppercase tracking-widest text-text-muted flex items-center gap-2">
                  <Key className="w-3.5 h-3.5" /> Access Key
               </Label>
-              <Input 
-                id="password" 
-                type="password" 
-                placeholder="••••••••"
-                value={password} 
-                onChange={e => setPassword(e.target.value)} 
-                required 
-                className="input-premium h-14 text-sm font-bold" 
-              />
+              <div className="relative">
+                <Input 
+                  id="password" 
+                  type={showPassword ? "text" : "password"} 
+                  placeholder="••••••••"
+                  value={password} 
+                  onChange={e => setPassword(e.target.value)} 
+                  required 
+                  className="input-premium h-14 text-sm font-bold pr-12" 
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 flex items-center pr-4 text-text-muted hover:text-primary transition-colors focus:outline-none"
+                >
+                  {showPassword ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
             </div>
 
             <Button 
@@ -128,14 +144,14 @@ export default function LoginPage() {
           <div className="mt-10 pt-8 border-t border-border flex flex-col items-center gap-4">
             <div className="grid grid-cols-2 gap-4 w-full">
               <a 
-                href="http://localhost:8080/oauth2/authorization/google"
+                href={`${BACKEND_URL}/oauth2/authorization/google`}
                 className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-[10px] font-black uppercase tracking-widest"
               >
                 <img src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" alt="Google" className="w-4 h-4" />
                 Google
               </a>
               <a 
-                href="http://localhost:8080/oauth2/authorization/github"
+                href={`${BACKEND_URL}/oauth2/authorization/github`}
                 className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-[10px] font-black uppercase tracking-widest"
               >
                 <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="GitHub" className="w-4 h-4 invert" />

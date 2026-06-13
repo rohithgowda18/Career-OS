@@ -6,6 +6,8 @@ import com.eventtracker.entity.User;
 import com.eventtracker.exception.DuplicateEventException;
 import com.eventtracker.repository.ApplicationRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -82,11 +84,15 @@ public class ApplicationService {
         return applicationRepository.findByIdAndUserId(id, userId);
     }
 
-    public List<ApplicationDTO> getUserApplications(Long userId) {
-        return applicationRepository.findByUserIdOrderByDeadlineAsc(userId)
-                .stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
+    public Page<ApplicationDTO> getUserApplications(Long userId, String status, String search, Pageable pageable) {
+        Application.ApplicationStatus appStatus = null;
+        if (status != null && !status.trim().isEmpty() && !status.equalsIgnoreCase("ALL")) {
+            appStatus = parseStatus(status);
+        }
+        String searchPattern = (search != null && !search.trim().isEmpty()) ? search.trim() : null;
+
+        return applicationRepository.findFiltered(userId, appStatus, searchPattern, pageable)
+                .map(this::convertToDTO);
     }
 
     public List<ApplicationDTO> getUserApplicationsByStatus(Long userId, String status) {

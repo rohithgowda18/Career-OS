@@ -1,3 +1,4 @@
+@import url('https://api.fontshare.com/v2/css?f[]=satoshi@900,700,500,400,300&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 @import "tailwindcss";
@@ -11,6 +12,8 @@
   --radius-lg: 1rem;
   --radius-xl: 1.25rem;
 
+  --font-sans: 'Satoshi', 'Inter', system-ui, sans-serif;
+
   /* Cyber-Premium Orange & Pink Palette */
   --color-bg-main: #0E0E10;
   --color-bg-card: #17171A;
@@ -19,8 +22,12 @@
   --color-primary: #F97316;
   --color-primary-hover: #EA580C;
   --color-accent: #EC4899;
-  --color-text-main: #F4F4F5;
+  
+  /* Text Colors */
+  --color-text-main: #F5F5F5;
   --color-text-muted: #A1A1AA;
+  --color-text-dim: #71717A;
+  
   --color-success: #22C55E;
   --color-danger: #EF4444;
 
@@ -51,37 +58,82 @@
     @apply border-border outline-none transition-colors duration-200;
   }
   body {
-    @apply bg-bg-main text-text-main font-sans antialiased;
-    font-family: 'Inter', sans-serif;
+    @apply bg-bg-main text-text-main font-sans antialiased text-[15px] sm:text-[17px] leading-[1.6];
   }
   h1, h2, h3, h4, h5, h6 {
-    @apply font-bold tracking-tight text-text-main;
+    @apply font-bold tracking-tight text-text-main leading-tight mb-3;
+  }
+  h1 { @apply text-[36px] sm:text-[42px] tracking-tighter; }
+  h2 { @apply text-[24px] sm:text-[30px] tracking-tight; }
+  h3 { @apply text-[18px] sm:text-[22px] tracking-tight; }
+  h4 { @apply text-[16px] sm:text-[18px] tracking-tight; }
+  a, button {
+    @apply transition-all duration-300 ease-in-out;
   }
 }
 
 @layer components {
+  /* Premium SaaS Typography Utility Classes */
+  .text-heading-large {
+    @apply font-bold text-[36px] sm:text-[42px] tracking-tighter text-text-main leading-tight;
+  }
+  .text-heading-section {
+    @apply font-bold text-[24px] sm:text-[30px] tracking-tight text-text-main leading-snug;
+  }
+  .text-card-heading {
+    @apply font-bold text-[18px] sm:text-[22px] tracking-tight text-text-main leading-snug;
+  }
+  .text-nav {
+    @apply font-medium text-[15px] sm:text-[16px] tracking-wide text-text-muted hover:text-text-main transition-colors duration-300;
+  }
+  .text-body {
+    @apply font-normal text-[15px] sm:text-[17px] text-text-muted leading-[1.6];
+  }
+  .label-small {
+    @apply font-bold text-[12px] sm:text-[13px] uppercase tracking-widest text-text-muted mb-1.5 inline-block;
+  }
+  .stat-number {
+    @apply font-black text-[36px] sm:text-[48px] tracking-tighter text-text-main leading-none;
+  }
+  .stat-percentage {
+    @apply font-black text-[32px] sm:text-[40px] tracking-tighter text-text-main leading-none;
+  }
+  .text-secondary {
+    @apply text-text-muted text-[14px] sm:text-[15px] leading-[1.5];
+  }
+  .text-muted {
+    @apply text-text-dim text-[13px] sm:text-[14px] leading-[1.5];
+  }
+  .table-heading {
+    @apply font-bold text-[14px] sm:text-[15px] text-text-main tracking-wide;
+  }
+  .table-row {
+    @apply text-[14px] sm:text-[15px] text-text-muted py-3;
+  }
+
+  /* Core UI Components */
   .container {
     @apply mx-auto px-4 md:px-8 max-w-7xl;
   }
 
   .card-premium {
-    @apply bg-bg-card border border-border rounded-xl shadow-sm transition-all duration-300 hover:border-primary/40 hover:bg-bg-elevated hover:-translate-y-0.5;
+    @apply bg-bg-card border border-border rounded-xl shadow-sm transition-all duration-300 hover:border-primary/40 hover:bg-bg-elevated hover:-translate-y-0.5 p-6;
   }
 
   .btn-primary {
-    @apply bg-primary hover:bg-primary-hover text-white font-bold px-4 py-2 rounded-lg transition-all duration-200 shadow-lg shadow-primary/10 active:scale-95 disabled:opacity-50;
+    @apply bg-primary hover:bg-primary-hover text-white font-bold text-[14px] sm:text-[16px] px-5 py-2.5 rounded-lg transition-all duration-200 shadow-lg shadow-primary/10 active:scale-95 disabled:opacity-50 tracking-wide;
   }
 
   .btn-accent {
-    @apply bg-accent hover:bg-accent/90 text-white font-bold px-4 py-2 rounded-lg transition-all duration-200 shadow-lg shadow-accent/10 active:scale-95 disabled:opacity-50;
+    @apply bg-accent hover:bg-accent/90 text-white font-bold text-[14px] sm:text-[16px] px-5 py-2.5 rounded-lg transition-all duration-200 shadow-lg shadow-accent/10 active:scale-95 disabled:opacity-50 tracking-wide;
   }
 
   .input-premium {
-    @apply bg-bg-elevated border border-border text-text-main rounded-lg px-4 py-2 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-text-muted;
+    @apply bg-bg-elevated border border-border text-text-main text-[15px] sm:text-[16px] rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all placeholder:text-text-dim;
   }
 
   .badge-status {
-    @apply px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all;
+    @apply px-3 py-1 rounded-full text-[12px] sm:text-[13px] font-medium uppercase tracking-wider border transition-all;
   }
 }
 

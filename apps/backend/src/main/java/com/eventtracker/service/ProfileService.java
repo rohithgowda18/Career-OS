@@ -1,5 +1,6 @@
 package com.eventtracker.service;
 
+import com.eventtracker.dto.UserProfileDTO;
 import com.eventtracker.entity.UserProfile;
 import com.eventtracker.repository.UserProfileRepository;
 import lombok.RequiredArgsConstructor;
@@ -12,11 +13,11 @@ import java.util.Optional;
 public class ProfileService {
     private final UserProfileRepository profileRepository;
 
-    public Optional<UserProfile> getProfileByUserId(Long userId) {
-        return profileRepository.findByUserId(userId);
+    public Optional<UserProfileDTO> getProfileByUserId(Long userId) {
+        return profileRepository.findByUserId(userId).map(this::convertToDTO);
     }
 
-    public UserProfile updateProfile(Long userId, UserProfile updates) {
+    public UserProfileDTO updateProfile(Long userId, UserProfileDTO updates) {
         UserProfile profile = profileRepository.findByUserId(userId)
                 .orElseThrow(() -> new IllegalArgumentException("Profile not found"));
 
@@ -27,6 +28,23 @@ public class ProfileService {
         if (updates.getPortfolioUrl() != null) profile.setPortfolioUrl(updates.getPortfolioUrl());
         if (updates.getLocation() != null) profile.setLocation(updates.getLocation());
 
-        return profileRepository.save(profile);
+        return convertToDTO(profileRepository.save(profile));
+    }
+
+    public UserProfileDTO convertToDTO(UserProfile profile) {
+        if (profile == null) return null;
+        return UserProfileDTO.builder()
+                .id(profile.getId())
+                .userId(profile.getUser() != null ? profile.getUser().getId() : null)
+                .email(profile.getEmail())
+                .college(profile.getCollege())
+                .skills(profile.getSkills())
+                .githubUrl(profile.getGithubUrl())
+                .linkedinUrl(profile.getLinkedinUrl())
+                .portfolioUrl(profile.getPortfolioUrl())
+                .location(profile.getLocation())
+                .createdAt(profile.getCreatedAt())
+                .updatedAt(profile.getUpdatedAt())
+                .build();
     }
 }
