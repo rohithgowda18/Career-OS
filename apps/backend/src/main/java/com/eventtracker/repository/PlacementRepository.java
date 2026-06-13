@@ -16,7 +16,7 @@ public interface PlacementRepository extends JpaRepository<Placement, Long> {
 
     @org.springframework.data.jpa.repository.Query("SELECT p FROM Placement p WHERE p.user.id = :userId " +
            "AND (:status IS NULL OR p.status = :status) " +
-           "AND (:search IS NULL OR LOWER(p.companyName) LIKE LOWER(CONCAT('%', :search, '%')) OR LOWER(p.role) LIKE LOWER(CONCAT('%', :search, '%')) OR LOWER(p.location) LIKE LOWER(CONCAT('%', :search, '%')))")
+           "AND (CAST(:search AS string) IS NULL OR LOWER(p.companyName) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%')) OR LOWER(p.role) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%')) OR LOWER(p.location) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%')))")
     Page<Placement> findFiltered(@org.springframework.data.repository.query.Param("userId") Long userId, 
                                 @org.springframework.data.repository.query.Param("status") PlacementStatus status, 
                                 @org.springframework.data.repository.query.Param("search") String search, 

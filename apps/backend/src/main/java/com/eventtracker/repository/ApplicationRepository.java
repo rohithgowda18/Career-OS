@@ -16,7 +16,7 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
 
     @org.springframework.data.jpa.repository.Query("SELECT a FROM Application a WHERE a.user.id = :userId " +
            "AND (:status IS NULL OR a.status = :status) " +
-           "AND (:search IS NULL OR LOWER(a.eventName) LIKE LOWER(CONCAT('%', :search, '%')) OR LOWER(a.location) LIKE LOWER(CONCAT('%', :search, '%')) OR LOWER(a.notes) LIKE LOWER(CONCAT('%', :search, '%')))")
+           "AND (CAST(:search AS string) IS NULL OR LOWER(a.eventName) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%')) OR LOWER(a.location) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%')) OR LOWER(a.notes) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%')))")
     Page<Application> findFiltered(@org.springframework.data.repository.query.Param("userId") Long userId, 
                                   @org.springframework.data.repository.query.Param("status") Application.ApplicationStatus status, 
                                   @org.springframework.data.repository.query.Param("search") String search, 
