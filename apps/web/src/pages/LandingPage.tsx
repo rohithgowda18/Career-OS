@@ -7,13 +7,34 @@ import {
   BarChart3, 
   Layout,
   Calendar,
-  CheckCircle2
+  CheckCircle2,
+  Smartphone
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { usePWAInstall } from "@/hooks/usePWAInstall";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 export default function LandingPage() {
   const [, setLocation] = useLocation();
   const [scrolled, setScrolled] = useState(false);
+  const [showInstallDialog, setShowInstallDialog] = useState(false);
+  const { isInstallable, isIOS, triggerInstall } = usePWAInstall();
+
+  const handleConfirmInstall = async () => {
+    setShowInstallDialog(false);
+    try {
+      const outcome = await triggerInstall();
+      if (outcome === "accepted") {
+        toast.success("App installed successfully.");
+      } else {
+        toast.info("Installation cancelled.");
+      }
+    } catch (error) {
+      toast.error("Failed to trigger installation.");
+    }
+  };
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -42,6 +63,15 @@ export default function LandingPage() {
           </div>
           
           <div className="flex items-center gap-4">
+            {isInstallable && (
+              <Button
+                onClick={() => setShowInstallDialog(true)}
+                className="bg-accent hover:bg-accent/90 text-white rounded-full px-5 font-semibold gap-2 flex items-center shadow-lg shadow-accent/20 border-none h-10 transition-all hover:scale-[1.02] active:scale-95"
+              >
+                <Smartphone className="w-4 h-4" />
+                <span>Install</span>
+              </Button>
+            )}
             <button 
               onClick={() => setLocation("/login")}
               className="text-sm font-medium hover:text-white transition-colors"
@@ -50,7 +80,7 @@ export default function LandingPage() {
             </button>
             <Button 
               onClick={() => setLocation("/login")}
-              className="bg-white text-black hover:bg-white/90 rounded-full px-6 font-semibold"
+              className="bg-white text-black hover:bg-white/90 rounded-full px-6 font-semibold h-10"
             >
               Get Started
             </Button>
@@ -177,10 +207,67 @@ export default function LandingPage() {
               </div>
               <span className="text-lg font-bold tracking-tight">Event Tracker</span>
             </div>
-            <p className="text-sm text-muted-foreground">© 2024 Event Tracker. Clean. Minimal. Fast.</p>
+            <p className="text-sm text-muted-foreground">© 2026 Event Tracker. Clean. Minimal. Fast.</p>
           </div>
         </div>
       </footer>
+
+      <Dialog open={showInstallDialog} onOpenChange={setShowInstallDialog}>
+        <DialogContent className="max-w-md bg-bg-card border-border text-text-main rounded-2xl shadow-2xl p-6">
+          <DialogHeader className="space-y-3">
+            <DialogTitle className="text-xl font-black text-white">
+              {isIOS ? "Install EventTracker on iOS" : "Install Opportunity Management Platform?"}
+            </DialogTitle>
+            <DialogDescription className="text-sm text-text-muted">
+              {isIOS 
+                ? "Install this app on your iPhone or iPad for faster access and a native app experience."
+                : "Install this app on your device for faster access and a better experience."}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {isIOS ? (
+            <div className="space-y-4 py-4 text-sm text-text-main">
+              <p className="font-bold mb-2 text-primary">Follow these simple steps in Safari:</p>
+              <ol className="list-decimal list-inside space-y-3 font-semibold">
+                <li>
+                  Tap the <span className="inline-flex items-center px-2 py-0.5 rounded bg-bg-elevated border border-border text-xs"><span className="text-base mr-1">📤</span> Share</span> button.
+                </li>
+                <li>
+                  Scroll down and tap <span className="inline-flex items-center px-2 py-0.5 rounded bg-bg-elevated border border-border text-xs"><span className="text-base mr-1">➕</span> Add to Home Screen</span>.
+                </li>
+                <li>
+                  Tap <span className="font-bold text-primary">Add</span> in the top-right corner.
+                </li>
+              </ol>
+            </div>
+          ) : null}
+
+          <DialogFooter className="flex justify-end gap-3 pt-4 border-t border-border/40 mt-6 font-bold">
+            <Button
+              type="button"
+              variant={isIOS ? "default" : "ghost"}
+              onClick={() => setShowInstallDialog(false)}
+              className={cn(
+                "font-black px-6 h-10 shadow-lg",
+                isIOS 
+                  ? "bg-primary hover:bg-primary-hover text-white shadow-primary/20" 
+                  : "text-text-muted hover:text-text-main hover:bg-bg-hover"
+              )}
+            >
+              {isIOS ? "Got it" : "Cancel"}
+            </Button>
+            {!isIOS && (
+              <Button
+                type="button"
+                onClick={handleConfirmInstall}
+                className="bg-primary hover:bg-primary-hover text-white font-black px-6 h-10 shadow-lg shadow-primary/20"
+              >
+                Install
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes gradient {

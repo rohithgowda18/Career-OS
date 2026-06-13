@@ -26,7 +26,7 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
   const { user, loading, logout } = useAuth();
   const [, setLocation] = useLocation();
   const [showInstallDialog, setShowInstallDialog] = useState(false);
-  const { isInstallable, triggerInstall } = usePWAInstall();
+  const { isInstallable, isIOS, triggerInstall } = usePWAInstall();
 
   const handleConfirmInstall = async () => {
     setShowInstallDialog(false);
@@ -204,28 +204,55 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
         <DialogContent className="max-w-md bg-bg-card border-border text-text-main rounded-2xl shadow-2xl p-6">
           <DialogHeader className="space-y-3">
             <DialogTitle className="text-xl font-black">
-              Install Opportunity Management Platform?
+              {isIOS ? "Install EventTracker on iOS" : "Install Opportunity Management Platform?"}
             </DialogTitle>
             <DialogDescription className="text-sm text-text-muted">
-              Install this app on your device for faster access and a better experience.
+              {isIOS 
+                ? "Install this app on your iPhone or iPad for faster access and a native app experience."
+                : "Install this app on your device for faster access and a better experience."}
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="flex justify-end gap-3 pt-4 border-t border-border/40 mt-6">
+          
+          {isIOS ? (
+            <div className="space-y-4 py-4 text-sm text-text-main">
+              <p className="font-bold mb-2 text-primary">Follow these simple steps in Safari:</p>
+              <ol className="list-decimal list-inside space-y-3 font-semibold">
+                <li>
+                  Tap the <span className="inline-flex items-center px-2 py-0.5 rounded bg-bg-elevated border border-border text-xs"><span className="text-base mr-1">📤</span> Share</span> button.
+                </li>
+                <li>
+                  Scroll down and tap <span className="inline-flex items-center px-2 py-0.5 rounded bg-bg-elevated border border-border text-xs"><span className="text-base mr-1">➕</span> Add to Home Screen</span>.
+                </li>
+                <li>
+                  Tap <span className="font-bold text-primary">Add</span> in the top-right corner.
+                </li>
+              </ol>
+            </div>
+          ) : null}
+
+          <DialogFooter className="flex justify-end gap-3 pt-4 border-t border-border/40 mt-6 font-bold">
             <Button
               type="button"
-              variant="ghost"
+              variant={isIOS ? "default" : "ghost"}
               onClick={() => setShowInstallDialog(false)}
-              className="text-text-muted hover:text-text-main hover:bg-bg-hover font-bold"
+              className={cn(
+                "font-black px-6 h-10 shadow-lg",
+                isIOS 
+                  ? "bg-primary hover:bg-primary-hover text-white shadow-primary/20" 
+                  : "text-text-muted hover:text-text-main hover:bg-bg-hover"
+              )}
             >
-              Cancel
+              {isIOS ? "Got it" : "Cancel"}
             </Button>
-            <Button
-              type="button"
-              onClick={handleConfirmInstall}
-              className="bg-primary hover:bg-primary-hover text-white font-black px-6 h-10 shadow-lg shadow-primary/20"
-            >
-              Install
-            </Button>
+            {!isIOS && (
+              <Button
+                type="button"
+                onClick={handleConfirmInstall}
+                className="bg-primary hover:bg-primary-hover text-white font-black px-6 h-10 shadow-lg shadow-primary/20"
+              >
+                Install
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

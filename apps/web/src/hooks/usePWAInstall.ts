@@ -12,12 +12,13 @@ export interface BeforeInstallPromptEvent extends Event {
 export function usePWAInstall() {
   const [installPromptEvent, setInstallPromptEvent] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
 
-  const isInstallable = installPromptEvent !== null && !isInstalled;
+  const isInstallable = (installPromptEvent !== null || isIOS) && !isInstalled;
 
   useEffect(() => {
-    console.log("PWA Status Update - installPromptEvent:", installPromptEvent, "isInstalled:", isInstalled, "isInstallable:", isInstallable);
-  }, [installPromptEvent, isInstalled, isInstallable]);
+    console.log("PWA Status Update - installPromptEvent:", installPromptEvent, "isInstalled:", isInstalled, "isInstallable:", isInstallable, "isIOS:", isIOS);
+  }, [installPromptEvent, isInstalled, isInstallable, isIOS]);
 
   useEffect(() => {
     const checkStandalone = () => {
@@ -28,6 +29,14 @@ export function usePWAInstall() {
     };
 
     setIsInstalled(checkStandalone());
+
+    const checkIOS = () => {
+      const ua = window.navigator.userAgent.toLowerCase();
+      const isApple = /iphone|ipad|ipod/.test(ua);
+      const isIPadOS = ua.includes("macintosh") && navigator.maxTouchPoints > 1;
+      return isApple || isIPadOS;
+    };
+    setIsIOS(checkIOS());
 
     const handleBeforeInstallPrompt = (e: Event) => {
       console.log("PWA install available");
@@ -58,6 +67,10 @@ export function usePWAInstall() {
   }, []);
 
   const triggerInstall = async (): Promise<"accepted" | "dismissed"> => {
+    if (isIOS) {
+      // iOS has no programmatic trigger, we handle it via instructions in the UI
+      return "dismissed";
+    }
     if (!installPromptEvent) {
       console.warn("Installation prompt is not available yet.");
       return "dismissed";
@@ -71,6 +84,7 @@ export function usePWAInstall() {
   return {
     isInstallable,
     isInstalled,
+    isIOS,
     triggerInstall,
     installPromptEvent,
   };
