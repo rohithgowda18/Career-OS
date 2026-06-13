@@ -1,25 +1,93 @@
- read all controllerrrect{
+{
   "info": {
     "name": "Event Tracker - Backend API",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "description": "Postman collection generated from the Spring Boot backend in apps/backend. JWT Bearer auth is required for all non-public routes."
+    "description": "Postman collection generated from the Spring Boot backend. Standardized endpoints with unified /api namespace and collection-level pre-request JWT auth acquisition."
   },
   "variable": [
     {
       "key": "baseUrl",
-      "value": "http://localhost:8080"
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "testEmail",
+      "value": "rohit@gmail.com",
+      "type": "string"
+    },
+    {
+      "key": "testPassword",
+      "value": "rohith2005",
+      "type": "string"
     },
     {
       "key": "token",
-      "value": ""
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "tokenCapturedAt",
+      "value": "",
+      "type": "string"
     },
     {
       "key": "status",
-      "value": "Accepted"
+      "value": "Applied",
+      "type": "string"
     },
     {
-      "key": "appid",
-      "value": "1"
+      "key": "id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "placementId",
+      "value": "1",
+      "type": "string"
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const token = pm.collectionVariables.get('token');",
+          "const tokenCapturedAt = pm.collectionVariables.get('tokenCapturedAt');",
+          "const testEmail = pm.collectionVariables.get('testEmail');",
+          "const testPassword = pm.collectionVariables.get('testPassword');",
+          "const baseUrl = pm.collectionVariables.get('baseUrl') || 'http://localhost:8080';",
+          "",
+          "const now = Date.now();",
+          "const oneHour = 3600000;",
+          "",
+          "const path = pm.request.url.getPath();",
+          "const isPublicEndpoint = path.includes('/auth/login') || path.includes('/auth/register');",
+          "",
+          "if (!isPublicEndpoint && (!token || !tokenCapturedAt || (now - tokenCapturedAt > oneHour))) {",
+          "    pm.sendRequest({",
+          "        url: baseUrl + '/api/auth/login',",
+          "        method: 'POST',",
+          "        header: {",
+          "            'Content-Type': 'application/json'",
+          "        },",
+          "        body: {",
+          "            mode: 'raw',",
+          "            raw: JSON.stringify({ email: testEmail, password: testPassword })",
+          "        }",
+          "    }, function (err, res) {",
+          "        if (err || res.code !== 200) {",
+          "            console.error('Authentication failed: ', err || res.text());",
+          "        } else {",
+          "            const data = res.json();",
+          "            pm.collectionVariables.set('token', data.token);",
+          "            pm.collectionVariables.set('tokenCapturedAt', Date.now());",
+          "            console.log('Token retrieved successfully for: ' + testEmail);",
+          "        }",
+          "    });",
+          "}"
+        ]
+      }
     }
   ],
   "item": [
@@ -37,24 +105,34 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/auth/register",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "auth",
-                "register"
-              ]
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "register"]
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"password123\"\n}"
+              "raw": "{\n  \"email\": \"rohit@gmail.com\",\n  \"password\": \"rohith2005\"\n}"
             }
-          },
-          "response": []
+          }
         },
         {
           "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var data = pm.response.json();",
+                  "    pm.collectionVariables.set('token', data.token);",
+                  "    pm.collectionVariables.set('tokenCapturedAt', Date.now());",
+                  "});"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -64,45 +142,45 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/auth/login",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "auth",
-                "login"
-              ]
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"password123\"\n}"
+              "raw": "{\n  \"email\": \"{{testEmail}}\",\n  \"password\": \"{{testPassword}}\"\n}"
             }
-          },
-          "response": []
+          }
         },
         {
-          "name": "Get current user (/auth/me)",
+          "name": "Get current user",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{token}}",
-                "type": "text"
+                "value": "Bearer {{token}}"
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/auth/me",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "auth",
-                "me"
-              ]
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "me"]
             }
-          },
-          "response": []
+          }
         },
         {
           "name": "Logout",
@@ -111,22 +189,15 @@
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{jwtToken}}",
-                "type": "text"
+                "value": "Bearer {{token}}"
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/auth/logout",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "auth",
-                "logout"
-              ]
+              "raw": "{{baseUrl}}/api/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "logout"]
             }
-          },
-          "response": []
+          }
         }
       ]
     },
@@ -140,22 +211,15 @@
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{jwtToken}}",
-                "type": "text"
+                "value": "Bearer {{token}}"
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/profile/me",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "profile",
-                "me"
-              ]
+              "raw": "{{baseUrl}}/api/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "profile"]
             }
-          },
-          "response": []
+          }
         },
         {
           "name": "Update my profile",
@@ -164,27 +228,23 @@
             "header": [
               {
                 "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
               {
                 "key": "Content-Type",
                 "value": "application/json"
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/profile/me",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "profile",
-                "me"
-              ]
+              "raw": "{{baseUrl}}/api/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "profile"]
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"college\": \"ABC College\",\n  \"skills\": \"Java,Spring\",\n  \"githubUrl\": \"https://github.com/yourname\",\n  \"linkedinUrl\": \"https://linkedin.com/in/yourname\",\n  \"portfolioUrl\": \"https://your-site.com\",\n  \"location\": \"Bangalore\"\n}"
+              "raw": "{\n  \"college\": \"ABC College\",\n  \"skills\": \"Java,Spring\",\n  \"githubUrl\": \"https://github.com/rohithgowda18\",\n  \"linkedinUrl\": \"https://linkedin.com/in/rohithgowda18\",\n  \"portfolioUrl\": \"https://rohithgowda18.github.io\",\n  \"location\": \"Bangalore\"\n}"
             }
-          },
-          "response": []
+          }
         }
       ]
     },
@@ -198,65 +258,39 @@
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{jwtToken}}",
-                "type": "text"
+                "value": "Bearer {{token}}"
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/applications",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "applications"
-              ],
-              "query": []
+              "raw": "{{baseUrl}}/api/applications",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "applications"]
             }
-          },
-          "response": []
-        },
-        {
-          "name": "List applications (paged example)",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{jwtToken}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/applications?page=0&size=10",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "applications"
-              ],
-              "query": [
-                {
-                  "key": "page",
-                  "value": "0"
-                },
-                {
-                  "key": "size",
-                  "value": "10"
-                }
-              ]
-            }
-          },
-          "response": []
+          }
         },
         {
           "name": "Create application",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    var data = pm.response.json();",
+                  "    pm.collectionVariables.set('id', data.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{jwtToken}}",
-                "type": "text"
+                "value": "Bearer {{token}}"
               },
               {
                 "key": "Content-Type",
@@ -264,54 +298,41 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/applications",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "applications"
-              ]
+              "raw": "{{baseUrl}}/api/applications",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "applications"]
             },
             "body": {
               "mode": "raw",
               "raw": "{\n  \"eventName\": \"Spring Boot Hackathon\",\n  \"eventType\": \"Hackathon\",\n  \"status\": \"Interested\",\n  \"deadline\": \"2026-12-31T18:00:00\",\n  \"notes\": \"Need to register\",\n  \"url\": \"https://example.com/event\",\n  \"location\": \"Online\"\n}"
             }
-          },
-          "response": []
+          }
         },
         {
-          "name": "Get application by id (set :id)",
+          "name": "Get application by id",
           "request": {
             "method": "GET",
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{jwtToken}}",
-                "type": "text"
+                "value": "Bearer {{token}}"
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/applications/{{id}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "applications",
-                "{{id}}"
-              ]
+              "raw": "{{baseUrl}}/api/applications/{{id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "applications", "{{id}}"]
             }
-          },
-          "response": []
+          }
         },
         {
-          "name": "Update application by id (set :id)",
+          "name": "Update application by id",
           "request": {
             "method": "PUT",
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{jwtToken}}",
-                "type": "text"
+                "value": "Bearer {{token}}"
               },
               {
                 "key": "Content-Type",
@@ -319,70 +340,201 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/applications/{{id}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "applications",
-                "{{id}}"
-              ]
+              "raw": "{{baseUrl}}/api/applications/{{id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "applications", "{{id}}"]
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"eventName\": \"Spring Boot Hackathon (Updated)\",\n  \"status\": \"Applied\"\n}"
+              "raw": "{\n  \"eventName\": \"Spring Boot Hackathon (Updated)\",\n  \"eventType\": \"Hackathon\",\n  \"status\": \"Applied\"\n}"
             }
-          },
-          "response": []
+          }
         },
         {
-          "name": "Delete application by id (set :id)",
+          "name": "Delete application by id",
           "request": {
             "method": "DELETE",
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{jwtToken}}",
-                "type": "text"
+                "value": "Bearer {{token}}"
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/applications/{{id}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "applications",
-                "{{id}}"
-              ]
+              "raw": "{{baseUrl}}/api/applications/{{id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "applications", "{{id}}"]
             }
-          },
-          "response": []
+          }
         },
         {
-          "name": "Get by status",
+          "name": "Get applications by status",
           "request": {
             "method": "GET",
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{jwtToken}}",
-                "type": "text"
+                "value": "Bearer {{token}}"
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/applications/status/{{status}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "applications",
-                "status",
-                "{{status}}"
+              "raw": "{{baseUrl}}/api/applications?status={{status}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "applications"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "{{status}}"
+                }
               ]
             }
-          },
-          "response": []
+          }
+        }
+      ]
+    },
+    {
+      "name": "Placements",
+      "item": [
+        {
+          "name": "List placements",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/placements",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "placements"]
+            }
+          }
+        },
+        {
+          "name": "Create placement",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    var data = pm.response.json();",
+                  "    pm.collectionVariables.set('placementId', data.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/placements",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "placements"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyName\": \"Google\",\n  \"role\": \"Software Engineer\",\n  \"location\": \"Bangalore\",\n  \"stipend\": \"100k\",\n  \"ctc\": \"30L\",\n  \"applicationLink\": \"https://google.com/jobs\",\n  \"assessmentDate\": \"2026-12-31T18:00:00\",\n  \"interviewDate\": \"2026-12-31T18:00:00\",\n  \"status\": \"APPLIED\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get placement by id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/placements/{{placementId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "placements", "{{placementId}}"]
+            }
+          }
+        },
+        {
+          "name": "Update placement by id",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/placements/{{placementId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "placements", "{{placementId}}"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyName\": \"Google (Updated)\",\n  \"role\": \"Senior Software Engineer\",\n  \"location\": \"Bangalore\",\n  \"stipend\": \"120k\",\n  \"ctc\": \"36L\",\n  \"applicationLink\": \"https://google.com/jobs\",\n  \"status\": \"APPLIED\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete placement by id",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/placements/{{placementId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "placements", "{{placementId}}"]
+            }
+          }
+        },
+        {
+          "name": "AI Extraction",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/placements/extract",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "placements", "extract"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"emailContent\": \"Google has offered you a Software Engineer role in Bangalore starting next week. Link: https://forms.gle/a2GuszGG7w5FUf9v6\"\n}"
+            }
+          }
         }
       ]
     },
@@ -390,80 +542,125 @@
       "name": "Analytics",
       "item": [
         {
-          "name": "Summary",
+          "name": "Applications Summary",
           "request": {
             "method": "GET",
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{jwtToken}}",
-                "type": "text"
+                "value": "Bearer {{token}}"
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/analytics/summary",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "analytics",
-                "summary"
-              ]
+              "raw": "{{baseUrl}}/api/analytics/applications/summary",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "analytics", "applications", "summary"]
             }
-          },
-          "response": []
+          }
         },
         {
-          "name": "Distribution",
+          "name": "Applications Distribution",
           "request": {
             "method": "GET",
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{jwtToken}}",
-                "type": "text"
+                "value": "Bearer {{token}}"
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/analytics/distribution",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "analytics",
-                "distribution"
-              ]
+              "raw": "{{baseUrl}}/api/analytics/applications/status-distribution",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "analytics", "applications", "status-distribution"]
             }
-          },
-          "response": []
+          }
         },
         {
-          "name": "Acceptance rates",
+          "name": "Applications Conversion Rates",
           "request": {
             "method": "GET",
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{jwtToken}}",
-                "type": "text"
+                "value": "Bearer {{token}}"
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/analytics/rates",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "analytics",
-                "rates"
-              ]
+              "raw": "{{baseUrl}}/api/analytics/applications/conversion-rates",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "analytics", "applications", "conversion-rates"]
             }
-          },
-          "response": []
+          }
+        },
+        {
+          "name": "Placements Summary",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/analytics/placements/summary",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "analytics", "placements", "summary"]
+            }
+          }
+        },
+        {
+          "name": "Placements Distribution",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/analytics/placements/status-distribution",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "analytics", "placements", "status-distribution"]
+            }
+          }
+        },
+        {
+          "name": "Placements Conversion Rates",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/analytics/placements/conversion-rates",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "analytics", "placements", "conversion-rates"]
+            }
+          }
+        },
+        {
+          "name": "Placements Trends",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/analytics/placements/trends",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "analytics", "placements", "trends"]
+            }
+          }
         }
       ]
     }
-  ],
-  "event": []
+  ]
 }
-

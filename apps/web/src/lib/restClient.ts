@@ -66,4 +66,6 @@ restClient.interceptors.response.use(
   }
 );
 
+export { normalizedUrl as BACKEND_URL };
 export default restClient;
+
