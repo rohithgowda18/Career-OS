@@ -1,10 +1,11 @@
+import React, { Suspense } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Loader2 } from "lucide-react";
 import DashboardView from "@/components/views/DashboardView";
-import KanbanView from "@/components/views/KanbanView";
-import CalendarView from "@/components/views/CalendarView";
-import AnalyticsDashboard from "@/components/AnalyticsDashboard";
-import ApplicationProfileForm from "@/components/ApplicationProfileForm";
+const KanbanView = React.lazy(() => import("@/components/views/KanbanView"));
+const CalendarView = React.lazy(() => import("@/components/views/CalendarView"));
+const AnalyticsDashboard = React.lazy(() => import("@/components/AnalyticsDashboard"));
+const ApplicationProfileForm = React.lazy(() => import("@/components/ApplicationProfileForm"));
 import DashboardLayout from "@/components/DashboardLayout";
 import { useState, useEffect } from "react";
 
@@ -70,11 +71,17 @@ export default function Home() {
 
   return (
     <DashboardLayout activeTab={currentView}>
-      {currentView === "dashboard" && <DashboardView />}
-      {currentView === "kanban" && <KanbanView />}
-      {currentView === "calendar" && <CalendarView />}
-      {currentView === "analytics" && <AnalyticsDashboard />}
-      {currentView === "profile" && <ApplicationProfileForm />}
+      <Suspense fallback={
+        <div className="flex items-center justify-center py-24">
+          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+        </div>
+      }>
+        {currentView === "dashboard" && <DashboardView />}
+        {currentView === "kanban" && <KanbanView />}
+        {currentView === "calendar" && <CalendarView />}
+        {currentView === "analytics" && <AnalyticsDashboard />}
+        {currentView === "profile" && <ApplicationProfileForm />}
+      </Suspense>
     </DashboardLayout>
   );
 }

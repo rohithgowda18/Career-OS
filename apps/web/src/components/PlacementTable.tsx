@@ -11,11 +11,14 @@ import {
   Globe,
   Loader2,
   MapPin,
-  DollarSign
+  DollarSign,
+  Briefcase
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import EditPlacementModal from "@/components/EditPlacementModal";
+import AddPlacementModal from "@/components/AddPlacementModal";
 import PlacementCard from "@/components/PlacementCard";
+import EmptyState from "@/components/ui/EmptyState";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -28,19 +31,19 @@ interface PlacementTableProps {
 const STATUS_CLASSES: Record<string, string> = {
   APPLIED: "bg-primary/10 text-primary border-primary/20",
   ASSESSMENT_SCHEDULED: "bg-amber-500/10 text-amber-500 border-amber-500/20",
-  ASSESSMENT_COMPLETED: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
+  ASSESSMENT_COMPLETED: "bg-amber-500/10 text-amber-500 border-amber-500/20",
   INTERVIEW_SCHEDULED: "bg-indigo-500/10 text-indigo-500 border-indigo-500/20",
-  INTERVIEW_COMPLETED: "bg-blue-500/10 text-blue-500 border-blue-500/20",
+  INTERVIEW_COMPLETED: "bg-indigo-500/10 text-indigo-500 border-indigo-500/20",
   OFFER_RECEIVED: "bg-success/10 text-success border-success/20",
   REJECTED: "bg-danger/10 text-danger border-danger/20",
 };
 
 const STATUS_LABELS: Record<string, string> = {
   APPLIED: "Applied",
-  ASSESSMENT_SCHEDULED: "Assessment Scheduled",
-  ASSESSMENT_COMPLETED: "Assessment Completed",
+  ASSESSMENT_SCHEDULED: "Assess Scheduled",
+  ASSESSMENT_COMPLETED: "Assess Done",
   INTERVIEW_SCHEDULED: "Interview Scheduled",
-  INTERVIEW_COMPLETED: "Interview Completed",
+  INTERVIEW_COMPLETED: "Interview Done",
   OFFER_RECEIVED: "Offer Received",
   REJECTED: "Rejected",
 };
@@ -48,6 +51,7 @@ const STATUS_LABELS: Record<string, string> = {
 export default function PlacementTable({ page, setPage, pageSize }: PlacementTableProps) {
   const [selectedPlacement, setSelectedPlacement] = useState<any>(null);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
   const queryClient = useQueryClient();
 
   const placementsQuery = useQuery({
@@ -60,15 +64,15 @@ export default function PlacementTable({ page, setPage, pageSize }: PlacementTab
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["placements"] });
       queryClient.invalidateQueries({ queryKey: ["analytics", "placements"] });
-      toast.success("Placement deleted successfully");
+      toast.success("Placement opportunity deleted");
     },
     onError: (err: any) => {
-      toast.error(err.message || "Failed to delete placement");
+      toast.error(err.message || "Failed to delete placement opportunity");
     },
   });
 
   const handleDelete = (id: number, company: string) => {
-    if (window.confirm(`Are you sure you want to delete the placement for ${company}?`)) {
+    if (window.confirm(`Are you sure you want to delete the placement opportunity for ${company}?`)) {
       deleteMutation.mutate(id);
     }
   };
@@ -120,9 +124,24 @@ export default function PlacementTable({ page, setPage, pageSize }: PlacementTab
     );
   }
 
+  if (placements.length === 0) {
+    return (
+      <div className="space-y-6">
+        <EmptyState
+          title="No Placements"
+          description="You haven't logged any placement opportunities yet. Add job offers, internships, and recruiter contacts to start your pipeline."
+          icon={Briefcase}
+          actionLabel="Add Placement"
+          onAction={() => setShowAddModal(true)}
+        />
+        <AddPlacementModal open={showAddModal} onOpenChange={setShowAddModal} />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      {/* Cards list view on mobile */}
+      {/* Mobile viewports list display */}
       <div className="grid grid-cols-1 gap-4 md:hidden">
         {placements.map((p: any) => (
           <PlacementCard
@@ -133,98 +152,98 @@ export default function PlacementTable({ page, setPage, pageSize }: PlacementTab
           />
         ))}
         {placements.length === 0 && (
-          <div className="card-premium p-8 text-center text-xs font-bold text-text-muted uppercase tracking-widest opacity-40">
+          <div className="border border-dashed border-border/60 rounded-xl p-8 text-center text-xs text-text-dim">
             No placement opportunities recorded yet
           </div>
         )}
       </div>
 
-      {/* Table view on desktop */}
-      <div className="card-premium overflow-hidden p-0 border-border bg-bg-card/20 backdrop-blur-md hidden md:block">
+      {/* Desktop data table display */}
+      <div className="bg-bg-card border border-border rounded-xl overflow-hidden shadow-xs hidden md:block">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-border/80 bg-bg-card/60">
-                <th className="p-4 text-[10px] font-black uppercase tracking-wider text-text-muted">Company</th>
-                <th className="p-4 text-[10px] font-black uppercase tracking-wider text-text-muted">Role</th>
-                <th className="p-4 text-[10px] font-black uppercase tracking-wider text-text-muted">Location</th>
-                <th className="p-4 text-[10px] font-black uppercase tracking-wider text-text-muted">Stipend</th>
-                <th className="p-4 text-[10px] font-black uppercase tracking-wider text-text-muted">CTC</th>
-                <th className="p-4 text-[10px] font-black uppercase tracking-wider text-text-muted">Status</th>
-                <th className="p-4 text-[10px] font-black uppercase tracking-wider text-text-muted">Assessment</th>
-                <th className="p-4 text-[10px] font-black uppercase tracking-wider text-text-muted">Interview</th>
-                <th className="p-4 text-[10px] font-black uppercase tracking-wider text-text-muted text-right">Actions</th>
+              <tr className="border-b border-border bg-bg-elevated/20">
+                <th className="p-3 text-[11px] font-semibold uppercase tracking-wider text-text-dim">Company</th>
+                <th className="p-3 text-[11px] font-semibold uppercase tracking-wider text-text-dim">Role</th>
+                <th className="p-3 text-[11px] font-semibold uppercase tracking-wider text-text-dim">Location</th>
+                <th className="p-3 text-[11px] font-semibold uppercase tracking-wider text-text-dim">Stipend</th>
+                <th className="p-3 text-[11px] font-semibold uppercase tracking-wider text-text-dim">CTC</th>
+                <th className="p-3 text-[11px] font-semibold uppercase tracking-wider text-text-dim">Status</th>
+                <th className="p-3 text-[11px] font-semibold uppercase tracking-wider text-text-dim">Assessment</th>
+                <th className="p-3 text-[11px] font-semibold uppercase tracking-wider text-text-dim">Interview</th>
+                <th className="p-3 text-[11px] font-semibold uppercase tracking-wider text-text-dim text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border/40">
+            <tbody className="divide-y divide-border/60">
               {placements.map((p: any) => (
-                <tr key={p.id} className="hover:bg-bg-elevated/20 transition-colors group">
-                  <td className="p-4 font-bold text-text-main text-sm truncate max-w-[120px]">{p.companyName}</td>
-                  <td className="p-4 text-text-muted text-sm font-semibold truncate max-w-[120px]">{p.role}</td>
-                  <td className="p-4 text-xs font-semibold text-text-muted">
+                <tr key={p.id} className="hover:bg-bg-elevated/15 transition-colors group">
+                  <td className="p-3 font-semibold text-text-main text-xs truncate max-w-[120px]">{p.companyName}</td>
+                  <td className="p-3 text-text-muted text-xs truncate max-w-[120px]">{p.role}</td>
+                  <td className="p-3 text-xs text-text-muted">
                     {p.location ? (
                       <span className="flex items-center gap-1">
-                        <MapPin className="w-3 h-3 opacity-60" />
+                        <MapPin className="w-3 h-3 text-text-dim shrink-0" />
                         {p.location}
                       </span>
                     ) : (
-                      <span className="opacity-30">-</span>
+                      <span className="text-text-dim/40">-</span>
                     )}
                   </td>
-                  <td className="p-4 text-xs font-semibold text-text-muted">
+                  <td className="p-3 text-xs text-text-muted">
                     {p.stipend ? (
                       <span className="flex items-center gap-1 text-primary">
-                        <DollarSign className="w-3 h-3 opacity-80" />
+                        <DollarSign className="w-3 h-3 text-text-dim shrink-0" />
                         {p.stipend}
                       </span>
                     ) : (
-                      <span className="opacity-30">-</span>
+                      <span className="text-text-dim/40">-</span>
                     )}
                   </td>
-                  <td className="p-4 text-xs font-semibold text-text-muted">
+                  <td className="p-3 text-xs text-text-muted">
                     {p.ctc ? (
                       <span className="flex items-center gap-1 text-primary">
-                        <DollarSign className="w-3 h-3 opacity-80" />
+                        <DollarSign className="w-3 h-3 text-text-dim shrink-0" />
                         {p.ctc}
                       </span>
                     ) : (
-                      <span className="opacity-30">-</span>
+                      <span className="text-text-dim/40">-</span>
                     )}
                   </td>
-                  <td className="p-4 text-xs">
-                    <span className={cn("px-2.5 py-1 rounded-md border font-black uppercase tracking-wider text-[9px]", STATUS_CLASSES[p.status] || "bg-bg-elevated border-border")}>
+                  <td className="p-3 text-xs">
+                    <span className={cn("px-2 py-0.5 rounded-full border text-[10px] font-semibold uppercase tracking-wider", STATUS_CLASSES[p.status] || "bg-bg-elevated border-border text-text-muted")}>
                       {STATUS_LABELS[p.status] || p.status}
                     </span>
                   </td>
 
-                  <td className="p-4 text-xs font-semibold text-text-muted">
+                  <td className="p-3 text-xs text-text-muted">
                     {p.assessmentDate ? (
-                      <span className="flex items-center gap-1.5">
-                        <Calendar className="w-3.5 h-3.5 text-accent shrink-0" />
-                        {format(new Date(p.assessmentDate), "MMM dd, yyyy")}
+                      <span className="flex items-center gap-1">
+                        <Calendar className="w-3.5 h-3.5 text-warning shrink-0" />
+                        {format(new Date(p.assessmentDate), "MMM dd")}
                       </span>
                     ) : (
-                      <span className="opacity-30">-</span>
+                      <span className="text-text-dim/40">-</span>
                     )}
                   </td>
-                  <td className="p-4 text-xs font-semibold text-text-muted">
+                  <td className="p-3 text-xs text-text-muted">
                     {p.interviewDate ? (
-                      <span className="flex items-center gap-1.5">
+                      <span className="flex items-center gap-1">
                         <Calendar className="w-3.5 h-3.5 text-success shrink-0" />
-                        {format(new Date(p.interviewDate), "MMM dd, yyyy")}
+                        {format(new Date(p.interviewDate), "MMM dd")}
                       </span>
                     ) : (
-                      <span className="opacity-30">-</span>
+                      <span className="text-text-dim/40">-</span>
                     )}
                   </td>
-                  <td className="p-4 text-right">
-                    <div className="flex items-center justify-end gap-1">
+                  <td className="p-3 text-right">
+                    <div className="flex items-center justify-end gap-1 opacity-75 group-hover:opacity-100 transition-opacity">
                       {p.applicationLink && (
                         <a
                           href={p.applicationLink}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="h-8 w-8 text-text-muted hover:text-primary hover:bg-bg-elevated flex items-center justify-center rounded-lg"
+                          className="h-8 w-8 text-text-dim hover:text-primary hover:bg-bg-elevated flex items-center justify-center rounded-lg"
                         >
                           <Globe className="w-3.5 h-3.5" />
                         </a>
@@ -233,7 +252,7 @@ export default function PlacementTable({ page, setPage, pageSize }: PlacementTab
                         variant="ghost"
                         size="icon"
                         onClick={() => handleEdit(p)}
-                        className="h-8 w-8 text-text-muted hover:text-primary hover:bg-bg-elevated"
+                        className="h-8 w-8 text-text-dim hover:text-primary hover:bg-bg-elevated"
                       >
                         <Edit2 className="w-3.5 h-3.5" />
                       </Button>
@@ -241,7 +260,7 @@ export default function PlacementTable({ page, setPage, pageSize }: PlacementTab
                         variant="ghost"
                         size="icon"
                         onClick={() => handleDelete(p.id, p.companyName)}
-                        className="h-8 w-8 text-text-muted hover:text-danger hover:bg-danger/10"
+                        className="h-8 w-8 text-text-dim hover:text-danger hover:bg-danger/10"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </Button>
@@ -252,7 +271,7 @@ export default function PlacementTable({ page, setPage, pageSize }: PlacementTab
 
               {placements.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="p-8 text-center text-xs font-bold text-text-muted uppercase tracking-widest opacity-40">
+                  <td colSpan={9} className="p-8 text-center text-xs text-text-dim">
                     No placement opportunities recorded yet
                   </td>
                 </tr>
@@ -265,11 +284,11 @@ export default function PlacementTable({ page, setPage, pageSize }: PlacementTab
       {/* Pagination Controls */}
       {totalPages > 1 && (
         <div className="flex items-center justify-end pt-4">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <button
               onClick={() => setPage(Math.max(0, page - 1))}
               disabled={page === 0}
-              className="w-11 h-11 md:w-9 md:h-9 rounded-full border border-border bg-bg-card text-text-muted flex items-center justify-center hover:border-primary hover:text-primary transition-all disabled:opacity-30 disabled:hover:border-border disabled:hover:text-text-muted cursor-pointer active:scale-90"
+              className="w-8 h-8 rounded-lg border border-border bg-bg-card text-text-muted flex items-center justify-center hover:border-border/80 hover:text-text-main transition-all disabled:opacity-35 cursor-pointer active:scale-95"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
@@ -277,7 +296,7 @@ export default function PlacementTable({ page, setPage, pageSize }: PlacementTab
             {getPageNumbers().map((p, idx) => {
               if (p === "...") {
                 return (
-                  <span key={`ellipsis-${idx}`} className="text-xs font-black text-text-muted/40 px-2 select-none">
+                  <span key={`ellipsis-${idx}`} className="text-xs font-semibold text-text-dim px-1.5 select-none">
                     ...
                   </span>
                 );
@@ -289,10 +308,10 @@ export default function PlacementTable({ page, setPage, pageSize }: PlacementTab
                   key={`page-${p}`}
                   onClick={() => setPage(p as number)}
                   className={cn(
-                    "w-11 h-11 md:w-9 md:h-9 rounded-full text-xs font-black transition-all cursor-pointer flex items-center justify-center border active:scale-90",
+                    "w-8 h-8 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center justify-center border",
                     isCurrent
-                      ? "bg-primary text-white border-primary shadow-lg shadow-primary/20"
-                      : "border-border bg-bg-card text-text-muted hover:border-primary/50 hover:text-text-main"
+                      ? "bg-primary text-white border-primary"
+                      : "border-border bg-bg-card text-text-muted hover:border-border/80 hover:text-text-main"
                   )}
                 >
                   {(p as number) + 1}
@@ -303,7 +322,7 @@ export default function PlacementTable({ page, setPage, pageSize }: PlacementTab
             <button
               onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
               disabled={page >= totalPages - 1}
-              className="w-11 h-11 md:w-9 md:h-9 rounded-full border border-border bg-bg-card text-text-muted flex items-center justify-center hover:border-primary hover:text-primary transition-all disabled:opacity-30 disabled:hover:border-border disabled:hover:text-text-muted cursor-pointer active:scale-90"
+              className="w-8 h-8 rounded-lg border border-border bg-bg-card text-text-muted flex items-center justify-center hover:border-border/80 hover:text-text-main transition-all disabled:opacity-35 cursor-pointer active:scale-95"
             >
               <ChevronRight className="w-4 h-4" />
             </button>

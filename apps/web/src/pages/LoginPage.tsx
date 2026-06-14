@@ -3,12 +3,11 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Sparkles, Loader2, ArrowLeft, Key, Mail, Eye, EyeOff } from "lucide-react";
+import { Terminal, Loader2, ArrowLeft, Key, Mail, Eye, EyeOff } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { authApi } from "@/lib/api/authApi";
 import { BACKEND_URL } from "@/lib/restClient";
 import { toast } from "sonner";
-
 
 export default function LoginPage() {
   const [, setLocation] = useLocation();
@@ -27,11 +26,11 @@ export default function LoginPage() {
       if (data.token) {
         localStorage.setItem("token", data.token);
       }
-      toast.success("Authentication successful");
+      toast.success("Signed in successfully");
       await queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
       setLocation(redirectPath);
     },
-    onError: (error: any) => toast.error(error.message || "Access denied"),
+    onError: (error: any) => toast.error(error.message || "Invalid email or password"),
   });
 
   const registerMutation = useMutation({
@@ -40,7 +39,7 @@ export default function LoginPage() {
       if (data.token) {
         localStorage.setItem("token", data.token);
       }
-      toast.success("Account initialized");
+      toast.success("Account created successfully");
       queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
       setLocation(redirectPath);
     },
@@ -64,48 +63,49 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-bg-main text-text-main flex items-center justify-center p-6 pt-20 sm:pt-6 relative overflow-hidden font-sans">
-      {/* Background Ambience */}
-      <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full bg-primary/10 blur-[140px]" />
-      <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] rounded-full bg-accent/10 blur-[140px]" />
-
+    <div className="min-h-screen bg-bg-main text-text-main flex items-center justify-center p-6 relative overflow-hidden font-sans">
+      
+      {/* Quiet Top Left Exit Button */}
       <button
         onClick={() => setLocation("/")}
-        className="absolute top-4 left-4 sm:top-10 sm:left-10 flex items-center gap-2.5 text-[10px] font-black uppercase tracking-[0.2em] text-text-muted hover:text-primary transition-colors z-20"
+        className="absolute top-4 left-4 sm:top-8 sm:left-8 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-text-dim hover:text-text-muted transition-colors z-20 cursor-pointer"
       >
-        <ArrowLeft className="w-4 h-4" /> Return to Origin
+        <ArrowLeft className="w-3.5 h-3.5" /> Back to Homepage
       </button>
 
-      <div className="w-full max-w-[440px] z-10 animate-in fade-in zoom-in duration-700">
-        <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-[1.5rem] bg-gradient-to-br from-primary to-accent mb-8 shadow-2xl shadow-primary/30 active:scale-95 transition-transform cursor-pointer">
-            <Sparkles className="w-8 h-8 text-white" />
+      <div className="w-full max-w-[400px] z-10 animate-in fade-in duration-300">
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-primary mb-5 shadow-sm">
+            <Terminal className="w-6 h-6 text-white" />
           </div>
-          <h1 className="text-4xl font-black tracking-tighter mb-3">{isSignUp ? "Initialize Identity" : "Portal Access"}</h1>
-          <p className="text-[11px] font-bold text-text-muted uppercase tracking-[0.2em] opacity-60">
-            {isSignUp ? "Connect to the Application Grid" : "Resuming Tracking Protocol"}
+          <h1 className="text-[28px] font-bold tracking-tight mb-2">
+            {isSignUp ? "Create your account" : "Sign in to Career OS"}
+          </h1>
+          <p className="text-xs text-text-muted">
+            {isSignUp ? "Start organizing your job applications today" : "Welcome back. Access your workspace"}
           </p>
         </div>
 
-        <div className="card-premium p-10 bg-bg-card/40 backdrop-blur-3xl shadow-2xl">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2.5">
-              <Label htmlFor="email" className="text-[10px] font-black uppercase tracking-widest text-text-muted flex items-center gap-2">
-                 <Mail className="w-3.5 h-3.5" /> Identity Email
+        <div className="bg-bg-card border border-border rounded-xl p-6 md:p-8 shadow-xs">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="email" className="text-[11px] font-semibold text-text-muted flex items-center gap-2">
+                <Mail className="w-3.5 h-3.5 text-text-dim" /> Email Address
               </Label>
               <Input 
                 id="email" 
                 type="email" 
-                placeholder="identity@domain.com"
+                placeholder="you@example.com"
                 value={email} 
                 onChange={e => setEmail(e.target.value)} 
                 required 
-                className="input-premium h-14 text-sm font-bold" 
+                className="bg-bg-elevated border-border h-10 text-xs font-semibold focus:border-primary/65" 
               />
             </div>
-            <div className="space-y-2.5">
-              <Label htmlFor="password" name="password" className="text-[10px] font-black uppercase tracking-widest text-text-muted flex items-center gap-2">
-                 <Key className="w-3.5 h-3.5" /> Access Key
+            
+            <div className="space-y-1.5">
+              <Label htmlFor="password" className="text-[11px] font-semibold text-text-muted flex items-center gap-2">
+                <Key className="w-3.5 h-3.5 text-text-dim" /> Password
               </Label>
               <div className="relative">
                 <Input 
@@ -115,12 +115,12 @@ export default function LoginPage() {
                   value={password} 
                   onChange={e => setPassword(e.target.value)} 
                   required 
-                  className="input-premium h-14 text-sm font-bold pr-12" 
+                  className="bg-bg-elevated border-border h-10 text-xs font-semibold pr-10 focus:border-primary/65" 
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 flex items-center pr-4 text-text-muted hover:text-primary transition-colors focus:outline-none"
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-text-dim hover:text-text-muted cursor-pointer"
                 >
                   {showPassword ? (
                     <EyeOff className="w-4 h-4" />
@@ -134,36 +134,38 @@ export default function LoginPage() {
             <Button 
               type="submit" 
               disabled={isLoading} 
-              className="w-full btn-primary h-14 mt-6 text-base tracking-tight shadow-xl"
+              className="w-full bg-primary hover:bg-primary-hover text-white font-semibold h-10 mt-4 rounded-lg text-xs"
             >
-              {isLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              {isSignUp ? "Establish Account" : "Authorize Access"}
+              {isLoading && <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />}
+              {isSignUp ? "Sign Up" : "Continue"}
             </Button>
           </form>
 
-          <div className="mt-10 pt-8 border-t border-border flex flex-col items-center gap-4">
-            <div className="grid grid-cols-2 gap-4 w-full">
+          {/* Social OAuth block */}
+          <div className="mt-6 pt-5 border-t border-border flex flex-col items-center gap-4">
+            <div className="text-[10px] uppercase font-bold tracking-wider text-text-dim">Or continue with</div>
+            <div className="grid grid-cols-2 gap-3 w-full">
               <a 
                 href={`${BACKEND_URL}/oauth2/authorization/google`}
-                className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-[10px] font-black uppercase tracking-widest"
+                className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-bg-elevated border border-border hover:bg-bg-elevated/80 transition-colors text-[11px] font-semibold text-text-main"
               >
                 <img src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" alt="Google" className="w-4 h-4" />
-                Google
+                <span>Google</span>
               </a>
               <a 
                 href={`${BACKEND_URL}/oauth2/authorization/github`}
-                className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-[10px] font-black uppercase tracking-widest"
+                className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-bg-elevated border border-border hover:bg-bg-elevated/80 transition-colors text-[11px] font-semibold text-text-main"
               >
                 <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="GitHub" className="w-4 h-4 invert" />
-                GitHub
+                <span>GitHub</span>
               </a>
             </div>
             
             <button
               onClick={() => setIsSignUp(!isSignUp)}
-              className="text-[10px] font-black text-primary hover:text-primary-hover transition-all uppercase tracking-[0.3em] hover:tracking-[0.4em] mt-4"
+              className="text-[11px] font-semibold text-primary hover:text-primary-hover transition-all mt-3 cursor-pointer"
             >
-              {isSignUp ? "Existing User? Auth Here" : "New User? Register Slot"}
+              {isSignUp ? "Already have an account? Sign In" : "New to Career OS? Create Account"}
             </button>
           </div>
         </div>

@@ -8,15 +8,11 @@ import PlacementKanbanView from "@/components/views/PlacementKanbanView";
 import AddPlacementModal from "@/components/AddPlacementModal";
 import { cn } from "@/lib/utils";
 import {
-  TrendingUp,
-  FileCheck,
-  Award,
-  Calendar,
-  CheckCircle,
-  XCircle,
   Plus,
   Briefcase,
   Loader2,
+  Layers,
+  TableProperties
 } from "lucide-react";
 
 export default function PlacementsPage() {
@@ -44,103 +40,82 @@ export default function PlacementsPage() {
 
   return (
     <DashboardLayout activeTab="placements">
-      <div className="space-y-8 animate-in fade-in duration-500">
+      <div className="space-y-6 animate-in fade-in duration-300">
         {/* Title / Action bar */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-bg-elevated border border-border flex items-center justify-center shadow-lg group hover:border-primary/50 transition-colors">
-              <Briefcase className="w-5 h-5 text-primary group-hover:scale-110 transition-transform" />
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/60 pb-5">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-lg bg-bg-elevated border border-border flex items-center justify-center">
+              <Briefcase className="w-4.5 h-4.5 text-primary" />
             </div>
             <div>
-              <h2 className="text-2xl font-black tracking-tight">Placements</h2>
-              <p className="text-xs text-text-muted hidden sm:block uppercase tracking-widest font-bold opacity-60">
-                Jobs, Internships, and Campus recruitment funnel
+              <h2 className="text-xl font-bold tracking-tight">Placements</h2>
+              <p className="text-xs text-text-dim hidden sm:block mt-0.5">
+                Jobs, Internship pipelines, and recruitment workflows
               </p>
             </div>
           </div>
           
-          <div className="flex items-center gap-3 self-end sm:self-auto">
+          <div className="flex items-center gap-2.5 self-end sm:self-auto">
             {/* View Mode Toggle */}
-            <div className="flex gap-1 p-1 border border-border rounded-xl bg-bg-card/40">
+            <div className="flex gap-1 p-1 border border-border rounded-lg bg-bg-card">
               <button
                 onClick={() => setViewMode("table")}
                 className={cn(
-                  "py-1.5 px-3.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all",
-                  viewMode === "table" ? "bg-primary text-white shadow-md shadow-primary/20" : "text-text-muted hover:text-text-main"
+                  "flex items-center gap-1.5 py-1 px-3 rounded-md text-[11px] font-semibold transition-all",
+                  viewMode === "table" ? "bg-bg-elevated text-text-main" : "text-text-muted hover:text-text-main"
                 )}
               >
-                Table
+                <TableProperties className="w-3.5 h-3.5" />
+                <span>Table</span>
               </button>
               <button
                 onClick={() => setViewMode("kanban")}
                 className={cn(
-                  "py-1.5 px-3.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all",
-                  viewMode === "kanban" ? "bg-primary text-white shadow-md shadow-primary/20" : "text-text-muted hover:text-text-main"
+                  "flex items-center gap-1.5 py-1 px-3 rounded-md text-[11px] font-semibold transition-all",
+                  viewMode === "kanban" ? "bg-bg-elevated text-text-main" : "text-text-muted hover:text-text-main"
                 )}
               >
-                Kanban
+                <Layers className="w-3.5 h-3.5" />
+                <span>Kanban</span>
               </button>
             </div>
 
             <Button
               onClick={() => setShowAddModal(true)}
-              className="btn-primary flex h-11 px-8 shadow-primary/20"
+              className="btn-primary h-9 px-4"
             >
-              <Plus className="w-4 h-4 mr-2" />
+              <Plus className="w-4 h-4 mr-1.5" />
               Add Placement
             </Button>
           </div>
         </div>
 
-        {/* Analytics Stats Grid */}
+        {/* Quiet, Minimal KPI Indicators Row (Workflow-first style, replaces large widgets) */}
         {analyticsQuery.isLoading ? (
-          <div className="flex items-center justify-center py-6">
-            <Loader2 className="w-6 h-6 animate-spin text-primary" />
+          <div className="flex items-center justify-center py-4">
+            <Loader2 className="w-5 h-5 animate-spin text-primary" />
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-            <StatCard
-              label="Total Applications"
-              value={stats.total}
-              icon={<TrendingUp className="w-4 h-4 text-text-muted" />}
-              bg="bg-bg-elevated/40"
-              color="text-text-main"
-            />
-            <StatCard
-              label="Applied Only"
-              value={stats.applied}
-              icon={<FileCheck className="w-4 h-4 text-primary" />}
-              bg="bg-primary/5"
-              color="text-primary"
-            />
-            <StatCard
-              label="Assessments"
-              value={stats.assessments}
-              icon={<Award className="w-4 h-4 text-amber-500" />}
-              bg="bg-amber-500/5"
-              color="text-amber-500"
-            />
-            <StatCard
-              label="Interviews"
-              value={stats.interviews}
-              icon={<Calendar className="w-4 h-4 text-indigo-500" />}
-              bg="bg-indigo-500/5"
-              color="text-indigo-500"
-            />
-            <StatCard
-              label="Offers"
-              value={stats.offers}
-              icon={<CheckCircle className="w-4 h-4 text-success" />}
-              bg="bg-success/5"
-              color="text-success"
-            />
-            <StatCard
-              label="Rejected"
-              value={stats.rejected}
-              icon={<XCircle className="w-4 h-4 text-danger" />}
-              bg="bg-danger/5"
-              color="text-danger"
-            />
+          <div className="flex flex-wrap items-center gap-y-2 gap-x-6 text-xs text-text-muted border-b border-border/40 pb-4">
+            <span className="flex items-center gap-1.5">
+              Total Opportunities: <strong className="text-text-main font-semibold">{stats.total}</strong>
+            </span>
+            <span className="text-text-dim/40">•</span>
+            <span className="flex items-center gap-1.5">
+              Applied: <strong className="text-text-main font-semibold">{stats.applied}</strong>
+            </span>
+            <span className="text-text-dim/40">•</span>
+            <span className="flex items-center gap-1.5">
+              Assessments: <strong className="text-text-main font-semibold">{stats.assessments}</strong>
+            </span>
+            <span className="text-text-dim/40">•</span>
+            <span className="flex items-center gap-1.5">
+              Interviews: <strong className="text-text-main font-semibold">{stats.interviews}</strong>
+            </span>
+            <span className="text-text-dim/40">•</span>
+            <span className="flex items-center gap-1.5">
+              Offers: <strong className="text-success font-semibold">{stats.offers} 🎉</strong>
+            </span>
           </div>
         )}
 
@@ -155,31 +130,5 @@ export default function PlacementsPage() {
         <AddPlacementModal open={showAddModal} onOpenChange={setShowAddModal} />
       </div>
     </DashboardLayout>
-  );
-}
-
-function StatCard({
-  label,
-  value,
-  icon,
-  bg,
-  color,
-}: {
-  label: string;
-  value: number;
-  icon: React.ReactNode;
-  bg: string;
-  color: string;
-}) {
-  return (
-    <div className="card-premium p-5 group flex flex-col justify-between bg-bg-card/30 border-border/60">
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-[9px] font-black text-text-muted uppercase tracking-wider line-clamp-1">{label}</span>
-        <div className={`w-7 h-7 rounded-lg flex items-center justify-center border border-border/40 group-hover:scale-105 transition-transform ${bg}`}>
-          {icon}
-        </div>
-      </div>
-      <p className={`text-2xl font-black tracking-tight tabular-nums ${color}`}>{value}</p>
-    </div>
   );
 }

@@ -30,7 +30,7 @@ import { placementsApi } from "@/lib/api/placementsApi";
 import { toast } from "sonner";
 import { Loader2, Calendar as CalendarIcon, Sparkles, Clipboard } from "lucide-react";
 import { format } from "date-fns";
-import { cn } from "@/lib/utils";
+import { cn, formatDateForBackend } from "@/lib/utils";
 
 interface AddPlacementModalProps {
   open: boolean;
@@ -50,8 +50,6 @@ const placementFormSchema = z.object({
 });
 
 type FormValues = z.infer<typeof placementFormSchema>;
-
-
 
 export default function AddPlacementModal({ open, onOpenChange }: AddPlacementModalProps) {
   const [emailText, setEmailText] = useState("");
@@ -76,11 +74,11 @@ export default function AddPlacementModal({ open, onOpenChange }: AddPlacementMo
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["placements"] });
       queryClient.invalidateQueries({ queryKey: ["analytics", "placements"] });
-      toast.success("Placement secured in pipeline");
+      toast.success("Placement opportunity logged successfully");
       onOpenChange(false);
       resetForm();
     },
-    onError: (err: any) => toast.error(err.message || "Failed to add placement"),
+    onError: (err: any) => toast.error(err.message || "Failed to log placement opportunity"),
   });
 
   const resetForm = () => {
@@ -104,20 +102,24 @@ export default function AddPlacementModal({ open, onOpenChange }: AddPlacementMo
       toast.success("Extracted details pre-filled. Please verify and save.");
     },
     onError: (err: any) => {
-      toast.error(err.message || "Failed to extract placement details using AI");
+      toast.error(err.message || "Failed to extract details using Gemini");
     }
   });
 
   const handleExtract = () => {
     if (!emailText.trim()) {
-      toast.error("Please paste email/announcement content first");
+      toast.error("Please paste email or placement announcement details first");
       return;
     }
     extractMutation.mutate(emailText);
   };
 
   const onSubmitForm = (data: FormValues) => {
-    createMutation.mutate(data);
+    createMutation.mutate({
+      ...data,
+      assessmentDate: formatDateForBackend(data.assessmentDate) as any,
+      interviewDate: formatDateForBackend(data.interviewDate) as any,
+    });
   };
 
   const statusVal = watch("status");
@@ -129,79 +131,76 @@ export default function AddPlacementModal({ open, onOpenChange }: AddPlacementMo
       onOpenChange(v);
       if (!v) resetForm();
     }}>
-      <DialogContent className="max-w-xl bg-bg-card border-border text-text-main p-0 overflow-y-auto max-h-[90vh] rounded-2xl shadow-2xl">
-        <DialogHeader className="p-6 bg-bg-hover/20 border-b border-border flex flex-row items-center justify-between">
-          <DialogTitle className="text-xl font-black">New Placement</DialogTitle>
+      <DialogContent className="max-w-xl bg-bg-card border-border text-text-main p-0 overflow-y-auto max-h-[90vh] rounded-xl shadow-2xl">
+        <DialogHeader className="p-5 border-b border-border bg-bg-elevated/20 flex flex-row items-center justify-between">
+          <DialogTitle className="text-sm font-semibold">New Placement Opportunity</DialogTitle>
           <Button 
             variant="outline" 
             size="sm" 
             type="button"
             onClick={() => setShowQuickEntry(!showQuickEntry)}
-            className="border-primary/20 bg-primary/5 hover:bg-primary/10 text-primary text-[10px] uppercase font-black tracking-widest h-8"
+            className="border-primary/20 bg-primary/10 hover:bg-primary/15 text-primary text-[10px] uppercase font-semibold tracking-wider h-8"
           >
             <Sparkles className="w-3.5 h-3.5 mr-1.5" />
-            Quick Entry
+            AI Quick Entry
           </Button>
         </DialogHeader>
 
         {/* Quick Email Parsing Textarea */}
         {showQuickEntry && (
-          <div className="p-6 border-b border-border/60 bg-bg-hover/5 space-y-3.5 animate-in slide-in-from-top-4 duration-300">
+          <div className="p-5 border-b border-border/60 bg-bg-elevated/10 space-y-3.5 animate-in slide-in-from-top-4 duration-200">
             <div className="flex items-center justify-between">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-text-muted">Paste Placement Details</Label>
+              <Label className="text-[11px] font-semibold text-text-muted">Paste Placement Announcement Text</Label>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={handleExtract}
                 disabled={extractMutation.isPending}
-                className="text-xs text-primary font-bold hover:text-primary-hover hover:bg-primary/5 h-7"
+                className="text-xs text-primary font-semibold hover:text-primary-hover hover:bg-primary/5 h-7"
               >
                 {extractMutation.isPending ? (
                   <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
                 ) : (
                   <Clipboard className="w-3.5 h-3.5 mr-1" />
                 )}
-                Extract Using AI
+                Extract Details
               </Button>
             </div>
             <Textarea
               value={emailText}
               onChange={(e) => setEmailText(e.target.value)}
               disabled={extractMutation.isPending}
-              placeholder="Dear Students&#10;Campus recruitment by WorkIndia&#10;Job Designation: Software Development Engineer&#10;Stipend: 40k per month&#10;CTC: 16 LPA&#10;https://forms.gle/..."
-              className="bg-bg-main border-border focus:border-primary/50 focus:ring-primary/20 min-h-[120px] text-xs leading-relaxed"
+              placeholder="Example announcement text:&#10;WorkIndia is hiring Software Developers in Bangalore.&#10;Stipend is 40k. CTC is 16 LPA. Apply at: https://workindia.in/apply"
+              className="bg-bg-main border-border text-text-main min-h-[110px] text-xs font-semibold leading-relaxed focus:border-primary/65 resize-none"
             />
             {extractMutation.isPending && (
-              <p className="text-[10px] text-primary font-bold animate-pulse">
-                Extracting details using AI... Please wait.
+              <p className="text-[10px] text-primary font-semibold animate-pulse">
+                Gemini is parsing announcement text... Please wait.
               </p>
-            )}
-            {!extractMutation.isPending && (
-              <p className="text-[9px] text-text-muted/60 italic">We will extract details using Gemini AI to pre-fill the form.</p>
             )}
           </div>
         )}
 
-        <form onSubmit={handleSubmit(onSubmitForm)} className="p-6 space-y-6">
+        <form onSubmit={handleSubmit(onSubmitForm)} className="p-5 space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label htmlFor="companyName" className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Company Name *</Label>
+              <Label htmlFor="companyName" className="text-[11px] font-semibold text-text-muted">Company Name *</Label>
               <Input
                 id="companyName"
                 {...register("companyName")}
-                placeholder="e.g. WorkIndia"
-                className="bg-bg-main border-border focus:border-primary/50 focus:ring-primary/20 h-11 text-sm font-semibold"
+                placeholder="e.g. Stripe"
+                className="bg-bg-main border-border text-text-main h-10 text-xs font-semibold focus:border-primary/65"
               />
               {errors.companyName && <p className="text-xs text-danger">{errors.companyName.message}</p>}
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="role" className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Role / Position *</Label>
+              <Label htmlFor="role" className="text-[11px] font-semibold text-text-muted">Role / Position *</Label>
               <Input
                 id="role"
                 {...register("role")}
-                placeholder="e.g. Software Development Engineer"
-                className="bg-bg-main border-border focus:border-primary/50 focus:ring-primary/20 h-11 text-sm font-semibold"
+                placeholder="e.g. Backend Developer"
+                className="bg-bg-main border-border text-text-main h-10 text-xs font-semibold focus:border-primary/65"
               />
               {errors.role && <p className="text-xs text-danger">{errors.role.message}</p>}
             </div>
@@ -209,22 +208,22 @@ export default function AddPlacementModal({ open, onOpenChange }: AddPlacementMo
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label htmlFor="location" className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Location</Label>
+              <Label htmlFor="location" className="text-[11px] font-semibold text-text-muted">Location</Label>
               <Input
                 id="location"
                 {...register("location")}
-                placeholder="e.g. Bangalore"
-                className="bg-bg-main border-border focus:border-primary/50 focus:ring-primary/20 h-11 text-sm"
+                placeholder="e.g. San Francisco (Hybrid)"
+                className="bg-bg-main border-border text-text-main h-10 text-xs font-semibold focus:border-primary/65"
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Status *</Label>
+              <Label className="text-[11px] font-semibold text-text-muted">Status *</Label>
               <Select
                 value={statusVal}
                 onValueChange={(v) => setValue("status", v, { shouldValidate: true })}
               >
-                <SelectTrigger className="bg-bg-main border-border h-11 text-sm text-text-main">
+                <SelectTrigger className="bg-bg-main border-border h-10 text-xs text-text-main">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-bg-card border-border text-text-main">
@@ -237,7 +236,7 @@ export default function AddPlacementModal({ open, onOpenChange }: AddPlacementMo
                     { val: "OFFER_RECEIVED", label: "Offer Received" },
                     { val: "REJECTED", label: "Rejected" },
                   ].map((item) => (
-                    <SelectItem key={item.val} value={item.val} className="cursor-pointer">{item.label}</SelectItem>
+                    <SelectItem key={item.val} value={item.val} className="cursor-pointer text-xs">{item.label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -246,33 +245,33 @@ export default function AddPlacementModal({ open, onOpenChange }: AddPlacementMo
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label htmlFor="stipend" className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Stipend</Label>
+              <Label htmlFor="stipend" className="text-[11px] font-semibold text-text-muted">Stipend</Label>
               <Input
                 id="stipend"
                 {...register("stipend")}
-                placeholder="e.g. 40k per month"
-                className="bg-bg-main border-border focus:border-primary/50 focus:ring-primary/20 h-11 text-sm"
+                placeholder="e.g. 5k USD / mo"
+                className="bg-bg-main border-border text-text-main h-10 text-xs font-semibold focus:border-primary/65"
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="ctc" className="text-[10px] font-bold uppercase tracking-widest text-text-muted">CTC</Label>
+              <Label htmlFor="ctc" className="text-[11px] font-semibold text-text-muted">CTC (Annual package)</Label>
               <Input
                 id="ctc"
                 {...register("ctc")}
-                placeholder="e.g. 16 LPA"
-                className="bg-bg-main border-border focus:border-primary/50 focus:ring-primary/20 h-11 text-sm"
+                placeholder="e.g. 120k USD"
+                className="bg-bg-main border-border text-text-main h-10 text-xs font-semibold focus:border-primary/65"
               />
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="applicationLink" className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Application Link</Label>
+            <Label htmlFor="applicationLink" className="text-[11px] font-semibold text-text-muted">Application Link (URL)</Label>
             <Input
               id="applicationLink"
               {...register("applicationLink")}
-              placeholder="https://forms.gle/..."
-              className="bg-bg-main border-border focus:border-primary/50 focus:ring-primary/20 h-11 text-sm"
+              placeholder="https://company.com/jobs/SDE"
+              className="bg-bg-main border-border text-text-main h-10 text-xs font-semibold focus:border-primary/65"
             />
             {errors.applicationLink && <p className="text-xs text-danger">{errors.applicationLink.message}</p>}
           </div>
@@ -283,21 +282,21 @@ export default function AddPlacementModal({ open, onOpenChange }: AddPlacementMo
               { id: "interviewDate", val: interviewDateVal, label: "Interview Date" },
             ].map((d) => (
               <div key={d.id} className="space-y-1.5">
-                <Label className="text-[10px] font-bold uppercase tracking-widest text-text-muted">{d.label}</Label>
+                <Label className="text-[11px] font-semibold text-text-muted">{d.label}</Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
                       variant={"outline"}
                       className={cn(
-                        "w-full justify-start text-left font-bold bg-bg-main border-border hover:bg-bg-hover hover:text-text-main h-11 text-xs px-3",
-                        !d.val && "text-text-muted"
+                        "w-full justify-start text-left font-semibold bg-bg-main border-border hover:bg-bg-elevated hover:text-text-main h-10 text-xs px-3",
+                        !d.val && "text-text-dim"
                       )}
                     >
                       <CalendarIcon className="mr-1.5 h-3.5 w-3.5 text-primary shrink-0" />
                       {d.val ? format(d.val, "MM/dd/yyyy") : <span className="opacity-45">Pick date</span>}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0 bg-bg-card border-border shadow-2xl" align="start">
+                  <PopoverContent className="w-auto p-0 bg-bg-card border-border shadow-lg" align="start">
                     <Calendar
                       mode="single"
                       selected={d.val}
@@ -311,21 +310,21 @@ export default function AddPlacementModal({ open, onOpenChange }: AddPlacementMo
             ))}
           </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-border/40">
+          <div className="flex justify-end gap-2.5 pt-4 border-t border-border/40 mt-2">
             <Button
               type="button"
               variant="ghost"
               onClick={() => onOpenChange(false)}
-              className="text-text-muted hover:text-text-main hover:bg-bg-hover font-bold"
+              className="text-text-muted hover:text-text-main hover:bg-bg-elevated text-xs font-semibold h-9.5 px-4 cursor-pointer"
             >
               Cancel
             </Button>
             <Button
               type="submit"
               disabled={createMutation.isPending}
-              className="bg-primary hover:bg-primary-hover text-white font-black px-8 h-11 shadow-lg shadow-primary/20"
+              className="bg-primary hover:bg-primary-hover text-white font-semibold text-xs h-9.5 px-5 cursor-pointer"
             >
-              {createMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              {createMutation.isPending && <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />}
               Create Entry
             </Button>
           </div>

@@ -15,7 +15,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { applicationsApi } from "@/lib/api/applicationsApi";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { Loader2, ArrowLeft, ExternalLink, Sparkles, AlertTriangle } from "lucide-react";
+import { Loader2, ArrowLeft, ExternalLink, Sparkles, AlertTriangle, Terminal } from "lucide-react";
+import { formatDateForBackend } from "@/lib/utils";
 
 export default function AddEventPage() {
   const [, setLocation] = useLocation();
@@ -65,12 +66,13 @@ export default function AddEventPage() {
     mutationFn: applicationsApi.create,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["applications"] });
-      toast.success("Event secured in pipeline");
+      queryClient.invalidateQueries({ queryKey: ["analytics", "dashboard"] });
+      toast.success("Event added successfully");
       setLocation("/dashboard");
     },
     onError: (err: any) => {
       if (err.response?.status === 409) {
-        toast.error("Strategy duplicate detected: This event is already in your pipeline", {
+        toast.error("This event is already logged in your workspace", {
           icon: <AlertTriangle className="w-4 h-4 text-primary" />,
           duration: 5000
         });
@@ -82,8 +84,8 @@ export default function AddEventPage() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-[#0f0f10] flex items-center justify-center">
-        <Loader2 className="w-10 h-10 animate-spin text-primary" />
+      <div className="min-h-screen bg-bg-main flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -98,84 +100,78 @@ export default function AddEventPage() {
     }
     createMutation.mutate({
       ...formData,
-      deadline: formData.deadline ? new Date(formData.deadline).toISOString() : undefined,
+      deadline: formatDateForBackend(formData.deadline),
     });
   };
 
   return (
     <div className="min-h-screen bg-bg-main text-text-main font-sans selection:bg-primary/30 relative overflow-hidden">
-      {/* Background Glow */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-primary/5 blur-[120px]" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-accent/5 blur-[120px]" />
-      </div>
-
-      <div className="container relative z-10 min-h-screen flex items-center justify-center py-12 px-6">
-        <div className="w-full max-w-[550px] animate-in fade-in slide-in-from-bottom-4 duration-700">
+      
+      <div className="container relative z-10 min-h-screen flex flex-col items-center justify-center py-12 px-4">
+        <div className="w-full max-w-[500px] animate-in fade-in duration-300">
+          
           <button
             onClick={() => setLocation("/dashboard")}
-            className="group flex items-center gap-2 text-text-muted hover:text-primary transition-all mb-8 text-[10px] font-black uppercase tracking-[0.2em]"
+            className="group flex items-center gap-2 text-text-dim hover:text-text-muted transition-colors mb-6 text-[11px] font-semibold uppercase tracking-wider cursor-pointer"
           >
-            <ArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" /> 
-            Back to Pipeline
+            <ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-0.5" /> 
+            Back to Workspace
           </button>
 
-          <div className="bg-bg-card/40 backdrop-blur-2xl border border-border rounded-3xl p-8 md:p-10 shadow-2xl relative overflow-hidden group">
-            {/* Card Inner Glow */}
-            <div className="absolute -top-24 -right-24 w-48 h-48 bg-primary/10 blur-[80px] rounded-full transition-opacity group-hover:opacity-100 opacity-50" />
+          <div className="bg-bg-card border border-border rounded-xl p-6 md:p-8 shadow-2xl relative overflow-hidden group">
             
-            <div className="flex items-center gap-4 mb-10">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/20">
-                <Sparkles className="w-7 h-7 text-white" />
+            <div className="flex items-center gap-3.5 mb-8">
+              <div className="w-11 h-11 rounded-lg bg-primary flex items-center justify-center shadow-sm">
+                <Terminal className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-black tracking-tight uppercase">Import Protocol</h1>
-                <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest mt-1 opacity-60">Extracting intelligence from active terminal</p>
+                <h1 className="text-lg font-semibold tracking-tight text-text-main">Import Event Details</h1>
+                <p className="text-[10px] text-text-dim uppercase tracking-wider mt-0.5">Configure event entry properties</p>
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-text-muted ml-1">Objective Name</Label>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-1.5">
+                <Label className="text-[11px] font-semibold text-text-muted">Event / Company Name *</Label>
                 <Input
                   value={formData.eventName}
                   onChange={e => setFormData({ ...formData, eventName: e.target.value })}
-                  placeholder={formData.eventName ? "" : "Data missing..."}
-                  className="bg-bg-elevated/50 border-border focus:border-primary/50 focus:ring-0 h-12 text-sm font-bold rounded-xl transition-all"
+                  placeholder="e.g. Stanford Hackathon"
+                  className="bg-bg-main border-border text-text-main h-10 text-xs font-semibold focus:border-primary/65"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-5">
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-text-muted ml-1">Classification</Label>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="text-[11px] font-semibold text-text-muted">Category</Label>
                   <Select
                     value={formData.eventType}
                     onValueChange={v => setFormData({ ...formData, eventType: v })}
                   >
-                    <SelectTrigger className="bg-bg-elevated/50 border-border h-12 text-sm font-bold rounded-xl">
+                    <SelectTrigger className="bg-bg-main border-border h-10 text-xs text-text-main">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-bg-card border-border text-text-main backdrop-blur-xl">
+                    <SelectContent className="bg-bg-card border-border text-text-main">
                       {["Hackathon", "Workshop", "Conference", "Internship", "Other"].map(t => (
-                        <SelectItem key={t} value={t} className="font-bold text-xs uppercase tracking-widest">{t}</SelectItem>
+                        <SelectItem key={t} value={t} className="cursor-pointer text-xs">{t}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
 
-                <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-text-muted ml-1">Current Status</Label>
+                <div className="space-y-1.5">
+                  <Label className="text-[11px] font-semibold text-text-muted">Status</Label>
                   <Select
                     value={formData.status}
                     onValueChange={v => setFormData({ ...formData, status: v })}
                   >
-                    <SelectTrigger className="bg-bg-elevated/50 border-border h-12 text-sm font-bold rounded-xl">
+                    <SelectTrigger className="bg-bg-main border-border h-10 text-xs text-text-main">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-bg-card border-border text-text-main backdrop-blur-xl">
+                    <SelectContent className="bg-bg-card border-border text-text-main">
                       {["Interested", "Applied", "UnderReview", "Accepted", "Rejected"].map(s => (
-                        <SelectItem key={s} value={s} className="font-bold text-xs uppercase tracking-widest">
-                          {s === "UnderReview" ? "Under Review" : s}
+                        <SelectItem key={s} value={s} className="cursor-pointer text-xs">
+                          {s === "UnderReview" ? "In Review" : s}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -183,59 +179,59 @@ export default function AddEventPage() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-text-muted ml-1">Temporal Deadline</Label>
+              <div className="space-y-1.5">
+                <Label className="text-[11px] font-semibold text-text-muted">Deadline Date</Label>
                 <Input
                   type="date"
                   value={formData.deadline}
                   onChange={e => setFormData({ ...formData, deadline: e.target.value })}
-                  className="bg-bg-elevated/50 border-border focus:border-primary/50 focus:ring-0 h-12 text-sm font-bold rounded-xl [color-scheme:dark] transition-all"
+                  className="bg-bg-main border-border text-text-main h-10 text-xs font-semibold [color-scheme:dark] focus:border-primary/65"
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-text-muted ml-1 flex items-center gap-2">
-                  <ExternalLink className="w-3 h-3" /> Resource Identifier (URL)
+              <div className="space-y-1.5">
+                <Label className="text-[11px] font-semibold text-text-muted flex items-center gap-1.5">
+                  <ExternalLink className="w-3.5 h-3.5 text-text-dim" /> Link URL
                 </Label>
                 <Input
                   value={formData.url}
                   onChange={e => setFormData({ ...formData, url: e.target.value })}
-                  placeholder={formData.url ? "" : "Link not detected..."}
-                  className="bg-bg-elevated/50 border-border focus:border-primary/50 focus:ring-0 h-12 text-[10px] font-bold text-text-muted rounded-xl transition-all"
+                  placeholder="https://example.com/listing"
+                  className="bg-bg-main border-border text-text-main h-10 text-xs font-semibold focus:border-primary/65"
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-text-muted ml-1">Coordinates (Location)</Label>
+              <div className="space-y-1.5">
+                <Label className="text-[11px] font-semibold text-text-muted">Location / Coordinates</Label>
                 <Input
                   value={formData.location}
                   onChange={e => setFormData({ ...formData, location: e.target.value })}
-                  placeholder={formData.location ? "" : "Scanning..."}
-                  className="bg-bg-elevated/50 border-border focus:border-primary/50 focus:ring-0 h-12 text-sm font-bold rounded-xl transition-all"
+                  placeholder="e.g. Remote or Stanford Campus"
+                  className="bg-bg-main border-border text-text-main h-10 text-xs font-semibold focus:border-primary/65"
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-text-muted ml-1">Strategic Notes</Label>
+              <div className="space-y-1.5">
+                <Label className="text-[11px] font-semibold text-text-muted">Private Notes</Label>
                 <Textarea
                   value={formData.notes}
                   onChange={e => setFormData({ ...formData, notes: e.target.value })}
-                  placeholder="Inject additional intelligence here..."
-                  className="bg-bg-elevated/50 border-border focus:border-primary/50 focus:ring-0 min-h-[100px] text-sm font-medium rounded-xl resize-none transition-all"
+                  placeholder="Add checklists or preparation tasks..."
+                  className="bg-bg-main border-border text-text-main min-h-[90px] text-xs font-semibold focus:border-primary/65 resize-none leading-relaxed"
                 />
               </div>
 
               <Button
                 type="submit"
                 disabled={createMutation.isPending}
-                className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90 text-white font-black uppercase tracking-[0.2em] text-xs h-14 mt-6 rounded-2xl transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-3"
+                className="w-full bg-primary hover:bg-primary-hover text-white font-semibold text-xs h-10.5 mt-4 rounded-lg flex items-center justify-center gap-2 cursor-pointer"
               >
                 {createMutation.isPending ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
                   <>
                     <Sparkles className="w-4 h-4" />
-                    Secure in Pipeline
+                    <span>Add to Workspace</span>
                   </>
                 )}
               </Button>

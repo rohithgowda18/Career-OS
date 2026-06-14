@@ -29,7 +29,7 @@ import { placementsApi } from "@/lib/api/placementsApi";
 import { toast } from "sonner";
 import { Loader2, Calendar as CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
-import { cn } from "@/lib/utils";
+import { cn, formatDateForBackend } from "@/lib/utils";
 
 interface EditPlacementModalProps {
   open: boolean;
@@ -80,14 +80,19 @@ export default function EditPlacementModal({ open, onOpenChange, placementId, in
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["placements"] });
       queryClient.invalidateQueries({ queryKey: ["analytics", "placements"] });
-      toast.success("Placement entry updated");
+      toast.success("Placement opportunity updated successfully");
       onOpenChange(false);
     },
-    onError: (err: any) => toast.error(err.message || "Failed to update placement"),
+    onError: (err: any) => toast.error(err.message || "Failed to update placement opportunity"),
   });
 
   const onSubmitForm = (data: FormValues) => {
-    updateMutation.mutate({ id: placementId, ...data });
+    updateMutation.mutate({
+      id: placementId,
+      ...data,
+      assessmentDate: formatDateForBackend(data.assessmentDate) as any,
+      interviewDate: formatDateForBackend(data.interviewDate) as any,
+    });
   };
 
   const statusVal = watch("status");
@@ -96,29 +101,29 @@ export default function EditPlacementModal({ open, onOpenChange, placementId, in
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl bg-bg-card border-border text-text-main p-0 overflow-y-auto max-h-[90vh] rounded-2xl shadow-2xl">
-        <DialogHeader className="p-6 bg-bg-hover/20 border-b border-border">
-          <DialogTitle className="text-xl font-black">Edit Placement</DialogTitle>
+      <DialogContent className="max-w-xl bg-bg-card border-border text-text-main p-0 overflow-y-auto max-h-[90vh] rounded-xl shadow-2xl">
+        <DialogHeader className="p-5 border-b border-border bg-bg-elevated/20">
+          <DialogTitle className="text-sm font-semibold">Edit Placement Opportunity</DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmitForm)} className="p-6 space-y-6">
+        <form onSubmit={handleSubmit(onSubmitForm)} className="p-5 space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label htmlFor="companyName" className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Company Name *</Label>
+              <Label htmlFor="companyName" className="text-[11px] font-semibold text-text-muted">Company Name *</Label>
               <Input
                 id="companyName"
                 {...register("companyName")}
-                className="bg-bg-main border-border focus:border-primary/50 focus:ring-primary/20 h-11 text-sm font-semibold"
+                className="bg-bg-main border-border text-text-main h-10 text-xs font-semibold focus:border-primary/65"
               />
               {errors.companyName && <p className="text-xs text-danger">{errors.companyName.message}</p>}
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="role" className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Role / Position *</Label>
+              <Label htmlFor="role" className="text-[11px] font-semibold text-text-muted">Role / Position *</Label>
               <Input
                 id="role"
                 {...register("role")}
-                className="bg-bg-main border-border focus:border-primary/50 focus:ring-primary/20 h-11 text-sm font-semibold"
+                className="bg-bg-main border-border text-text-main h-10 text-xs font-semibold focus:border-primary/65"
               />
               {errors.role && <p className="text-xs text-danger">{errors.role.message}</p>}
             </div>
@@ -126,21 +131,21 @@ export default function EditPlacementModal({ open, onOpenChange, placementId, in
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label htmlFor="location" className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Location</Label>
+              <Label htmlFor="location" className="text-[11px] font-semibold text-text-muted">Location</Label>
               <Input
                 id="location"
                 {...register("location")}
-                className="bg-bg-main border-border focus:border-primary/50 focus:ring-primary/20 h-11 text-sm"
+                className="bg-bg-main border-border text-text-main h-10 text-xs font-semibold focus:border-primary/65"
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Status *</Label>
+              <Label className="text-[11px] font-semibold text-text-muted">Status *</Label>
               <Select
                 value={statusVal}
                 onValueChange={(v) => setValue("status", v, { shouldValidate: true })}
               >
-                <SelectTrigger className="bg-bg-main border-border h-11 text-sm text-text-main">
+                <SelectTrigger className="bg-bg-main border-border h-10 text-xs text-text-main">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-bg-card border-border text-text-main">
@@ -153,7 +158,7 @@ export default function EditPlacementModal({ open, onOpenChange, placementId, in
                     { val: "OFFER_RECEIVED", label: "Offer Received" },
                     { val: "REJECTED", label: "Rejected" },
                   ].map((item) => (
-                    <SelectItem key={item.val} value={item.val} className="cursor-pointer">{item.label}</SelectItem>
+                    <SelectItem key={item.val} value={item.val} className="cursor-pointer text-xs">{item.label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -162,32 +167,30 @@ export default function EditPlacementModal({ open, onOpenChange, placementId, in
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label htmlFor="stipend" className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Stipend</Label>
+              <Label htmlFor="stipend" className="text-[11px] font-semibold text-text-muted">Stipend</Label>
               <Input
                 id="stipend"
                 {...register("stipend")}
-                placeholder="e.g. 40k per month"
-                className="bg-bg-main border-border focus:border-primary/50 focus:ring-primary/20 h-11 text-sm"
+                className="bg-bg-main border-border text-text-main h-10 text-xs font-semibold focus:border-primary/65"
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="ctc" className="text-[10px] font-bold uppercase tracking-widest text-text-muted">CTC</Label>
+              <Label htmlFor="ctc" className="text-[11px] font-semibold text-text-muted">CTC</Label>
               <Input
                 id="ctc"
                 {...register("ctc")}
-                placeholder="e.g. 16 LPA"
-                className="bg-bg-main border-border focus:border-primary/50 focus:ring-primary/20 h-11 text-sm"
+                className="bg-bg-main border-border text-text-main h-10 text-xs font-semibold focus:border-primary/65"
               />
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="applicationLink" className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Application Link</Label>
+            <Label htmlFor="applicationLink" className="text-[11px] font-semibold text-text-muted">Application Link (URL)</Label>
             <Input
               id="applicationLink"
               {...register("applicationLink")}
-              className="bg-bg-main border-border focus:border-primary/50 focus:ring-primary/20 h-11 text-sm"
+              className="bg-bg-main border-border text-text-main h-10 text-xs font-semibold focus:border-primary/65"
             />
             {errors.applicationLink && <p className="text-xs text-danger">{errors.applicationLink.message}</p>}
           </div>
@@ -198,21 +201,21 @@ export default function EditPlacementModal({ open, onOpenChange, placementId, in
               { id: "interviewDate", val: interviewDateVal, label: "Interview Date" },
             ].map((d) => (
               <div key={d.id} className="space-y-1.5">
-                <Label className="text-[10px] font-bold uppercase tracking-widest text-text-muted">{d.label}</Label>
+                <Label className="text-[11px] font-semibold text-text-muted">{d.label}</Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
                       variant={"outline"}
                       className={cn(
-                        "w-full justify-start text-left font-bold bg-bg-main border-border hover:bg-bg-hover hover:text-text-main h-11 text-xs px-3",
-                        !d.val && "text-text-muted"
+                        "w-full justify-start text-left font-semibold bg-bg-main border-border hover:bg-bg-elevated hover:text-text-main h-10 text-xs px-3",
+                        !d.val && "text-text-dim"
                       )}
                     >
                       <CalendarIcon className="mr-1.5 h-3.5 w-3.5 text-primary shrink-0" />
                       {d.val ? format(d.val, "MM/dd/yyyy") : <span className="opacity-45">Pick date</span>}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0 bg-bg-card border-border shadow-2xl" align="start">
+                  <PopoverContent className="w-auto p-0 bg-bg-card border-border shadow-lg" align="start">
                     <Calendar
                       mode="single"
                       selected={d.val}
@@ -226,21 +229,21 @@ export default function EditPlacementModal({ open, onOpenChange, placementId, in
             ))}
           </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-border/40">
+          <div className="flex justify-end gap-2.5 pt-4 border-t border-border/40 mt-2">
             <Button
               type="button"
               variant="ghost"
               onClick={() => onOpenChange(false)}
-              className="text-text-muted hover:text-text-main hover:bg-bg-hover font-bold"
+              className="text-text-muted hover:text-text-main hover:bg-bg-elevated text-xs font-semibold h-9.5 px-4 cursor-pointer"
             >
               Cancel
             </Button>
             <Button
               type="submit"
               disabled={updateMutation.isPending}
-              className="bg-primary hover:bg-primary-hover text-white font-black px-8 h-11 shadow-lg shadow-primary/20"
+              className="bg-primary hover:bg-primary-hover text-white font-semibold text-xs h-9.5 px-5 cursor-pointer"
             >
-              {updateMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              {updateMutation.isPending && <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />}
               Save Changes
             </Button>
           </div>

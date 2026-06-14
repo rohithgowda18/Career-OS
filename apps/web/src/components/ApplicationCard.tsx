@@ -30,6 +30,7 @@ import { format } from "date-fns";
 
 interface ApplicationCardProps {
   application: Application;
+  inlineOnly?: boolean;
 }
 
 const STATUSES = [
@@ -40,7 +41,7 @@ const STATUSES = [
   "Rejected",
 ] as const;
 
-export default function ApplicationCard({ application }: ApplicationCardProps) {
+export default function ApplicationCard({ application, inlineOnly = false }: ApplicationCardProps) {
   const [showEditModal, setShowEditModal] = useState(false);
   const queryClient = useQueryClient();
 
@@ -48,18 +49,20 @@ export default function ApplicationCard({ application }: ApplicationCardProps) {
     mutationFn: applicationsApi.update,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["applications"] });
-      toast.success("Status updated");
+      queryClient.invalidateQueries({ queryKey: ["analytics", "dashboard"] });
+      toast.success("Status updated successfully");
     },
-    onError: () => toast.error("Update failed"),
+    onError: () => toast.error("Failed to update status"),
   });
 
   const deleteMutation = useMutation({
     mutationFn: applicationsApi.delete,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["applications"] });
-      toast.success("Deleted");
+      queryClient.invalidateQueries({ queryKey: ["analytics", "dashboard"] });
+      toast.success("Application deleted successfully");
     },
-    onError: () => toast.error("Delete failed"),
+    onError: () => toast.error("Failed to delete application"),
   });
 
   const handleStatusChange = (newStatus: string) => {
@@ -73,16 +76,62 @@ export default function ApplicationCard({ application }: ApplicationCardProps) {
     deadlineDate &&
     deadlineDate.getTime() - Date.now() < 3 * 24 * 60 * 60 * 1000;
 
+  if (inlineOnly) {
+    return (
+      <>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 rounded-lg hover:bg-bg-elevated cursor-pointer"
+            >
+              <MoreVertical className="w-4 h-4 text-text-dim" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="end"
+            className="bg-bg-card border-border text-text-main shadow-lg"
+          >
+            <DropdownMenuItem
+              onClick={() => setShowEditModal(true)}
+              className="hover:bg-bg-elevated cursor-pointer font-semibold text-xs py-2 px-3"
+            >
+              <Edit2 className="w-3.5 h-3.5 mr-2 text-text-dim" /> Modify Entry
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => {
+                if (window.confirm("Are you sure you want to delete this application?")) {
+                  deleteMutation.mutate(application.id);
+                }
+              }}
+              className="text-danger hover:bg-danger/10 cursor-pointer font-semibold text-xs py-2 px-3"
+            >
+              <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete Item
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <AddApplicationModal
+          open={showEditModal}
+          onOpenChange={setShowEditModal}
+          applicationId={application.id}
+          initialData={application}
+        />
+      </>
+    );
+  }
+
   return (
     <>
-      <div className="group relative rounded-2xl border border-border bg-bg-elevated p-4 shadow-sm hover:shadow-xl hover:border-primary/50 hover:-translate-y-1 transition-all duration-300">
+      <div className="group relative rounded-xl border border-border bg-bg-card p-4.5 transition-all duration-200 hover:border-border/80">
         <div className="flex items-start justify-between gap-3 mb-3">
           <div className="flex-1 min-w-0">
-            <h4 className="font-black text-[13px] text-text-main group-hover:text-primary transition-colors truncate tracking-tight">
+            <h4 className="font-semibold text-xs text-text-main group-hover:text-primary transition-colors truncate">
               {application.eventName}
             </h4>
-            <div className="flex items-center gap-2 mt-1.5">
-              <span className="text-[9px] text-text-muted font-black uppercase tracking-widest bg-bg-card px-2 py-0.5 rounded border border-border/50">
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-[10px] text-text-muted font-medium bg-bg-elevated/50 px-2 py-0.5 rounded border border-border">
                 {application.eventType}
               </span>
               {application.url && (
@@ -90,7 +139,7 @@ export default function ApplicationCard({ application }: ApplicationCardProps) {
                   href={application.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-text-muted hover:text-accent transition-colors"
+                  className="text-text-dim hover:text-text-muted transition-colors"
                 >
                   <ExternalLink className="w-3 h-3" />
                 </a>
@@ -103,24 +152,28 @@ export default function ApplicationCard({ application }: ApplicationCardProps) {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7 rounded-lg hover:bg-bg-card opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity"
+                className="h-9 w-9 rounded-lg hover:bg-bg-elevated"
               >
-                <MoreVertical className="w-4 h-4 text-text-muted" />
+                <MoreVertical className="w-4 h-4 text-text-dim" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
               align="end"
-              className="bg-bg-card border-border text-text-main shadow-2xl"
+              className="bg-bg-card border-border text-text-main shadow-lg"
             >
               <DropdownMenuItem
                 onClick={() => setShowEditModal(true)}
-                className="hover:bg-bg-elevated cursor-pointer font-bold text-xs"
+                className="hover:bg-bg-elevated cursor-pointer font-semibold text-xs py-2 px-3"
               >
-                <Edit2 className="w-3.5 h-3.5 mr-2" /> Modify Entry
+                <Edit2 className="w-3.5 h-3.5 mr-2 text-text-dim" /> Modify Entry
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={() => deleteMutation.mutate(application.id)}
-                className="text-danger hover:bg-danger/10 cursor-pointer font-bold text-xs"
+                onClick={() => {
+                  if (window.confirm("Are you sure you want to delete this application?")) {
+                    deleteMutation.mutate(application.id);
+                  }
+                }}
+                className="text-danger hover:bg-danger/10 cursor-pointer font-semibold text-xs py-2 px-3"
               >
                 <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete Item
               </DropdownMenuItem>
@@ -128,29 +181,27 @@ export default function ApplicationCard({ application }: ApplicationCardProps) {
           </DropdownMenu>
         </div>
 
-        {deadlineDate && (
+        {deadlineDate ? (
           <div
             className={cn(
-              "flex items-center gap-2 mb-4 px-3 py-2 rounded-lg border text-xs font-black uppercase tracking-wider transition-all duration-300",
+              "flex items-center gap-2 mb-3 px-2.5 py-1.5 rounded-lg border text-[11px] font-semibold uppercase tracking-wider",
               isUrgent
-                ? "bg-danger/10 border-danger/20 text-danger animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.2)]"
-                : "bg-blue-500/10 border-blue-500/20 text-blue-600 dark:text-blue-400"
+                ? "bg-danger/10 border-danger/25 text-danger"
+                : "bg-bg-elevated text-text-muted border-border"
             )}
           >
             <Calendar className="w-3.5 h-3.5 flex-shrink-0" />
             <span>{format(deadlineDate, "MMM d, yyyy")}</span>
           </div>
-        )}
-
-        {!deadlineDate && (
-          <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-lg border bg-bg-card border-border/30 text-text-muted text-xs font-bold uppercase tracking-wider">
-            <Calendar className="w-3.5 h-3.5 flex-shrink-0 opacity-50" />
-            <span className="opacity-60">No deadline set</span>
+        ) : (
+          <div className="flex items-center gap-2 mb-3 px-2.5 py-1.5 rounded-lg border bg-bg-elevated/40 border-border/40 text-text-dim text-[11px] font-medium italic">
+            <Calendar className="w-3.5 h-3.5 flex-shrink-0 opacity-40" />
+            <span>No deadline set</span>
           </div>
         )}
 
         {application.notes && (
-          <p className="text-[11px] text-text-muted/60 mb-5 line-clamp-2 italic font-medium leading-relaxed border-l-2 border-border pl-3">
+          <p className="text-[11px] text-text-muted/80 mb-4 line-clamp-2 leading-relaxed border-l border-border pl-2.5 italic">
             "{application.notes}"
           </p>
         )}
@@ -161,7 +212,8 @@ export default function ApplicationCard({ application }: ApplicationCardProps) {
             onValueChange={handleStatusChange}
             disabled={updateMutation.isPending}
           >
-            <SelectTrigger className="h-8 text-[9px] font-black uppercase tracking-widest bg-bg-card/50 border-border hover:bg-bg-card hover:border-primary/40 transition-all">
+            {/* Set touch target height to 44px min for thumb friendliness on mobile */}
+            <SelectTrigger className="h-10 text-[10px] font-semibold uppercase tracking-wider bg-bg-elevated/30 border-border hover:bg-bg-elevated hover:border-border/80 transition-all">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="bg-bg-card border-border text-text-main">
@@ -169,7 +221,7 @@ export default function ApplicationCard({ application }: ApplicationCardProps) {
                 <SelectItem
                   key={s}
                   value={s}
-                  className="text-xs hover:bg-bg-elevated cursor-pointer font-bold"
+                  className="text-xs hover:bg-bg-elevated cursor-pointer font-medium"
                 >
                   {s === "UnderReview" ? "In Review" : s}
                 </SelectItem>

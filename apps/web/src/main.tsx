@@ -6,12 +6,14 @@ import App from "./App";
 import "./index.css";
 
 // Register Service Worker for PWA support
-registerSW({
+const updateSW = registerSW({
   onNeedRefresh() {
     console.log("New content available, please refresh.");
+    window.dispatchEvent(new CustomEvent("pwa-update-available", { detail: { updateSW } }));
   },
   onOfflineReady() {
     console.log("App ready to work offline.");
+    window.dispatchEvent(new CustomEvent("pwa-offline-ready"));
   },
 });
 

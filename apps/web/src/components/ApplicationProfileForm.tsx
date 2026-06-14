@@ -6,7 +6,18 @@ import { Textarea } from "@/components/ui/textarea";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { userApi } from "@/lib/api/userApi";
 import { toast } from "sonner";
-import { Loader2, User, Mail, School, Github, Linkedin, Globe, MapPin, Sparkles } from "lucide-react";
+import { 
+  Loader2, 
+  User, 
+  Mail, 
+  School, 
+  Github, 
+  Linkedin, 
+  Globe, 
+  MapPin, 
+  Sliders, 
+  ShieldAlert 
+} from "lucide-react";
 
 export default function ApplicationProfileForm() {
   const queryClient = useQueryClient();
@@ -24,6 +35,13 @@ export default function ApplicationProfileForm() {
     location: "",
   });
 
+  // Simple mock visual preference state (as requested for Settings layout system, stored in localStorage)
+  const [preferences, setPreferences] = useState({
+    emailAlerts: true,
+    weeklyDigest: false,
+    theme: "dark",
+  });
+
   useEffect(() => {
     if (profile) {
       setFormData({
@@ -37,13 +55,23 @@ export default function ApplicationProfileForm() {
     }
   }, [profile]);
 
+  useEffect(() => {
+    const savedPrefs = localStorage.getItem("career_os_prefs");
+    if (savedPrefs) {
+      try {
+        setPreferences(JSON.parse(savedPrefs));
+      } catch (e) {}
+    }
+  }, []);
+
   const updateMutation = useMutation({
     mutationFn: userApi.updateProfile,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["user", "profile"] });
-      toast.success("Profile updated successfully");
+      localStorage.setItem("career_os_prefs", JSON.stringify(preferences));
+      toast.success("Settings saved successfully");
     },
-    onError: (err: any) => toast.error(err.message || "Failed to update profile"),
+    onError: (err: any) => toast.error(err.message || "Failed to update profile settings"),
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -54,162 +82,208 @@ export default function ApplicationProfileForm() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-24">
-        <Loader2 className="w-10 h-10 animate-spin text-primary" />
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="max-w-5xl mx-auto animate-in fade-in slide-in-from-bottom-6 duration-700">
-      <div className="flex flex-col lg:flex-row gap-8 md:gap-12">
-        {/* Left Column: Summary */}
-        <div className="lg:w-1/3 space-y-6">
-          <div className="card-premium p-10 text-center flex flex-col items-center bg-bg-card/40">
-            <div className="relative mb-8">
-              <div className="w-28 h-28 rounded-[2.5rem] bg-bg-elevated border border-border flex items-center justify-center shadow-2xl transition-transform hover:rotate-3 duration-500">
-                <User className="w-14 h-14 text-primary" />
-              </div>
-              <div className="absolute -bottom-3 -right-3 w-10 h-10 rounded-2xl bg-primary border border-white/20 flex items-center justify-center shadow-xl shadow-primary/30">
-                <Sparkles className="w-5 h-5 text-white" />
+    <div className="max-w-4xl mx-auto animate-in fade-in duration-300">
+      <div className="flex flex-col lg:flex-row gap-6 items-start">
+        
+        {/* Left Column: Navigation Quick Menu / Summary */}
+        <div className="w-full lg:w-[280px] space-y-4 shrink-0">
+          <div className="bg-bg-card border border-border rounded-xl p-5 text-center flex flex-col items-center">
+            <div className="relative mb-4">
+              <div className="w-20 h-20 rounded-full bg-bg-elevated border border-border flex items-center justify-center shadow-inner">
+                <User className="w-10 h-10 text-primary" />
               </div>
             </div>
-            <h2 className="text-2xl font-black text-text-main tracking-tight">Identity Settings</h2>
-            <p className="text-[10px] text-text-muted font-black uppercase tracking-[0.2em] mt-2 opacity-60">Personal Core Data</p>
+            <h2 className="text-sm font-semibold text-text-main tracking-tight">Account Settings</h2>
+            <p className="text-[10px] text-text-dim uppercase tracking-wider mt-1">{profile?.email}</p>
           </div>
 
-          <div className="card-premium p-6 space-y-5 bg-bg-card/20">
-            <div className="flex items-center gap-4 text-text-muted group">
-              <div className="w-8 h-8 rounded-lg bg-bg-elevated border border-border flex items-center justify-center group-hover:border-primary/40 transition-colors">
-                <Mail className="w-4 h-4" />
-              </div>
-              <span className="text-xs font-bold truncate tracking-tight">{profile?.email || "No email linked"}</span>
+          <div className="bg-bg-card border border-border rounded-xl p-4 space-y-3.5 text-xs text-text-muted">
+            <div className="flex items-center gap-3">
+              <Mail className="w-4 h-4 text-text-dim" />
+              <span className="truncate">{profile?.email || "No email linked"}</span>
             </div>
-            <div className="flex items-center gap-4 text-text-muted group">
-              <div className="w-8 h-8 rounded-lg bg-bg-elevated border border-border flex items-center justify-center group-hover:border-primary/40 transition-colors">
-                <MapPin className="w-4 h-4" />
-              </div>
-              <span className="text-xs font-bold tracking-tight">{formData.location || "Location undefined"}</span>
+            <div className="flex items-center gap-3">
+              <MapPin className="w-4 h-4 text-text-dim" />
+              <span>{formData.location || "Location undefined"}</span>
             </div>
           </div>
         </div>
 
-        {/* Right Column: Detailed Form */}
-        <div className="lg:flex-1">
-          <form onSubmit={handleSubmit} className="card-premium p-8 md:p-12 space-y-10 bg-bg-card/30">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-              <div className="space-y-2.5">
-                <Label htmlFor="college" className="text-[10px] font-black uppercase tracking-widest text-text-muted opacity-60 flex items-center gap-2">
-                  <School className="w-3.5 h-3.5" /> Institution
-                </Label>
+        {/* Right Column: Grouped Settings Form */}
+        <div className="flex-1 w-full">
+          <form onSubmit={handleSubmit} className="bg-bg-card border border-border rounded-xl p-6 md:p-8 space-y-8">
+            
+            {/* Section 1: Personal Information */}
+            <div className="space-y-4">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-text-dim border-b border-border/40 pb-2 flex items-center gap-2">
+                <User className="w-3.5 h-3.5" /> Personal Information
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="email" className="text-[11px] font-semibold text-text-muted">Email Address</Label>
+                  <Input
+                    id="email"
+                    value={profile?.email || ""}
+                    disabled
+                    className="bg-bg-elevated/40 border-border text-text-dim h-10 text-xs font-medium cursor-not-allowed"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="location" className="text-[11px] font-semibold text-text-muted">Residency / Location</Label>
+                  <Input
+                    id="location"
+                    value={formData.location}
+                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                    placeholder="City, Country"
+                    className="bg-bg-elevated border-border text-text-main h-10 text-xs font-semibold focus:border-primary/65"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Section 2: Education */}
+            <div className="space-y-4">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-text-dim border-b border-border/40 pb-2 flex items-center gap-2">
+                <School className="w-3.5 h-3.5" /> Academic Information
+              </h3>
+              <div className="space-y-1.5">
+                <Label htmlFor="college" className="text-[11px] font-semibold text-text-muted">Institution Name</Label>
                 <Input
                   id="college"
                   value={formData.college}
                   onChange={(e) => setFormData({ ...formData, college: e.target.value })}
-                  placeholder="University Name"
-                  className="input-premium h-12 text-sm font-semibold"
-                />
-              </div>
-
-              <div className="space-y-2.5">
-                <Label htmlFor="location" className="text-[10px] font-black uppercase tracking-widest text-text-muted opacity-60 flex items-center gap-2">
-                  <MapPin className="w-3.5 h-3.5" /> Residency
-                </Label>
-                <Input
-                  id="location"
-                  value={formData.location}
-                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                  placeholder="City, Country"
-                  className="input-premium h-12 text-sm font-semibold"
+                  placeholder="e.g. Stanford University"
+                  className="bg-bg-elevated border-border text-text-main h-10 text-xs font-semibold focus:border-primary/65"
                 />
               </div>
             </div>
 
-            <div className="space-y-2.5">
-              <Label htmlFor="skills" className="text-[10px] font-black uppercase tracking-widest text-text-muted opacity-60">Professional Capabilities</Label>
-              <Textarea
-                id="skills"
-                value={formData.skills}
-                onChange={(e) => setFormData({ ...formData, skills: e.target.value })}
-                placeholder="e.g. Full-stack Architecture, React Native, AWS Deployment..."
-                className="input-premium min-h-[140px] resize-none text-sm font-semibold leading-relaxed"
-              />
-              <p className="text-[10px] text-text-muted italic opacity-40">These keywords power your smart profile and future application matching.</p>
+            {/* Section 3: Skills */}
+            <div className="space-y-4">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-text-dim border-b border-border/40 pb-2">Skills & Capabilities</h3>
+              <div className="space-y-1.5">
+                <Label htmlFor="skills" className="text-[11px] font-semibold text-text-muted">Professional Keywords</Label>
+                <Textarea
+                  id="skills"
+                  value={formData.skills}
+                  onChange={(e) => setFormData({ ...formData, skills: e.target.value })}
+                  placeholder="React, TypeScript, Spring Boot, Data Structures, Machine Learning..."
+                  className="bg-bg-elevated border-border text-text-main min-h-[100px] text-xs font-semibold leading-relaxed focus:border-primary/65 resize-none"
+                />
+                <p className="text-[10px] text-text-dim/60 italic">Separate items with commas to optimize keyword extractions.</p>
+              </div>
             </div>
 
-            <div className="space-y-8 pt-4">
-              <h4 className="text-[11px] font-black uppercase tracking-[0.3em] text-text-main border-b border-border/50 pb-3">Digital Fingerprint</h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                <div className="space-y-2.5">
-                  <Label htmlFor="github" className="text-[10px] font-black text-text-muted opacity-60 flex items-center gap-2">
-                    <Github className="w-3.5 h-3.5" /> GitHub
+            {/* Section 4: Digital Fingerprints (Links) */}
+            <div className="space-y-4">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-text-dim border-b border-border/40 pb-2 flex items-center gap-2">
+                <Globe className="w-3.5 h-3.5" /> Professional Links
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="github" className="text-[11px] font-semibold text-text-muted flex items-center gap-1.5">
+                    <Github className="w-3.5 h-3.5 text-text-dim" /> GitHub URL
                   </Label>
                   <Input
                     id="github"
                     value={formData.githubUrl}
                     onChange={(e) => setFormData({ ...formData, githubUrl: e.target.value })}
-                    placeholder="github.com/identity"
-                    className="input-premium h-12 text-sm font-semibold"
+                    placeholder="https://github.com/username"
+                    className="bg-bg-elevated border-border text-text-main h-10 text-xs font-semibold focus:border-primary/65"
                   />
                 </div>
-
-                <div className="space-y-2.5">
-                  <Label htmlFor="linkedin" className="text-[10px] font-black text-text-muted opacity-60 flex items-center gap-2">
-                    <Linkedin className="w-3.5 h-3.5" /> LinkedIn
+                <div className="space-y-1.5">
+                  <Label htmlFor="linkedin" className="text-[11px] font-semibold text-text-muted flex items-center gap-1.5">
+                    <Linkedin className="w-3.5 h-3.5 text-text-dim" /> LinkedIn URL
                   </Label>
                   <Input
                     id="linkedin"
                     value={formData.linkedinUrl}
                     onChange={(e) => setFormData({ ...formData, linkedinUrl: e.target.value })}
-                    placeholder="linkedin.com/in/identity"
-                    className="input-premium h-12 text-sm font-semibold"
+                    placeholder="https://linkedin.com/in/username"
+                    className="bg-bg-elevated border-border text-text-main h-10 text-xs font-semibold focus:border-primary/65"
                   />
                 </div>
-
-                <div className="sm:col-span-2 space-y-2.5">
-                  <Label htmlFor="portfolio" className="text-[10px] font-black text-text-muted opacity-60 flex items-center gap-2">
-                    <Globe className="w-3.5 h-3.5" /> Personal Domain
+                <div className="sm:col-span-2 space-y-1.5">
+                  <Label htmlFor="portfolio" className="text-[11px] font-semibold text-text-muted flex items-center gap-1.5">
+                    <Globe className="w-3.5 h-3.5 text-text-dim" /> Portfolio Website
                   </Label>
                   <Input
                     id="portfolio"
                     value={formData.portfolioUrl}
                     onChange={(e) => setFormData({ ...formData, portfolioUrl: e.target.value })}
-                    placeholder="https://identity.com"
-                    className="input-premium h-12 text-sm font-semibold"
+                    placeholder="https://mywebsite.com"
+                    className="bg-bg-elevated border-border text-text-main h-10 text-xs font-semibold focus:border-primary/65"
                   />
                 </div>
               </div>
             </div>
 
-            <div className="pt-8">
+            {/* Section 5: Preferences */}
+            <div className="space-y-4">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-text-dim border-b border-border/40 pb-2 flex items-center gap-2">
+                <Sliders className="w-3.5 h-3.5" /> Workspace Preferences
+              </h3>
+              <div className="space-y-2.5">
+                <label className="flex items-center gap-2.5 cursor-pointer text-xs text-text-muted">
+                  <input
+                    type="checkbox"
+                    checked={preferences.emailAlerts}
+                    onChange={(e) => setPreferences({ ...preferences, emailAlerts: e.target.checked })}
+                    className="w-4 h-4 rounded border-border bg-bg-elevated text-primary focus:ring-primary/20 accent-primary"
+                  />
+                  <span>Enable instant email notifications on status transitions</span>
+                </label>
+                <label className="flex items-center gap-2.5 cursor-pointer text-xs text-text-muted">
+                  <input
+                    type="checkbox"
+                    checked={preferences.weeklyDigest}
+                    onChange={(e) => setPreferences({ ...preferences, weeklyDigest: e.target.checked })}
+                    className="w-4 h-4 rounded border-border bg-bg-elevated text-primary focus:ring-primary/20 accent-primary"
+                  />
+                  <span>Send weekly digest summary of upcoming calendar deadlines</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Submit Action */}
+            <div className="pt-4 border-t border-border/60 flex justify-end">
               <Button
                 type="submit"
                 disabled={updateMutation.isPending}
-                className="bg-[#f97316] hover:bg-[#ea580c] text-white font-bold h-12 px-8 rounded-lg transition-all"
+                className="bg-primary hover:bg-primary-hover text-white font-semibold h-9.5 px-6 rounded-lg transition-all"
               >
-                {updateMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                Commit Changes
+                {updateMutation.isPending && <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />}
+                Save Changes
               </Button>
             </div>
 
-            {/* Flat Style Bookmarklet Section */}
-            <div className="pt-10 mt-10 border-t border-[#27272a] hidden md:block">
-              <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#a1a1aa] mb-4">Tools</h4>
-              <div className="p-6 rounded-xl bg-[#0f0f10] border border-[#27272a] flex flex-col md:flex-row items-center gap-6">
-                <div className="flex-1">
-                   <h5 className="text-sm font-bold text-[#e4e4e7] mb-1">Save Event Bookmarklet</h5>
-                   <p className="text-xs text-[#a1a1aa] leading-relaxed">
-                     Drag the button to your bookmarks bar. Use it on any site to instantly import event details.
-                   </p>
+            {/* Bookmarklet Tool Block */}
+            <div className="pt-6 border-t border-border">
+              <h4 className="text-xs font-semibold uppercase tracking-wider text-text-dim mb-3">Utility Tools</h4>
+              <div className="p-4.5 rounded-lg bg-bg-elevated/20 border border-border flex flex-col md:flex-row items-center gap-5">
+                <div className="flex-1 space-y-1">
+                  <h5 className="text-xs font-bold text-text-main">Save Event Bookmarklet</h5>
+                  <p className="text-[11px] text-text-dim leading-relaxed">
+                    Drag this button to your bookmarks bar. Click it on portal listings (like Unstop) to automatically capture event listings.
+                  </p>
                 </div>
                 <a 
                   href={`javascript:(function(){try{var d=document,w=window,l=w.location,t=d.title,u=l.href,date='',loc='',desc='';if(l.hostname.includes('unstop.com')){t=d.querySelector('h1')?.innerText||t;var text=d.body.innerText;var dm=text.match(/-->\\s*(\\d{1,2}\\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\\s+(\\d{4}|\\d{2}))/i);if(dm){date=dm[1];}else{var matches=text.match(/\\d{1,2}\\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\\s+(\\d{4}|\\d{2})/gi);if(matches)date=matches[0];}var ks=['remote','online','india','bangalore','delhi','mumbai'];var tl=text.toLowerCase();for(var k of ks){if(tl.includes(k)){loc=k.charAt(0).toUpperCase()+k.slice(1);break;}}}var p=new URLSearchParams({title:t,url:u,date:date,location:loc,description:desc});w.open('${window.location.origin}/add?'+p.toString(),'_blank');}catch(e){w.open('${window.location.origin}/add?url='+encodeURIComponent(l.href),'_blank');}})();`}
-                  className="px-6 py-3 bg-[#f97316] hover:bg-[#ea580c] text-white text-xs font-bold rounded-lg transition-all whitespace-nowrap"
+                  className="px-4 py-2 bg-primary/10 hover:bg-primary/15 border border-primary/20 text-primary text-[11px] font-semibold rounded-lg transition-all whitespace-nowrap shrink-0"
                   onClick={(e) => e.preventDefault()}
                 >
-                  Save to EventTracker
+                  Save to Career OS
                 </a>
               </div>
             </div>
+
           </form>
         </div>
       </div>

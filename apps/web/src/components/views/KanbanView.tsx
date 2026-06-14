@@ -3,16 +3,21 @@ import { applicationsApi } from "@/lib/api/applicationsApi";
 import {
   Loader2,
   Plus,
-  Rocket,
-  Layers,
+  Compass,
   ChevronLeft,
   ChevronRight,
+  ExternalLink,
+  Calendar,
+  AlertTriangle,
+  Layers
 } from "lucide-react";
+import EmptyState from "@/components/ui/EmptyState";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import AddApplicationModal from "@/components/AddApplicationModal";
 import ApplicationCard from "@/components/ApplicationCard";
 import { cn } from "@/lib/utils";
+import { format } from "date-fns";
 
 const STATUSES = [
   "Interested",
@@ -22,12 +27,20 @@ const STATUSES = [
   "Rejected",
 ] as const;
 
+const STATUS_BADGE_CLASSES: Record<string, string> = {
+  Interested: "bg-bg-elevated text-text-muted border-border",
+  Applied: "bg-primary/10 text-primary border-primary/20",
+  UnderReview: "bg-amber-500/10 text-amber-500 border-amber-500/20",
+  Accepted: "bg-success/10 text-success border-success/20",
+  Rejected: "bg-danger/10 text-danger border-danger/20",
+};
+
 export default function KanbanView() {
   const [showAddModal, setShowAddModal] = useState(false);
-  const PAGE_SIZE = 6;
+  const PAGE_SIZE = 8;
   const [page, setPage] = useState(0);
 
-  // Backend pagination with sorting: sort by deadline ascending (earliest/most urgent first)
+  // Fetch applications list
   const applicationsQuery = useQuery({
     queryKey: ["applications", { page, size: PAGE_SIZE, sort: "deadline,asc" }],
     queryFn: () =>
@@ -67,17 +80,10 @@ export default function KanbanView() {
     return pages;
   };
 
-  const columnData = useMemo(() => {
-    return STATUSES.map(status => ({
-      status,
-      applications: applications.filter((app: any) => app.status === status),
-    }));
-  }, [applications]);
-
   if (applicationsQuery.isLoading) {
     return (
       <div className="flex items-center justify-center py-24">
-        <Loader2 className="w-10 h-10 animate-spin text-primary" />
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -85,77 +91,139 @@ export default function KanbanView() {
   if (applicationsQuery.isError) {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-center">
-        <div className="w-16 h-16 rounded-3xl bg-danger/10 flex items-center justify-center mb-6">
-          <Layers className="w-8 h-8 text-danger" />
+        <div className="w-12 h-12 rounded-xl bg-danger/10 flex items-center justify-center mb-4">
+          <AlertTriangle className="w-5 h-5 text-danger" />
         </div>
-        <h3 className="text-xl font-black text-text-main">Pipeline Interrupted</h3>
-        <p className="text-xs text-text-muted mt-3 uppercase tracking-widest font-bold opacity-60">
-          {(applicationsQuery.error as any)?.message || "Connectivity issue detected"}
+        <h3 className="text-sm font-semibold text-text-main">Pipeline Connection Error</h3>
+        <p className="text-xs text-text-dim mt-1.5 uppercase tracking-wider">
+          {(applicationsQuery.error as any)?.message || "Failed to load applications"}
         </p>
         <Button 
           onClick={() => applicationsQuery.refetch()} 
           variant="outline" 
-          className="mt-8 border-border hover:bg-bg-elevated font-black text-[10px] uppercase tracking-widest h-11 px-8"
+          className="mt-4 border-border hover:bg-bg-elevated font-semibold text-xs h-9 px-4"
         >
-          Re-establish Connection
+          Retry Connection
         </Button>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 relative pb-20 md:pb-0 animate-in fade-in duration-500">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-2xl bg-bg-elevated border border-border flex items-center justify-center shadow-lg group hover:border-primary/50 transition-colors">
-            <Layers className="w-5 h-5 text-primary group-hover:scale-110 transition-transform" />
+    <div className="space-y-6 relative pb-20 md:pb-0 animate-in fade-in duration-300">
+      <div className="flex items-center justify-between border-b border-border/60 pb-5">
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 rounded-lg bg-bg-elevated border border-border flex items-center justify-center">
+            <Layers className="w-4.5 h-4.5 text-primary" />
           </div>
           <div>
-            <h2 className="text-2xl font-black tracking-tight">
-              All Applications
-            </h2>
-            <p className="text-xs text-text-muted hidden sm:block uppercase tracking-widest font-bold opacity-60">
-              Complete Overview of your submissions
+            <h2 className="text-xl font-bold tracking-tight">Applications</h2>
+            <p className="text-xs text-text-dim hidden sm:block mt-0.5">
+              Personal funnel containing hackathons, internship applications, and events
             </p>
           </div>
         </div>
         <Button
           onClick={() => setShowAddModal(true)}
-          className="btn-primary hidden md:flex h-11 px-8 shadow-primary/20"
+          className="btn-primary h-9.5 px-4"
         >
-          <Plus className="w-4 h-4 mr-2" />
+          <Plus className="w-4 h-4 mr-1.5" />
           Add Application
         </Button>
       </div>
 
       {totalElements === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 text-center border-2 border-dashed border-border/40 rounded-3xl bg-bg-elevated/5 group">
-          <div className="w-16 h-16 rounded-[1.5rem] bg-bg-elevated border border-border flex items-center justify-center mb-6 transition-all group-hover:border-primary/30 group-hover:scale-110">
-            <Rocket className="w-8 h-8 text-text-muted/20" />
-          </div>
-          <p className="text-sm font-black text-text-muted uppercase tracking-widest mb-2">
-            No Applications Yet
-          </p>
-          <p className="text-xs text-text-muted/50 font-bold max-w-[200px] mx-auto leading-relaxed">
-            Click 'Add Application' to get started 🚀
-          </p>
-        </div>
+        <EmptyState
+          title="No Applications"
+          description="Your pipeline workspace is empty. Begin logging your internship and event applications to track your process."
+          icon={Layers}
+          actionLabel="Add Application"
+          onAction={() => setShowAddModal(true)}
+        />
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+          {/* Desktop Table/List Hybrid View */}
+          <div className="hidden md:block bg-bg-card border border-border rounded-xl overflow-hidden shadow-xs">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-border bg-bg-elevated/20">
+                    <th className="p-3 text-[11px] font-semibold text-text-dim uppercase tracking-wider">Event / Company</th>
+                    <th className="p-3 text-[11px] font-semibold text-text-dim uppercase tracking-wider">Category</th>
+                    <th className="p-3 text-[11px] font-semibold text-text-dim uppercase tracking-wider">Status</th>
+                    <th className="p-3 text-[11px] font-semibold text-text-dim uppercase tracking-wider">Deadline</th>
+                    <th className="p-3 text-[11px] font-semibold text-text-dim uppercase tracking-wider">Notes</th>
+                    <th className="p-3 text-[11px] font-semibold text-text-dim uppercase tracking-wider text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/60">
+                  {applications.map((app: any) => {
+                    const dl = app.deadline ? new Date(app.deadline) : null;
+                    const isUrgent = dl && dl.getTime() - Date.now() < 3 * 24 * 60 * 60 * 1000;
+                    
+                    return (
+                      <tr key={app.id} className="hover:bg-bg-elevated/15 transition-colors group">
+                        <td className="p-3">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-text-main text-xs">{app.eventName}</span>
+                            {app.url && (
+                              <a
+                                href={app.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-text-dim hover:text-primary transition-colors"
+                              >
+                                <ExternalLink className="w-3.5 h-3.5" />
+                              </a>
+                            )}
+                          </div>
+                        </td>
+                        <td className="p-3 text-xs text-text-muted">{app.eventType}</td>
+                        <td className="p-3 text-xs">
+                          <span className={cn("px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider border", STATUS_BADGE_CLASSES[app.status] || "bg-bg-elevated text-text-muted border-border")}>
+                            {app.status === "UnderReview" ? "In Review" : app.status}
+                          </span>
+                        </td>
+                        <td className="p-3 text-xs">
+                          {dl ? (
+                            <div className={cn("inline-flex items-center gap-1.5 px-2 py-0.5 rounded border text-[10px] uppercase font-semibold", isUrgent ? "bg-danger/10 border-danger/25 text-danger" : "bg-bg-elevated text-text-muted border-border")}>
+                              <Calendar className="w-3 h-3" />
+                              <span>{format(dl, "MMM dd, yyyy")}</span>
+                            </div>
+                          ) : (
+                            <span className="text-text-dim/55 italic">No deadline</span>
+                          )}
+                        </td>
+                        <td className="p-3 text-xs text-text-dim truncate max-w-xs">{app.notes || "-"}</td>
+                        <td className="p-3 text-right">
+                          <div className="flex justify-end opacity-75 group-hover:opacity-100 transition-opacity">
+                            {/* Reuse ApplicationCard component to wrap menu buttons, preventing redundant modal/delete handler definitions */}
+                            <ApplicationCard application={app} inlineOnly />
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Mobile Card Grid View */}
+          <div className="grid grid-cols-1 gap-4 md:hidden">
             {applications.map((app: any) => (
               <ApplicationCard key={app.id} application={app} />
             ))}
           </div>
 
-          {/* Simple Premium Pagination Controls */}
+          {/* Pagination Controls */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-end pt-6 border-t border-border mt-8">
-              <div className="flex items-center gap-2">
+            <div className="flex items-center justify-end pt-4">
+              <div className="flex items-center gap-1.5">
                 <button
                   onClick={() => setPage(p => Math.max(0, p - 1))}
                   disabled={page === 0}
-                  className="w-9 h-9 rounded-full border border-border bg-bg-card text-text-muted flex items-center justify-center hover:border-primary hover:text-primary transition-all disabled:opacity-30 disabled:hover:border-border disabled:hover:text-text-muted cursor-pointer active:scale-90"
+                  className="w-8 h-8 rounded-lg border border-border bg-bg-card text-text-muted flex items-center justify-center hover:border-border/80 hover:text-text-main transition-all disabled:opacity-35 cursor-pointer active:scale-95"
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
@@ -165,7 +233,7 @@ export default function KanbanView() {
                     return (
                       <span
                         key={`ellipsis-${idx}`}
-                        className="text-xs font-black text-text-muted/40 px-2 select-none"
+                        className="text-xs font-semibold text-text-dim px-1.5 select-none"
                       >
                         ...
                       </span>
@@ -178,10 +246,10 @@ export default function KanbanView() {
                       key={`page-${p}`}
                       onClick={() => setPage(p as number)}
                       className={cn(
-                        "w-9 h-9 rounded-full text-xs font-black transition-all cursor-pointer flex items-center justify-center border active:scale-90",
+                        "w-8 h-8 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center justify-center border",
                         isCurrent
-                          ? "bg-primary text-white border-primary shadow-lg shadow-primary/20"
-                          : "border-border bg-bg-card text-text-muted hover:border-primary/50 hover:text-text-main"
+                          ? "bg-primary text-white border-primary"
+                          : "border-border bg-bg-card text-text-muted hover:border-border/80 hover:text-text-main"
                       )}
                     >
                       {(p as number) + 1}
@@ -192,7 +260,7 @@ export default function KanbanView() {
                 <button
                   onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
                   disabled={page >= totalPages - 1}
-                  className="w-9 h-9 rounded-full border border-border bg-bg-card text-text-muted flex items-center justify-center hover:border-primary hover:text-primary transition-all disabled:opacity-30 disabled:hover:border-border disabled:hover:text-text-muted cursor-pointer active:scale-90"
+                  className="w-8 h-8 rounded-lg border border-border bg-bg-card text-text-muted flex items-center justify-center hover:border-border/80 hover:text-text-main transition-all disabled:opacity-35 cursor-pointer active:scale-95"
                 >
                   <ChevronRight className="w-4 h-4" />
                 </button>
@@ -202,13 +270,7 @@ export default function KanbanView() {
         </>
       )}
 
-      {/* Floating Action Button for Mobile */}
-      <Button
-        onClick={() => setShowAddModal(true)}
-        className="fixed bottom-24 right-6 w-16 h-16 rounded-full shadow-2xl shadow-primary/40 bg-primary hover:bg-primary-hover p-0 md:hidden z-50 animate-in fade-in zoom-in duration-300 active:scale-90"
-      >
-        <Plus className="w-7 h-7 text-white" />
-      </Button>
+
 
       <AddApplicationModal open={showAddModal} onOpenChange={setShowAddModal} />
     </div>

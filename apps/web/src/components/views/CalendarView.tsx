@@ -1,10 +1,11 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   ChevronLeft,
   ChevronRight,
   Download,
   Calendar as CalendarIcon,
   List,
+  Clock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
@@ -12,6 +13,9 @@ import { applicationsApi } from "@/lib/api/applicationsApi";
 import { placementsApi } from "@/lib/api/placementsApi";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { format, isToday } from "date-fns";
+import EmptyState from "@/components/ui/EmptyState";
+import { useLocation } from "wouter";
 
 const DAYS_OF_WEEK = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTHS = [
@@ -35,8 +39,8 @@ const STATUS_COLORS: Record<string, string> = {
   UnderReview: "bg-amber-500/10 text-amber-500 border-amber-500/20",
   Accepted: "bg-success/10 text-success border-success/20",
   Rejected: "bg-danger/10 text-danger border-danger/20",
-  PlacementAssessment: "bg-blue-500/10 text-blue-400 border-blue-500/20",
-  PlacementInterview: "bg-cyan-500/10 text-cyan-400 border-cyan-500/20",
+  PlacementAssessment: "bg-amber-500/10 text-amber-500 border-amber-500/20",
+  PlacementInterview: "bg-indigo-500/10 text-indigo-500 border-indigo-500/20",
 };
 
 interface CalendarEvent {
@@ -47,19 +51,24 @@ interface CalendarEvent {
 }
 
 export default function CalendarView() {
+  const [, setLocation] = useLocation();
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
-  const [isListView, setIsListView] = useState(() => {
-    if (typeof window !== "undefined") {
-      return window.innerWidth < 768;
-    }
-    return false;
-  });
-  const [page, setPage] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Sync mobile state
+  useEffect(() => {
+    const checkViewport = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkViewport();
+    window.addEventListener("resize", checkViewport);
+    return () => window.removeEventListener("resize", checkViewport);
+  }, []);
 
   const applicationsQuery = useQuery({
-    queryKey: ["applications", { page, size: 100, sort: "deadline,asc" }],
+    queryKey: ["applications", { page: 0, size: 100, sort: "deadline,asc" }],
     queryFn: () =>
-      applicationsApi.list({ page, size: 100, sort: "deadline,asc" }),
+      applicationsApi.list({ page: 0, size: 100, sort: "deadline,asc" }),
   });
   const applicationsData = applicationsQuery.data || { content: [] };
   const applications = applicationsData.content || [];
@@ -87,7 +96,7 @@ export default function CalendarView() {
       if (p.assessmentDate) {
         items.push({
           id: `place-as-${p.id}`,
-          eventName: `📝 ${p.companyName} - Assessment`,
+          eventName: `${p.companyName} - Assessment`,
           status: "PlacementAssessment",
           deadline: new Date(p.assessmentDate),
         });
@@ -95,7 +104,7 @@ export default function CalendarView() {
       if (p.interviewDate) {
         items.push({
           id: `place-it-${p.id}`,
-          eventName: `🎤 ${p.companyName} - Interview`,
+          eventName: `${p.companyName} - Interview`,
           status: "PlacementInterview",
           deadline: new Date(p.interviewDate),
         });
@@ -149,9 +158,9 @@ export default function CalendarView() {
       link.href = url;
       link.download = `event-applications.ics`;
       link.click();
-      toast.success("Calendar exported!");
+      toast.success("Calendar exported successfully");
     } catch (error) {
-      toast.error("Export failed");
+      toast.error("Failed to export calendar");
     }
   };
 
@@ -161,26 +170,38 @@ export default function CalendarView() {
   for (let i = 0; i < firstDay; i++) calendarDays.push(null);
   for (let day = 1; day <= daysInMonth; day++) calendarDays.push(day);
 
+  // Filter current month events for the side timeline agenda
+  const currentMonthEvents = useMemo(() => {
+    return events
+      .filter(
+        e =>
+          e.deadline.getMonth() === currentDate.getMonth() &&
+          e.deadline.getFullYear() === currentDate.getFullYear()
+      )
+      .sort((a, b) => a.deadline.getTime() - b.deadline.getTime());
+  }, [events, currentDate]);
+
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start bg-bg-card p-1 rounded-xl border border-border">
+    <div className="space-y-6 animate-in fade-in duration-300">
+      {/* Calendar View Control Header */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-border/60 pb-5">
+        <div className="flex items-center gap-3 bg-bg-card p-1 rounded-lg border border-border">
           <Button
             variant="ghost"
             size="icon"
             onClick={handlePrevMonth}
-            className="h-8 w-8 hover:bg-bg-elevated"
+            className="h-8 w-8 hover:bg-bg-elevated cursor-pointer"
           >
             <ChevronLeft className="w-4 h-4" />
           </Button>
-          <h2 className="text-sm font-black uppercase tracking-widest min-w-[140px] text-center">
+          <h2 className="text-xs font-semibold uppercase tracking-wider min-w-[120px] text-center text-text-main">
             {MONTHS[currentDate.getMonth()]} {currentDate.getFullYear()}
           </h2>
           <Button
             variant="ghost"
             size="icon"
             onClick={handleNextMonth}
-            className="h-8 w-8 hover:bg-bg-elevated"
+            className="h-8 w-8 hover:bg-bg-elevated cursor-pointer"
           >
             <ChevronRight className="w-4 h-4" />
           </Button>
@@ -188,64 +209,96 @@ export default function CalendarView() {
 
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsListView(!isListView)}
-            className="flex-1 sm:flex-none gap-2 border-border bg-bg-card hover:bg-bg-elevated font-black text-[10px] uppercase tracking-widest h-10"
-          >
-            {isListView ? (
-              <CalendarIcon className="w-3 h-3" />
-            ) : (
-              <List className="w-3 h-3" />
-            )}
-            {isListView ? "Grid View" : "List View"}
-          </Button>
-          <Button
             onClick={handleExportCalendar}
             variant="outline"
-            size="sm"
-            className="flex-1 sm:flex-none gap-2 border-border bg-bg-card hover:bg-bg-elevated font-black text-[10px] uppercase tracking-widest h-10"
+            className="flex-1 sm:flex-none gap-2 border-border bg-bg-card hover:bg-bg-elevated font-semibold text-xs h-9 px-4 cursor-pointer"
           >
-            <Download className="w-3 h-3" /> Export ICS
+            <Download className="w-3.5 h-3.5" /> <span>Export ICS</span>
           </Button>
         </div>
       </div>
 
-      {!isListView ? (
-        <div className="card-premium p-4 overflow-x-auto bg-bg-card/30">
-          <div className="min-w-[750px] md:min-w-0">
-            <div className="grid grid-cols-7 gap-2 mb-4">
+      {/* Main Layout Area */}
+      {isMobile ? (
+        /* Mobile Default: Agenda View */
+        <div className="space-y-3">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-text-dim px-1">Upcoming Agenda</h3>
+          {currentMonthEvents.map(event => (
+            <div
+              key={event.id}
+              className="card-premium p-4 flex items-center justify-between gap-4 bg-bg-card border-border/70 hover:border-border"
+            >
+              <div className="flex items-center gap-4">
+                <div className="flex flex-col items-center justify-center w-12 h-12 rounded-lg bg-bg-elevated border border-border shrink-0">
+                  <span className="text-[9px] font-semibold text-primary uppercase">
+                    {MONTHS[event.deadline.getMonth()].slice(0, 3)}
+                  </span>
+                  <span className="text-lg font-bold text-text-main tabular-nums leading-none mt-0.5">
+                    {event.deadline.getDate()}
+                  </span>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-xs text-text-main tracking-tight line-clamp-1">
+                    {event.eventName}
+                  </h4>
+                  <p className="text-[9px] text-text-dim font-semibold uppercase tracking-wider mt-1">
+                    Deadline / Event
+                  </p>
+                </div>
+              </div>
+              <span
+                className={cn(
+                  "text-[9px] px-2.5 py-0.5 rounded-full border font-semibold uppercase tracking-wider shrink-0",
+                  STATUS_COLORS[event.status] || "bg-bg-elevated text-text-muted border-border"
+                )}
+              >
+                {event.status === "UnderReview" ? "In Review" : event.status}
+              </span>
+            </div>
+          ))}
+
+          {currentMonthEvents.length === 0 && (
+            <EmptyState
+              title="No Events Scheduled"
+              description="Your calendar schedule is clear. Add deadlines, tests, and interview schedules to visualize your timeline."
+              icon={CalendarIcon}
+              actionLabel="Add Event"
+              onAction={() => setLocation("/add")}
+            />
+          )}
+        </div>
+      ) : (
+        /* Desktop: Calendar + Agenda Hybrid View */
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* 2/3 Column: Monthly Grid Calendar */}
+          <div className="lg:col-span-2 bg-bg-card border border-border rounded-xl p-4.5 space-y-4">
+            <div className="grid grid-cols-7 gap-1.5 mb-1">
               {DAYS_OF_WEEK.map(day => (
                 <div
                   key={day}
-                  className="text-center font-black text-[9px] text-text-muted py-2 uppercase tracking-[0.2em]"
+                  className="text-center font-semibold text-[10px] text-text-dim py-1 uppercase tracking-wider"
                 >
                   {day}
                 </div>
               ))}
             </div>
 
-            <div className="grid grid-cols-7 gap-2">
+            <div className="grid grid-cols-7 gap-1.5">
               {calendarDays.map((day, index) => {
                 const dayEvents = getEventsForDay(day);
-                const isToday =
+                const isTodayDate =
                   day &&
-                  new Date().toDateString() ===
-                    new Date(
-                      currentDate.getFullYear(),
-                      currentDate.getMonth(),
-                      day
-                    ).toDateString();
+                  isToday(new Date(currentDate.getFullYear(), currentDate.getMonth(), day));
 
                 return (
                   <div
                     key={index}
                     className={cn(
-                      "min-h-[110px] md:min-h-[140px] p-2 rounded-2xl border transition-all duration-300",
+                      "min-h-[75px] p-1.5 rounded-lg border transition-all duration-200 flex flex-col justify-between",
                       day
-                        ? isToday
-                          ? "border-primary bg-primary/5 ring-1 ring-primary/20"
-                          : "border-border bg-bg-card/20 hover:border-primary/20 hover:bg-bg-elevated/20"
+                        ? isTodayDate
+                          ? "border-primary bg-primary/[0.03] ring-1 ring-primary/10"
+                          : "border-border bg-bg-main/30 hover:border-border/80"
                         : "border-transparent"
                     )}
                   >
@@ -253,18 +306,18 @@ export default function CalendarView() {
                       <>
                         <div
                           className={cn(
-                            "text-[10px] font-black mb-2.5 px-1.5 transition-colors",
-                            isToday ? "text-primary" : "text-text-muted/40"
+                            "text-[10px] font-semibold transition-colors self-start px-0.5",
+                            isTodayDate ? "text-primary" : "text-text-muted/60"
                           )}
                         >
                           {day}
                         </div>
-                        <div className="space-y-1.5">
-                          {dayEvents.slice(0, 3).map(event => (
+                        <div className="space-y-1 mt-1">
+                          {dayEvents.slice(0, 2).map(event => (
                             <div
                               key={event.id}
                               className={cn(
-                                "text-[9px] p-1.5 rounded-lg border truncate leading-tight font-black uppercase tracking-tighter transition-all hover:scale-[1.02]",
+                                "text-[9px] px-1 py-0.5 rounded border truncate leading-tight font-medium transition-all",
                                 STATUS_COLORS[event.status] ||
                                   "bg-bg-elevated border-border text-text-muted"
                               )}
@@ -273,9 +326,9 @@ export default function CalendarView() {
                               {event.eventName}
                             </div>
                           ))}
-                          {dayEvents.length > 3 && (
-                            <div className="text-[8px] text-center font-black text-text-muted/30 pt-1 tracking-widest">
-                              +{dayEvents.length - 3} MORE
+                          {dayEvents.length > 2 && (
+                            <div className="text-[8px] text-center font-bold text-text-dim select-none tracking-wider pt-0.5">
+                              +{dayEvents.length - 2} MORE
                             </div>
                           )}
                         </div>
@@ -286,80 +339,68 @@ export default function CalendarView() {
               })}
             </div>
           </div>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {events
-            .filter(
-              e =>
-                e.deadline.getMonth() === currentDate.getMonth() &&
-                e.deadline.getFullYear() === currentDate.getFullYear()
-            )
-            .sort((a, b) => a.deadline.getTime() - b.deadline.getTime())
-            .map(event => (
-              <div
-                key={event.id}
-                className="card-premium p-5 flex items-center justify-between gap-6 group"
-              >
-                <div className="flex items-center gap-6">
-                  <div className="flex flex-col items-center justify-center w-16 h-16 rounded-[1.25rem] bg-bg-elevated border border-border group-hover:border-primary/40 transition-all shadow-inner">
-                    <span className="text-[9px] font-black text-primary uppercase tracking-widest">
-                      {MONTHS[event.deadline.getMonth()].slice(0, 3)}
-                    </span>
-                    <span className="text-2xl font-black text-text-main tabular-nums">
-                      {event.deadline.getDate()}
+
+          {/* 1/3 Column: Agenda Timeline panel */}
+          <div className="bg-bg-card border border-border rounded-xl p-5 space-y-4">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-text-dim flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5 text-primary" /> Month's Agenda
+            </h3>
+
+            <div className="space-y-3 max-h-[420px] overflow-y-auto pr-0.5 scrollbar-thin">
+              {currentMonthEvents.map(event => (
+                <div
+                  key={event.id}
+                  className="p-3 rounded-lg bg-bg-main border border-border/80 hover:border-border transition-all flex flex-col justify-between"
+                >
+                  <div className="flex items-start justify-between gap-2.5">
+                    <p className="text-xs font-semibold text-text-main line-clamp-1">{event.eventName}</p>
+                    <span
+                      className={cn(
+                        "text-[9px] px-2 py-0.5 rounded-full border font-semibold uppercase tracking-wider shrink-0",
+                        STATUS_COLORS[event.status] || "bg-bg-elevated text-text-muted border-border"
+                      )}
+                    >
+                      {event.status === "UnderReview" ? "In Review" : event.status}
                     </span>
                   </div>
-                  <div>
-                    <h4 className="font-black text-base text-text-main group-hover:text-primary transition-colors tracking-tight">
-                      {event.eventName}
-                    </h4>
-                    <p className="text-[10px] text-text-muted font-black uppercase tracking-[0.2em] mt-2 opacity-50">
-                      Application Deadline
-                    </p>
+                  <div className="mt-3 text-[10px] text-text-dim flex items-center justify-between">
+                    <span>Due Date</span>
+                    <span className="font-semibold text-text-main">{format(event.deadline, "MMM dd, yyyy")}</span>
                   </div>
                 </div>
-                <span
-                  className={cn(
-                    "text-[9px] px-3.5 py-1.5 rounded-lg border font-black uppercase tracking-widest",
-                    STATUS_COLORS[event.status]
-                  )}
-                >
-                  {event.status}
-                </span>
-              </div>
-            ))}
-          {events.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-24 px-4 text-center border-2 border-dashed border-border rounded-[2.5rem] bg-bg-card/10">
-              <CalendarIcon className="w-16 h-16 text-text-muted/5 mb-6" />
-              <h4 className="text-lg font-black text-text-main mb-2 tracking-tight">
-                Schedule Clear
-              </h4>
-              <p className="text-[10px] text-text-muted font-black uppercase tracking-widest opacity-40">
-                No application deadlines found for this period.
-              </p>
+              ))}
+
+              {currentMonthEvents.length === 0 && (
+                <EmptyState
+                  title="No Events Scheduled"
+                  description="Your calendar schedule is clear. Add deadlines, tests, and interview schedules to visualize your timeline."
+                  icon={CalendarIcon}
+                  actionLabel="Add Event"
+                  onAction={() => setLocation("/add")}
+                />
+              )}
             </div>
-          )}
+          </div>
         </div>
       )}
 
-      <div className="flex flex-wrap gap-4 md:gap-10 p-7 card-premium bg-bg-card/20 border-dashed">
+      {/* Categories Legend Grid */}
+      <div className="flex flex-wrap gap-x-6 gap-y-2.5 p-4.5 bg-bg-card/50 border border-border border-dashed rounded-xl">
         {Object.entries(STATUS_COLORS).map(([status, colors]) => {
           let label = status;
           if (status === "UnderReview") label = "In Review";
-          else if (status === "PlacementDeadline") label = "Placement Deadline 📅";
-          else if (status === "PlacementAssessment") label = "Placement Assessment 📝";
-          else if (status === "PlacementInterview") label = "Placement Interview 🎤";
+          else if (status === "PlacementAssessment") label = "Placement Assessment";
+          else if (status === "PlacementInterview") label = "Placement Interview";
 
           return (
-            <div key={status} className="flex items-center gap-3.5 group">
+            <div key={status} className="flex items-center gap-2 group text-xs text-text-muted">
               <div
                 className={cn(
-                  "w-2.5 h-2.5 rounded-full shadow-lg ring-2 ring-white/5",
+                  "w-2 h-2 rounded-full",
                   colors.split(" ")[0].replace("/10", "")
                 )}
               />
-              <span className="text-[9px] font-black text-text-muted uppercase tracking-[0.2em] group-hover:text-text-main transition-colors">
+              <span className="text-[10px] font-semibold uppercase tracking-wider group-hover:text-text-main transition-colors">
                 {label}
               </span>
             </div>
