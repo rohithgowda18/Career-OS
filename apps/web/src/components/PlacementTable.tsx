@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import EditPlacementModal from "@/components/EditPlacementModal";
+import PlacementCard from "@/components/PlacementCard";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -121,7 +122,25 @@ export default function PlacementTable({ page, setPage, pageSize }: PlacementTab
 
   return (
     <div className="space-y-6">
-      <div className="card-premium overflow-hidden p-0 border-border bg-bg-card/20 backdrop-blur-md">
+      {/* Cards list view on mobile */}
+      <div className="grid grid-cols-1 gap-4 md:hidden">
+        {placements.map((p: any) => (
+          <PlacementCard
+            key={p.id}
+            placement={p}
+            onEdit={() => handleEdit(p)}
+            onDelete={() => handleDelete(p.id, p.companyName)}
+          />
+        ))}
+        {placements.length === 0 && (
+          <div className="card-premium p-8 text-center text-xs font-bold text-text-muted uppercase tracking-widest opacity-40">
+            No placement opportunities recorded yet
+          </div>
+        )}
+      </div>
+
+      {/* Table view on desktop */}
+      <div className="card-premium overflow-hidden p-0 border-border bg-bg-card/20 backdrop-blur-md hidden md:block">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -250,7 +269,7 @@ export default function PlacementTable({ page, setPage, pageSize }: PlacementTab
             <button
               onClick={() => setPage(Math.max(0, page - 1))}
               disabled={page === 0}
-              className="w-9 h-9 rounded-full border border-border bg-bg-card text-text-muted flex items-center justify-center hover:border-primary hover:text-primary transition-all disabled:opacity-30 disabled:hover:border-border disabled:hover:text-text-muted cursor-pointer active:scale-90"
+              className="w-11 h-11 md:w-9 md:h-9 rounded-full border border-border bg-bg-card text-text-muted flex items-center justify-center hover:border-primary hover:text-primary transition-all disabled:opacity-30 disabled:hover:border-border disabled:hover:text-text-muted cursor-pointer active:scale-90"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
@@ -270,7 +289,7 @@ export default function PlacementTable({ page, setPage, pageSize }: PlacementTab
                   key={`page-${p}`}
                   onClick={() => setPage(p as number)}
                   className={cn(
-                    "w-9 h-9 rounded-full text-xs font-black transition-all cursor-pointer flex items-center justify-center border active:scale-90",
+                    "w-11 h-11 md:w-9 md:h-9 rounded-full text-xs font-black transition-all cursor-pointer flex items-center justify-center border active:scale-90",
                     isCurrent
                       ? "bg-primary text-white border-primary shadow-lg shadow-primary/20"
                       : "border-border bg-bg-card text-text-muted hover:border-primary/50 hover:text-text-main"
@@ -284,7 +303,7 @@ export default function PlacementTable({ page, setPage, pageSize }: PlacementTab
             <button
               onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
               disabled={page >= totalPages - 1}
-              className="w-9 h-9 rounded-full border border-border bg-bg-card text-text-muted flex items-center justify-center hover:border-primary hover:text-primary transition-all disabled:opacity-30 disabled:hover:border-border disabled:hover:text-text-muted cursor-pointer active:scale-90"
+              className="w-11 h-11 md:w-9 md:h-9 rounded-full border border-border bg-bg-card text-text-muted flex items-center justify-center hover:border-primary hover:text-primary transition-all disabled:opacity-30 disabled:hover:border-border disabled:hover:text-text-muted cursor-pointer active:scale-90"
             >
               <ChevronRight className="w-4 h-4" />
             </button>

@@ -192,7 +192,7 @@ export default function ApplicationProfileForm() {
             </div>
 
             {/* Flat Style Bookmarklet Section */}
-            <div className="pt-10 mt-10 border-t border-[#27272a]">
+            <div className="pt-10 mt-10 border-t border-[#27272a] hidden md:block">
               <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#a1a1aa] mb-4">Tools</h4>
               <div className="p-6 rounded-xl bg-[#0f0f10] border border-[#27272a] flex flex-col md:flex-row items-center gap-6">
                 <div className="flex-1">

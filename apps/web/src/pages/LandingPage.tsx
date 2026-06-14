@@ -59,28 +59,28 @@ export default function LandingPage() {
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent to-blue-600 flex items-center justify-center shadow-lg shadow-accent/20 group-hover:scale-105 transition-transform">
               <Sparkles className="w-6 h-6 text-white" />
             </div>
-            <span className="text-xl font-bold tracking-tight">Event Tracker</span>
+            <span className="text-xl font-bold tracking-tight hidden min-[400px]:block">Event Tracker</span>
           </div>
           
           <div className="flex items-center gap-4">
             {isInstallable && (
               <Button
                 onClick={() => setShowInstallDialog(true)}
-                className="bg-accent hover:bg-accent/90 text-white rounded-full px-5 font-semibold gap-2 flex items-center shadow-lg shadow-accent/20 border-none h-10 transition-all hover:scale-[1.02] active:scale-95"
+                className="bg-accent hover:bg-accent/90 text-white rounded-full px-4 sm:px-5 font-semibold gap-2 flex items-center shadow-lg shadow-accent/20 border-none h-11 transition-all hover:scale-[1.02] active:scale-95 text-xs sm:text-sm"
               >
                 <Smartphone className="w-4 h-4" />
-                <span>Install</span>
+                <span className="hidden min-[480px]:inline">Install</span>
               </Button>
             )}
             <button 
               onClick={() => setLocation("/login")}
-              className="text-sm font-medium hover:text-white transition-colors"
+              className="text-sm font-medium hover:text-white transition-colors hidden sm:block"
             >
               Log in
             </button>
             <Button 
               onClick={() => setLocation("/login")}
-              className="bg-white text-black hover:bg-white/90 rounded-full px-6 font-semibold h-10"
+              className="bg-white text-black hover:bg-white/90 rounded-full px-5 sm:px-6 font-semibold h-11 text-xs sm:text-sm"
             >
               Get Started
             </Button>
@@ -90,26 +90,26 @@ export default function LandingPage() {
 
       <main>
         {/* Hero Section */}
-        <section className="relative pt-32 pb-20 md:pt-48 md:pb-32 overflow-hidden">
+        <section className="relative pt-24 pb-16 md:pt-48 md:pb-32 overflow-hidden">
           <div className="container relative z-10 text-center">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs font-medium text-accent mb-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
               <Target className="w-3.5 h-3.5" />
               <span>Stay Organized. Get Accepted.</span>
             </div>
-            <h1 className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tight mb-8 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-100">
+            <h1 className="text-4xl min-[400px]:text-5xl md:text-7xl lg:text-8xl font-black tracking-tight mb-8 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-100">
               Your Career <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent via-blue-500 to-accent bg-[length:200%_auto] animate-gradient">
                 Event Command Center
               </span>
             </h1>
-            <p className="max-w-2xl mx-auto text-lg md:text-xl text-muted-foreground mb-10 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200">
+            <p className="max-w-2xl mx-auto text-base md:text-xl text-muted-foreground mb-10 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200">
               Track your hackathons, conferences, and internship applications in one beautiful, high-performance dashboard. Built for builders.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300">
               <Button 
                 onClick={() => setLocation("/login")}
                 size="lg" 
-                className="h-14 px-8 bg-accent hover:bg-accent/90 text-white rounded-full text-lg font-bold shadow-2xl shadow-accent/20 group"
+                className="h-14 px-8 bg-accent hover:bg-accent/90 text-white rounded-full text-base sm:text-lg font-bold shadow-2xl shadow-accent/20 group"
               >
                 Join Now — It's Free
                 <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />

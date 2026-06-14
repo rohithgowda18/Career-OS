@@ -148,7 +148,7 @@ export default function AnalyticsDashboard() {
               { label: "Pipeline", value: summary.underReview, icon: <AlertCircle className="w-5 h-5" />, color: "text-primary", bg: "bg-primary/10" },
               { label: "Yield %", value: `${summary.overallAcceptanceRate}%`, icon: <PieIcon className="w-5 h-5" />, color: "text-accent", bg: "bg-accent/10" },
             ].map(item => (
-              <div key={item.label} className="card-premium p-8 flex flex-col items-center text-center group bg-bg-card/40">
+              <div key={item.label} className="card-premium p-4 sm:p-8 flex flex-col items-center text-center group bg-bg-card/40">
                 <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center mb-5 transition-transform group-hover:scale-110 shadow-inner border border-white/5", item.bg, item.color)}>
                   {item.icon}
                 </div>
@@ -160,7 +160,7 @@ export default function AnalyticsDashboard() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-10">
             {/* Acceptance Rate Chart */}
-            <div className="card-premium p-8 flex flex-col bg-bg-card/20">
+            <div className="card-premium p-4 sm:p-8 flex flex-col bg-bg-card/20">
               <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-text-muted mb-10">Rate by Event Segment</h3>
               <div className="h-80 w-full mt-auto">
                 <ResponsiveContainer width="100%" height="100%">
@@ -180,7 +180,7 @@ export default function AnalyticsDashboard() {
             </div>
 
             {/* Status Distribution Chart */}
-            <div className="card-premium p-8 flex flex-col bg-bg-card/20">
+            <div className="card-premium p-4 sm:p-8 flex flex-col bg-bg-card/20">
               <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-text-muted mb-10">Pipeline Composition</h3>
               <div className="h-80 w-full mt-auto">
                 <ResponsiveContainer width="100%" height="100%">
@@ -209,7 +209,7 @@ export default function AnalyticsDashboard() {
 
           {/* Detailed Metrics */}
           <div className="card-premium overflow-hidden bg-bg-card/20">
-            <div className="p-8 border-b border-border flex items-center justify-between bg-bg-card/40">
+            <div className="p-4 sm:p-8 border-b border-border flex items-center justify-between bg-bg-card/40">
               <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-text-muted">Segment Deep Dive</h3>
               <div className="px-3 py-1 rounded-full border border-primary/20 bg-primary/5 text-[9px] font-black text-primary uppercase tracking-widest">
                 Real-time Calculation
@@ -251,7 +251,7 @@ export default function AnalyticsDashboard() {
               { label: "Interview Conv.", value: `${pData.interviewConversion}%`, icon: <Calendar className="w-5 h-5" />, color: "text-indigo-500", bg: "bg-indigo-500/10" },
               { label: "Offer Conversion", value: `${pData.offerConversion}%`, icon: <UserCheck className="w-5 h-5" />, color: "text-success", bg: "bg-success/10" },
             ].map(item => (
-              <div key={item.label} className="card-premium p-8 flex flex-col items-center text-center group bg-bg-card/40">
+              <div key={item.label} className="card-premium p-4 sm:p-8 flex flex-col items-center text-center group bg-bg-card/40">
                 <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center mb-5 transition-transform group-hover:scale-110 shadow-inner border border-white/5", item.bg, item.color)}>
                   {item.icon}
                 </div>
@@ -263,7 +263,7 @@ export default function AnalyticsDashboard() {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-10">
             {/* Status Distribution Pie Chart */}
-            <div className="card-premium p-8 flex flex-col bg-bg-card/20 lg:col-span-1">
+            <div className="card-premium p-4 sm:p-8 flex flex-col bg-bg-card/20 lg:col-span-1">
               <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-text-muted mb-10">Funnel Status Composition</h3>
               <div className="h-80 w-full mt-auto">
                 <ResponsiveContainer width="100%" height="100%">
@@ -290,7 +290,7 @@ export default function AnalyticsDashboard() {
             </div>
 
             {/* Funnel Progress list */}
-            <div className="card-premium p-8 flex flex-col bg-bg-card/20 lg:col-span-2 justify-between">
+            <div className="card-premium p-4 sm:p-8 flex flex-col bg-bg-card/20 lg:col-span-2 justify-between">
               <div className="mb-6">
                 <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-text-muted mb-2"> funnel stage breakdown</h3>
                 <p className="text-xs text-text-muted/60">Stage conversion rate tracking across placement applications.</p>
@@ -360,7 +360,7 @@ export default function AnalyticsDashboard() {
 
           {/* Status Segment Deep Dive */}
           <div className="card-premium overflow-hidden bg-bg-card/20">
-            <div className="p-8 border-b border-border flex items-center justify-between bg-bg-card/40">
+            <div className="p-4 sm:p-8 border-b border-border flex items-center justify-between bg-bg-card/40">
               <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-text-muted">Pipeline Distribution Breakdown</h3>
               <div className="px-3 py-1 rounded-full border border-primary/20 bg-primary/5 text-[9px] font-black text-primary uppercase tracking-widest">
                 Real-time Statistics

@@ -108,7 +108,7 @@ export default function AddApplicationModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md bg-bg-card border-border text-text-main p-0 overflow-hidden rounded-2xl shadow-2xl">
+      <DialogContent className="max-w-md bg-bg-card border-border text-text-main p-0 overflow-y-auto max-h-[90vh] rounded-2xl shadow-2xl">
         <DialogHeader className="p-6 bg-bg-hover/20 border-b border-border">
           <DialogTitle className="text-xl font-black">{applicationId ? "Edit" : "New"} Application</DialogTitle>
         </DialogHeader>

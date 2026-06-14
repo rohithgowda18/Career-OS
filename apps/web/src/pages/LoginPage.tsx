@@ -64,14 +64,14 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-bg-main text-text-main flex items-center justify-center p-6 relative overflow-hidden font-sans">
+    <div className="min-h-screen bg-bg-main text-text-main flex items-center justify-center p-6 pt-20 sm:pt-6 relative overflow-hidden font-sans">
       {/* Background Ambience */}
       <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full bg-primary/10 blur-[140px]" />
       <div className="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] rounded-full bg-accent/10 blur-[140px]" />
 
       <button
         onClick={() => setLocation("/")}
-        className="absolute top-10 left-10 flex items-center gap-2.5 text-[10px] font-black uppercase tracking-[0.2em] text-text-muted hover:text-primary transition-colors"
+        className="absolute top-4 left-4 sm:top-10 sm:left-10 flex items-center gap-2.5 text-[10px] font-black uppercase tracking-[0.2em] text-text-muted hover:text-primary transition-colors z-20"
       >
         <ArrowLeft className="w-4 h-4" /> Return to Origin
       </button>

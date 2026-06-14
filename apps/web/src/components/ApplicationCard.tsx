@@ -103,7 +103,7 @@ export default function ApplicationCard({ application }: ApplicationCardProps) {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7 rounded-lg hover:bg-bg-card opacity-0 group-hover:opacity-100 transition-opacity"
+                className="h-7 w-7 rounded-lg hover:bg-bg-card opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity"
               >
                 <MoreVertical className="w-4 h-4 text-text-muted" />
               </Button>

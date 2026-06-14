@@ -48,7 +48,12 @@ interface CalendarEvent {
 
 export default function CalendarView() {
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
-  const [isListView, setIsListView] = useState(false);
+  const [isListView, setIsListView] = useState(() => {
+    if (typeof window !== "undefined") {
+      return window.innerWidth < 768;
+    }
+    return false;
+  });
   const [page, setPage] = useState(0);
 
   const applicationsQuery = useQuery({

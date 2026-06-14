@@ -1,10 +1,18 @@
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { Calendar, Briefcase, MapPin, DollarSign, Globe } from "lucide-react";
+import { Calendar, Briefcase, MapPin, DollarSign, Globe, MoreVertical, Trash2, Edit2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface PlacementCardProps {
   placement: any;
   onEdit?: () => void;
+  onDelete?: () => void;
 }
 
 const STATUS_CLASSES: Record<string, string> = {
@@ -27,7 +35,7 @@ const STATUS_LABELS: Record<string, string> = {
   REJECTED: "Rejected",
 };
 
-export default function PlacementCard({ placement, onEdit }: PlacementCardProps) {
+export default function PlacementCard({ placement, onEdit, onDelete }: PlacementCardProps) {
 
   return (
     <div 
@@ -37,7 +45,7 @@ export default function PlacementCard({ placement, onEdit }: PlacementCardProps)
       <div className="space-y-4">
         {/* Top Meta info */}
         <div className="flex items-start justify-between gap-4">
-          <div className="space-y-1">
+          <div className="space-y-1 flex-1 min-w-0">
             <h4 className="text-base font-black text-text-main group-hover:text-primary transition-colors tracking-tight line-clamp-1">
               {placement.companyName}
             </h4>
@@ -47,9 +55,54 @@ export default function PlacementCard({ placement, onEdit }: PlacementCardProps)
             </p>
           </div>
 
-          <span className={cn("text-[9px] px-3.5 py-1.5 rounded-lg border font-black uppercase tracking-widest", STATUS_CLASSES[placement.status] || "bg-bg-elevated text-text-muted border-border")}>
-            {STATUS_LABELS[placement.status] || placement.status}
-          </span>
+          <div className="flex items-center gap-2 shrink-0">
+            <span className={cn("text-[9px] px-3.5 py-1.5 rounded-lg border font-black uppercase tracking-widest", STATUS_CLASSES[placement.status] || "bg-bg-elevated text-text-muted border-border")}>
+              {STATUS_LABELS[placement.status] || placement.status}
+            </span>
+
+            {(onEdit || onDelete) && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={(e) => e.stopPropagation()}
+                    className="h-8 w-8 rounded-lg hover:bg-bg-elevated opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <MoreVertical className="w-4 h-4 text-text-muted" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="end"
+                  className="bg-bg-card border-border text-text-main shadow-2xl"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {onEdit && (
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEdit();
+                      }}
+                      className="hover:bg-bg-elevated cursor-pointer font-bold text-xs"
+                    >
+                      <Edit2 className="w-3.5 h-3.5 mr-2" /> Modify Entry
+                    </DropdownMenuItem>
+                  )}
+                  {onDelete && (
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDelete();
+                      }}
+                      className="text-danger hover:bg-danger/10 cursor-pointer font-bold text-xs"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 mr-2" /> Delete Item
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
         </div>
 
         {/* Content details grid */}
