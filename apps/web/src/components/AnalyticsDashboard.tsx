@@ -4,7 +4,7 @@ import { analyticsApi } from "@/lib/api/analyticsApi";
 import { placementsApi } from "@/lib/api/placementsApi";
 import { Loader2, TrendingUp, CheckCircle2, AlertCircle, PieChart as PieIcon, Activity, Calendar, Trophy, UserCheck } from "lucide-react";
 import {
-  BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  BarChart, Bar, AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
 import { cn } from "@/lib/utils";
 
@@ -55,9 +55,15 @@ export default function AnalyticsDashboard() {
     enabled: analyticType === "placements",
   });
 
+  const placementTrendsQuery = useQuery({
+    queryKey: ['analytics', 'placements', 'trends'],
+    queryFn: placementsApi.getTrends,
+    enabled: analyticType === "placements",
+  });
+
   const isLoading = analyticType === "events"
     ? (acceptanceRatesQuery.isLoading || statusDistributionQuery.isLoading || summaryQuery.isLoading)
-    : placementAnalyticsQuery.isLoading;
+    : (placementAnalyticsQuery.isLoading || placementTrendsQuery.isLoading);
 
   if (isLoading) {
     return (
@@ -102,6 +108,8 @@ export default function AnalyticsDashboard() {
   const placementStatusDistArray = Object.entries(pData.statusDistribution || {}).map(([status, count]: any) => ({
     status, count,
   }));
+
+  const placementTrends = placementTrendsQuery.data || [];
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
@@ -281,6 +289,33 @@ export default function AnalyticsDashboard() {
                 ))}
               </div>
             </div>
+
+            {/* Placement Trends Chart */}
+            <div className="bg-bg-card border border-border rounded-xl p-4 flex flex-col md:col-span-2">
+              <h4 className="text-xs font-semibold uppercase tracking-wider text-text-dim mb-6">Placements Trend Over Time</h4>
+              <div className="h-64 w-full mt-auto">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={placementTrends} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#6366F1" stopOpacity={0.2}/>
+                        <stop offset="95%" stopColor="#6366F1" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#27272A" />
+                    <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#A1A1AA', fontSize: 10 }} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#A1A1AA', fontSize: 10 }} allowDecimals={false} />
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: '#111113', border: '1px solid #27272A', borderRadius: '8px' }}
+                      itemStyle={{ color: '#FAFAFA', fontSize: '11px', fontWeight: 500 }}
+                      cursor={{ fill: '#18181B' }}
+                    />
+                    <Area type="monotone" dataKey="count" stroke="#6366F1" fillOpacity={1} fill="url(#colorCount)" strokeWidth={2} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
           </div>
         </>
       )}

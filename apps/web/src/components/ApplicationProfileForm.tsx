@@ -33,13 +33,8 @@ export default function ApplicationProfileForm() {
     linkedinUrl: "",
     portfolioUrl: "",
     location: "",
-  });
-
-  // Simple mock visual preference state (as requested for Settings layout system, stored in localStorage)
-  const [preferences, setPreferences] = useState({
     emailAlerts: true,
     weeklyDigest: false,
-    theme: "dark",
   });
 
   useEffect(() => {
@@ -51,24 +46,16 @@ export default function ApplicationProfileForm() {
         linkedinUrl: profile.linkedinUrl || "",
         portfolioUrl: profile.portfolioUrl || "",
         location: profile.location || "",
+        emailAlerts: profile.emailAlerts !== undefined ? profile.emailAlerts : true,
+        weeklyDigest: profile.weeklyDigest !== undefined ? profile.weeklyDigest : false,
       });
     }
   }, [profile]);
-
-  useEffect(() => {
-    const savedPrefs = localStorage.getItem("career_os_prefs");
-    if (savedPrefs) {
-      try {
-        setPreferences(JSON.parse(savedPrefs));
-      } catch (e) {}
-    }
-  }, []);
 
   const updateMutation = useMutation({
     mutationFn: userApi.updateProfile,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["user", "profile"] });
-      localStorage.setItem("career_os_prefs", JSON.stringify(preferences));
       toast.success("Settings saved successfully");
     },
     onError: (err: any) => toast.error(err.message || "Failed to update profile settings"),
@@ -234,8 +221,8 @@ export default function ApplicationProfileForm() {
                 <label className="flex items-center gap-2.5 cursor-pointer text-xs text-text-muted">
                   <input
                     type="checkbox"
-                    checked={preferences.emailAlerts}
-                    onChange={(e) => setPreferences({ ...preferences, emailAlerts: e.target.checked })}
+                    checked={formData.emailAlerts}
+                    onChange={(e) => setFormData({ ...formData, emailAlerts: e.target.checked })}
                     className="w-4 h-4 rounded border-border bg-bg-elevated text-primary focus:ring-primary/20 accent-primary"
                   />
                   <span>Enable instant email notifications on status transitions</span>
@@ -243,8 +230,8 @@ export default function ApplicationProfileForm() {
                 <label className="flex items-center gap-2.5 cursor-pointer text-xs text-text-muted">
                   <input
                     type="checkbox"
-                    checked={preferences.weeklyDigest}
-                    onChange={(e) => setPreferences({ ...preferences, weeklyDigest: e.target.checked })}
+                    checked={formData.weeklyDigest}
+                    onChange={(e) => setFormData({ ...formData, weeklyDigest: e.target.checked })}
                     className="w-4 h-4 rounded border-border bg-bg-elevated text-primary focus:ring-primary/20 accent-primary"
                   />
                   <span>Send weekly digest summary of upcoming calendar deadlines</span>

@@ -69,3 +69,6 @@ CREATE UNIQUE INDEX IF NOT EXISTS unique_user_company_role_link ON placements (u
 
 UPDATE placements SET status = 'APPLIED' WHERE status = 'SAVED';
 
+-- Add preference fields to user_profiles table if they don't exist
+ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS email_alerts BOOLEAN DEFAULT TRUE NOT NULL;
+ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS weekly_digest BOOLEAN DEFAULT FALSE NOT NULL;

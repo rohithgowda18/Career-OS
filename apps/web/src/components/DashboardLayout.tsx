@@ -37,7 +37,6 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import AddApplicationModal from "@/components/AddApplicationModal";
 import AddPlacementModal from "@/components/AddPlacementModal";
-import ScratchpadModal from "@/components/ScratchpadModal";
 
 interface DashboardLayoutProps {
   activeTab: "dashboard" | "kanban" | "placements" | "calendar" | "analytics" | "profile";
@@ -54,7 +53,6 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
   // Global modals state
   const [showAddAppModal, setShowAddAppModal] = useState(false);
   const [showAddPlacementModal, setShowAddPlacementModal] = useState(false);
-  const [showAddNoteModal, setShowAddNoteModal] = useState(false);
 
   // PWA Experience states
   const [showInstallBanner, setShowInstallBanner] = useState(() => {
@@ -326,7 +324,7 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
       {!isOnline && (
         <div className="bg-danger/10 border-b border-danger/20 text-danger text-[11px] font-semibold text-center py-1.5 w-full z-50 flex items-center justify-center gap-1.5 shrink-0 animate-in slide-in-from-top duration-300">
           <WifiOff className="w-3.5 h-3.5" />
-          <span>You are currently offline. Local changes will sync when you reconnect.</span>
+          <span>You are currently offline.</span>
         </div>
       )}
 
@@ -527,9 +525,6 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setLocation("/add")} className="cursor-pointer hover:bg-bg-elevated px-2.5 py-1.5 text-xs font-medium">
                   Add Event
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setShowAddNoteModal(true)} className="cursor-pointer hover:bg-bg-elevated px-2.5 py-1.5 text-xs font-medium">
-                  Add Note
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -745,9 +740,6 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
             <DropdownMenuItem onClick={() => setLocation("/add")} className="cursor-pointer hover:bg-bg-elevated px-2.5 py-2 text-xs font-medium">
               Add Event
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setShowAddNoteModal(true)} className="cursor-pointer hover:bg-bg-elevated px-2.5 py-2 text-xs font-medium">
-              Add Note
-            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -755,7 +747,6 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
       {/* Global Add Modals */}
       <AddApplicationModal open={showAddAppModal} onOpenChange={setShowAddAppModal} />
       <AddPlacementModal open={showAddPlacementModal} onOpenChange={setShowAddPlacementModal} />
-      <ScratchpadModal open={showAddNoteModal} onOpenChange={setShowAddNoteModal} />
       
       </div> {/* Close the flex-1 div wrapper */}
     </div>

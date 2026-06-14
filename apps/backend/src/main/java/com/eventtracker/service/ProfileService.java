@@ -27,6 +27,8 @@ public class ProfileService {
         if (updates.getLinkedinUrl() != null) profile.setLinkedinUrl(updates.getLinkedinUrl());
         if (updates.getPortfolioUrl() != null) profile.setPortfolioUrl(updates.getPortfolioUrl());
         if (updates.getLocation() != null) profile.setLocation(updates.getLocation());
+        if (updates.getEmailAlerts() != null) profile.setEmailAlerts(updates.getEmailAlerts());
+        if (updates.getWeeklyDigest() != null) profile.setWeeklyDigest(updates.getWeeklyDigest());
 
         return convertToDTO(profileRepository.save(profile));
     }
@@ -43,6 +45,8 @@ public class ProfileService {
                 .linkedinUrl(profile.getLinkedinUrl())
                 .portfolioUrl(profile.getPortfolioUrl())
                 .location(profile.getLocation())
+                .emailAlerts(profile.getEmailAlerts())
+                .weeklyDigest(profile.getWeeklyDigest())
                 .createdAt(profile.getCreatedAt())
                 .updatedAt(profile.getUpdatedAt())
                 .build();

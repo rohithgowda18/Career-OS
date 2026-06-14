@@ -52,6 +52,12 @@ public class UserProfile {
     @Column(name = "location")
     private String location;
 
+    @Column(name = "email_alerts", nullable = false)
+    private Boolean emailAlerts = true;
+
+    @Column(name = "weekly_digest", nullable = false)
+    private Boolean weeklyDigest = false;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

@@ -21,6 +21,8 @@ public class UserProfileDTO {
     private String linkedinUrl;
     private String portfolioUrl;
     private String location;
+    private Boolean emailAlerts;
+    private Boolean weeklyDigest;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }
