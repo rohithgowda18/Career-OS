@@ -16,7 +16,7 @@ export function useAuth() {
 
   const logout = useCallback(async () => {
     localStorage.removeItem("token");
-    queryClient.setQueryData(['auth', 'me'], null);
+    queryClient.clear();
     setLocation("/login");
   }, [queryClient, setLocation]);
 

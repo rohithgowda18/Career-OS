@@ -49,6 +49,13 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
   const [showInstallDialog, setShowInstallDialog] = useState(false);
   const { isInstallable, isIOS, triggerInstall } = usePWAInstall();
   const [isOnline, setIsOnline] = useState(typeof window !== "undefined" ? window.navigator.onLine : true);
+  const [isMac, setIsMac] = useState(true);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setIsMac(navigator.platform.toUpperCase().indexOf("MAC") >= 0);
+    }
+  }, []);
 
   // Global modals state
   const [showAddAppModal, setShowAddAppModal] = useState(false);
@@ -352,8 +359,10 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
             className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-bg-elevated/40 border border-border text-[12px] text-text-dim hover:text-text-muted hover:border-border/80 transition-all text-left"
           >
             <Search className="w-3.5 h-3.5 shrink-0" />
-            <span>Search...</span>
-            <kbd className="ml-auto bg-bg-card border border-border px-1.5 py-0.5 rounded text-[10px] font-mono shrink-0">⌘K</kbd>
+            <span className="flex-1 min-w-0 truncate">Search...</span>
+            <kbd className="ml-auto bg-bg-card border border-border px-1.5 py-0.5 rounded text-[10px] font-mono shrink-0 text-text-dim">
+              {isMac ? "⌘K" : "Ctrl+K"}
+            </kbd>
           </button>
         </div>
 
@@ -502,14 +511,6 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
           </div>
 
           <div className="flex items-center gap-4">
-            <button 
-              onClick={() => setShowCommandPalette(true)}
-              className="flex items-center gap-2 text-xs text-text-dim hover:text-text-muted transition-colors mr-2"
-            >
-              <Command className="w-3.5 h-3.5" />
-              <span>Search Command Palette (Ctrl+K)</span>
-            </button>
-
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button size="sm" className="bg-primary hover:bg-primary-hover text-white h-8 px-3 text-xs font-semibold cursor-pointer">
@@ -522,9 +523,6 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setShowAddPlacementModal(true)} className="cursor-pointer hover:bg-bg-elevated px-2.5 py-1.5 text-xs font-medium">
                   Add Placement
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setLocation("/add")} className="cursor-pointer hover:bg-bg-elevated px-2.5 py-1.5 text-xs font-medium">
-                  Add Event
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -592,7 +590,7 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
         setShowCommandPalette(v);
         if (!v) setSearchQuery("");
       }}>
-        <DialogContent className="max-w-lg bg-bg-card border-border text-text-main p-0 overflow-hidden rounded-xl shadow-2xl">
+        <DialogContent showCloseButton={false} className="max-w-lg bg-bg-card border-border text-text-main p-0 overflow-hidden rounded-xl shadow-2xl">
           <div className="flex items-center border-b border-border px-4 h-12 bg-bg-elevated/20">
             <Search className="w-4 h-4 text-text-dim mr-2.5 shrink-0" />
             <input
@@ -601,10 +599,10 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={handleCommandPaletteKeyDown}
               placeholder="Search applications, placements, shortcuts..."
-              className="w-full bg-transparent outline-none border-none text-[13px] text-text-main placeholder:text-text-dim h-full py-2"
+              className="flex-1 min-w-0 bg-transparent outline-none border-none text-[13px] text-text-main placeholder:text-text-dim h-full py-2 mr-3"
               autoFocus
             />
-            <kbd className="ml-auto bg-bg-elevated border border-border px-1.5 py-0.5 rounded text-[10px] font-mono text-text-dim">ESC</kbd>
+            <kbd className="ml-auto bg-bg-elevated border border-border px-1.5 py-0.5 rounded text-[10px] font-mono text-text-dim shrink-0">ESC</kbd>
           </div>
 
           <div className="max-h-[300px] overflow-y-auto p-2 space-y-2">
@@ -736,9 +734,6 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setShowAddPlacementModal(true)} className="cursor-pointer hover:bg-bg-elevated px-2.5 py-2 text-xs font-medium">
               Add Placement
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setLocation("/add")} className="cursor-pointer hover:bg-bg-elevated px-2.5 py-2 text-xs font-medium">
-              Add Event
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
