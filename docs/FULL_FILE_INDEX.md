@@ -20,30 +20,39 @@ This document is the definitive index of all source files in the Event Applicati
 - `controller/AuthController.java`: JWT login and registration endpoints.
 - `controller/AnalyticsController.java`: Statistical endpoints for charts and metrics.
 - `controller/ProfileController.java`: Endpoints for managing user profile details.
+- `controller/PlacementController.java`: CRUD and AI parser endpoints for `/placements`.
 
 ### 🛠️ Services (Business Logic)
 - `service/ApplicationService.java`: Logic for application management and URL normalization.
 - `service/UserService.java`: User account management and profile initialization.
 - `service/ProfileService.java`: Logic for updating extended user profile data.
-- `service/AnalyticsService.java`: Complex aggregation logic for status and acceptance rates.
+- `service/AnalyticsService.java`: Complex aggregation logic for status, yield, and conversions.
+- `service/PlacementService.java`: Placements tracking pipeline, search filtering, and funnel metrics.
+- `service/GeminiExtractionService.java`: AI-assisted recruitment email parser using Gemini models.
+- `service/EmailService.java`: SMTP transport utility for notifications and weekly digests.
 
 ### 📦 Persistence (Entities & Repos)
 - `entity/User.java`: User account model with Security UserDetails implementation.
 - `entity/Application.java`: Application tracking model with unique URL constraints.
 - `entity/UserProfile.java`: Extended user data model.
+- `entity/Placement.java`: Database entity representing job and internship listings.
 - `repository/UserRepository.java`: User data access with case-insensitive search.
 - `repository/ApplicationRepository.java`: Application data access with complex filtering.
 - `repository/UserProfileRepository.java`: Profile data access.
+- `repository/PlacementRepository.java`: Database query handlers for job/internship applications.
 
 ### 📝 DTOs (Data Transfer)
 - `dto/ApplicationDTO.java`: Validated transfer object for application data.
 - `dto/AuthDTO.java`: Static inner classes for Login, Register, and AuthResponse.
 - `dto/UserDTO.java`: Transfer object for user information.
 - `dto/UpdateProfileRequestDTO.java`: Specialized DTO for profile updates.
+- `dto/PlacementDTO.java`: Transfer object representing career placement details.
 
 ### ⚠️ Exceptions
 - `exception/DuplicateEventException.java`: Thrown on URL collision.
 - `exception/DuplicateUserException.java`: Thrown on email collision.
+
+---
 
 ## Frontend (React 19 + Vite)
 
@@ -51,15 +60,21 @@ This document is the definitive index of all source files in the Event Applicati
 - `pages/LandingPage.tsx`: Hero section, features, and public entry.
 - `pages/LoginPage.tsx`: Authentication hub.
 - `pages/Home.tsx`: Main authenticated dashboard layout.
-- `pages/AddEventPage.tsx`: Dedicated form for new applications.
+- `pages/AddEventPage.tsx`: Dedicated form for new applications (supporting Bookmarklet URL params).
+- `pages/PlacementsPage.tsx`: Layout for tracking internships and jobs.
 - `pages/OAuthSuccessPage.tsx`: Post-OAuth token persistence logic.
 - `pages/NotFound.tsx`: Graceful 404 handler.
 
 ### 🧱 Views & Components
 - `components/views/DashboardView.tsx`: Analytics cards and deadline lists.
-- `components/views/KanbanView.tsx`: Draggable-style status columns.
+- `components/views/KanbanView.tsx`: Draggable-style status columns for events.
 - `components/views/CalendarView.tsx`: Deadline visualization.
-- `components/ApplicationProfileForm.tsx`: Settings and profile editor.
+- `components/views/PlacementKanbanView.tsx`: Kanban display of active career tracks.
+- `components/ApplicationProfileForm.tsx`: Settings, profile, preferences, and Scraper bookmarklet utility.
+- `components/AddPlacementModal.tsx`: Creation modal for placements (with text email parser).
+- `components/EditPlacementModal.tsx`: Modifying interface for placements.
+- `components/PlacementCard.tsx`: Card item display for placements.
+- `components/PlacementTable.tsx`: Full tabular query layout with sorting and actions.
 - `components/ErrorBoundary.tsx`: Application-wide crash protection.
 - `components/ui/*`: 20+ Radix UI based accessible primitives.
 
@@ -69,6 +84,7 @@ This document is the definitive index of all source files in the Event Applicati
 - `lib/api/authApi.ts`: Authentication calls.
 - `lib/api/analyticsApi.ts`: Data aggregation calls.
 - `lib/api/userApi.ts`: Profile management calls.
+- `lib/api/placementsApi.ts`: Placements CRUD and extraction calls.
 - `hooks/useAuth.ts`: Central authentication state hook.
 - `contexts/ThemeContext.tsx`: Persistent theme management.
 

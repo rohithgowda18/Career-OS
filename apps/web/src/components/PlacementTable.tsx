@@ -21,6 +21,8 @@ import PlacementCard from "@/components/PlacementCard";
 import EmptyState from "@/components/ui/EmptyState";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useTheme } from "@/contexts/ThemeContext";
+import { Badge } from "@/components/ui/badge";
 
 interface PlacementTableProps {
   page: number;
@@ -49,6 +51,7 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 export default function PlacementTable({ page, setPage, pageSize }: PlacementTableProps) {
+  const { themeTokens } = useTheme();
   const [selectedPlacement, setSelectedPlacement] = useState<any>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -159,11 +162,11 @@ export default function PlacementTable({ page, setPage, pageSize }: PlacementTab
       </div>
 
       {/* Desktop data table display */}
-      <div className="bg-bg-card border border-border rounded-xl overflow-hidden shadow-xs hidden md:block">
+      <div className={cn("overflow-hidden hidden md:block", themeTokens.card)}>
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-border bg-bg-elevated/20">
+              <tr className={themeTokens.tableHeaderClass}>
                 <th className="p-3 text-[11px] font-semibold uppercase tracking-wider text-text-dim">Company</th>
                 <th className="p-3 text-[11px] font-semibold uppercase tracking-wider text-text-dim">Role</th>
                 <th className="p-3 text-[11px] font-semibold uppercase tracking-wider text-text-dim">Location</th>
@@ -177,9 +180,9 @@ export default function PlacementTable({ page, setPage, pageSize }: PlacementTab
             </thead>
             <tbody className="divide-y divide-border/60">
               {placements.map((p: any) => (
-                <tr key={p.id} className="hover:bg-bg-elevated/15 transition-colors group">
-                  <td className="p-3 font-semibold text-text-main text-xs truncate max-w-[120px]">{p.companyName}</td>
-                  <td className="p-3 text-text-muted text-xs truncate max-w-[120px]">{p.role}</td>
+                <tr key={p.id} className={cn("transition-colors group", themeTokens.tableRowClass)}>
+                  <td className={cn("p-3 font-semibold text-xs truncate max-w-[120px]", themeTokens.headingColor)}>{p.companyName}</td>
+                  <td className={cn("p-3 text-xs truncate max-w-[120px]", themeTokens.textColor)}>{p.role}</td>
                   <td className="p-3 text-xs text-text-muted">
                     {p.location ? (
                       <span className="flex items-center gap-1">
@@ -211,9 +214,20 @@ export default function PlacementTable({ page, setPage, pageSize }: PlacementTab
                     )}
                   </td>
                   <td className="p-3 text-xs">
-                    <span className={cn("px-2 py-0.5 rounded-full border text-[10px] font-semibold uppercase tracking-wider", STATUS_CLASSES[p.status] || "bg-bg-elevated border-border text-text-muted")}>
+                    <Badge
+                      statusColor={
+                        p.status === "OFFER_RECEIVED"
+                          ? "green"
+                          : p.status === "REJECTED"
+                          ? "red"
+                          : p.status.includes("SCHEDULED") || p.status.includes("COMPLETED")
+                          ? "orange"
+                          : "blue"
+                      }
+                      className="text-[10px]"
+                    >
                       {STATUS_LABELS[p.status] || p.status}
-                    </span>
+                    </Badge>
                   </td>
 
                   <td className="p-3 text-xs text-text-muted">

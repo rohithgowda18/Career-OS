@@ -9,7 +9,7 @@ This document provides a senior-level technical specification of the Event Appli
 ### **Approach**: Component-Driven Development
 -   **Why**: We build the UI as a tree of isolated, reusable components. This reduces complexity and allows for localized debugging.
 -   **Tool: TypeScript**:
-    -   **Rationale**: JavaScript's dynamic nature is a liability in large-scale apps. TypeScript provides "Compile-time Validation," ensuring that an `Application` object on the frontend matches exactly what the backend sends.
+    -   **Rationale**: JavaScript's dynamic nature is a liability in large-scale apps. TypeScript provides "Compile-time Validation," ensuring that an `Application` or `Placement` object on the frontend matches exactly what the backend sends.
 
 ---
 
@@ -32,11 +32,17 @@ A key senior-level decision is **not** to store API data in global state (like R
 -   **Rationale**:
     -   **Speed**: No more jumping between `.tsx` and `.css` files.
     -   **Maintainability**: Eliminates the "dead CSS" problem where unused styles accumulate in large stylesheets.
-    -   **Bundle Size**: Tailwind's JIT compiler only generates the CSS we actually use.
+    -   **Bundle Size**: Tailwind's compiler only generates the CSS we actually use.
 
 ### **Tool: Shadcn/UI (Radix UI)**
 -   **Approach**: Headless, Accessible Components.
--   **Rationale**: We prioritize **A11Y (Accessibility)**. Radix UI handles the complex focus management, keyboard navigation, and screen reader roles, allowing us to focus on the custom "Cyber-Tech" aesthetic.
+-   **Rationale**: We prioritize **A11Y (Accessibility)**. Radix UI handles the complex focus management, keyboard navigation, and screen reader roles, allowing us to build a premium "Cyber-Tech" interface that is fully accessible and responsive.
+
+### **Unified Career Views (Dashboard, Kanban, and Table Layouts)**
+-   **Events View**: Toggle between a Calendar grid view, a Kanban board view, or a Dashboard breakdown list.
+-   **Placements View**: Offers a custom Kanban layout showing candidate stages (*Applied → Assessment → Interview → Offer*) and a sorting Table layout featuring interactive query filters and a search input.
+-   **Dynamic AI Modals**: Modals like `AddPlacementModal` incorporate a toggleable "AI Email Parser" text area. Pasting a recruitment email invokes the Gemini backend, auto-populating fields while allowing candidates to verify and adjust information before saving.
+-   **Bookmarklet Hook**: `AddEventPage` decodes URL search query parameters (passed from the custom JavaScript bookmarklet scraper) and auto-populates input fields instantly.
 
 ---
 

@@ -26,9 +26,11 @@ The backend implements a strict **N-Tier (Layered) Architecture**:
 ### Entities Detail
 1.  **`User`**: Implements Spring Security's `UserDetails`. Centralizes identity.
 2.  **`Application`**: Features a **Unique Constraint** on `(user_id, event_url)`.
-    -   **Rationale**: This prevents a user from tracking the same event multiple times, ensuring data cleanlines at the database level.
+    -   **Rationale**: This prevents a user from tracking the same event multiple times, ensuring data cleanliness at the database level.
 3.  **`UserProfile`**: Linked via `@OneToOne`.
     -   **Rationale**: We separate "Account Data" (User) from "Personal Data" (Profile) to optimize query performance and enhance privacy controls.
+4.  **`Placement`**: Represents job and internship tracking records. Features a multi-column **Unique Index** on `(user_id, company_name, role, application_link)`.
+    -   **Rationale**: Restricts data entry duplicates at the database layer while accommodating situations where a candidate applies to different roles at the same company.
 
 ---
 
@@ -42,22 +44,40 @@ The backend implements a strict **N-Tier (Layered) Architecture**:
 -   **Approach**: Database storage as `STRING`.
 -   **Rationale**: While `ORDINAL` is more compact, `STRING` is human-readable and resilient to changes in enum order, making database debugging significantly easier.
 
+### AI-Assisted Extraction (Gemini integration)
+-   **Implementation**: `GeminiExtractionService.java`.
+-   **Model**: Defaults to `gemini-2.5-flash`.
+-   **Rationale**: Allows users to paste recruitment emails to auto-fill job fields, minimizing manual entry friction.
+-   **Technical Rationale**:
+    -   *Reflection-driven prompt*: The service inspects `PlacementDTO` properties dynamically using reflection to build the instructions schema.
+    -   *Strict JSON enforce*: Uses Gemini's `responseMimeType: "application/json"` parameters to ensure the model responds with structured, parseable schema elements.
+    -   *URL Preservation*: Matches parsed URLs from the prompt response back against raw regex-extracted URLs from the original text to guarantee URL integrity.
+    -   *Fault Tolerance*: Employs a 3-attempt exponential backoff retry wrapper to handle transient Network or Rate Limit failures.
+
+### Email Notification System
+-   **Implementation**: `EmailService.java`.
+-   **Mechanism**: Uses Spring's `JavaMailSender` configured via SMTP.
+-   **Rationale**: Delivers status transition alerts and weekly digests to help users stay on top of upcoming calendar deadlines.
+
 ---
 
 ## 📡 4. API Specification & DTO Pattern
 
 ### The DTO (Data Transfer Object) Approach
--   **Implementation**: `ApplicationDTO`, `AuthDTO`, etc.
+-   **Implementation**: `ApplicationDTO`, `PlacementDTO`, `AuthDTO`, etc.
 -   **Why**: We **never** expose internal JPA entities directly to the API.
-    -   **Security**: Prevents sensitive fields (like passwords or internal IDs) from leaking.
-    -   **Flexibility**: Allows the API contract to remain stable even if the underlying database schema changes.
+-   **Security**: Prevents sensitive fields (like passwords or internal IDs) from leaking.
+-   **Flexibility**: Allows the API contract to remain stable even if the underlying database schema changes.
 
 ### Key API Endpoints
 | Endpoint | Method | Logic |
 | :--- | :--- | :--- |
-| `/auth/login` | `POST` | Authenticates credentials and issues a JWT. |
-| `/applications` | `POST` | Validates, normalizes, and stores new application records. |
-| `/analytics/stats`| `GET` | Aggregates status counts using Stream API collectors. |
+| `/api/auth/login` | `POST` | Authenticates credentials and issues a JWT. |
+| `/api/applications` | `POST` | Validates, normalizes, and stores new application records. |
+| `/api/placements` | `POST` | Processes, validates, and stores job/internship applications. |
+| `/api/placements/extract` | `POST` | Interfaces with Gemini API to extract DTO details from raw email text. |
+| `/api/analytics/summary` | `GET` | Aggregates event totals, success rates, and category statistics. |
+| `/api/placements/analytics` | `GET` | Computes conversion rates (Applied → Assessment → Interview → Offer). |
 
 ---
 

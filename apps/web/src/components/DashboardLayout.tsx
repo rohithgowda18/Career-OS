@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTheme } from "@/contexts/ThemeContext";
 import { applicationsApi } from "@/lib/api/applicationsApi";
 import { placementsApi } from "@/lib/api/placementsApi";
 import { 
@@ -44,6 +45,7 @@ interface DashboardLayoutProps {
 }
 
 export default function DashboardLayout({ activeTab, children }: DashboardLayoutProps) {
+  const { currentTheme, setTheme, themeTokens, toggleDarkMode } = useTheme();
   const { user, loading, logout } = useAuth();
   const [, setLocation] = useLocation();
   const [showInstallDialog, setShowInstallDialog] = useState(false);
@@ -313,7 +315,7 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
   };
 
   return (
-    <div className="min-h-screen bg-bg-main text-text-main font-sans flex flex-col pb-20 md:pb-0 relative">
+    <div className={cn("min-h-screen font-sans flex flex-col pb-20 md:pb-0 relative", themeTokens.pageBg)}>
       {/* Pull to Refresh Indicator */}
       {(pullDistance > 0 || isRefreshing) && (
         <div 
@@ -337,7 +339,7 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
 
       <div className="flex-1 flex flex-col md:flex-row min-w-0">
       {/* Desktop Left Sidebar */}
-      <aside className="hidden md:flex flex-col w-64 bg-bg-card border-r border-border fixed inset-y-0 left-0 z-30">
+      <aside className={cn("hidden md:flex flex-col w-64 fixed inset-y-0 left-0 z-30 border-r border-border/60", themeTokens.sidebarBg)}>
         {/* Brand */}
         <div className="h-16 flex items-center gap-2.5 px-6 border-b border-border">
           <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center shadow-sm">
@@ -376,10 +378,10 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
                 key={tab.id}
                 onClick={() => handleTabClick(tab.path)}
                 className={cn(
-                  "w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-[13px] font-medium transition-all",
+                  "w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-[13px] font-medium transition-all cursor-pointer",
                   isActive
-                    ? "bg-bg-elevated text-text-main font-semibold shadow-xs"
-                    : "text-text-muted hover:text-text-main hover:bg-bg-elevated/20"
+                    ? themeTokens.navActive
+                    : themeTokens.navInactive
                 )}
               >
                 <Icon className={cn("w-4.5 h-4.5 shrink-0", isActive ? "text-primary" : "text-text-dim")} />
@@ -426,6 +428,20 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
                     Profile Settings
                   </DropdownMenuItem>
                 </div>
+                <div className="px-2.5 py-2 border-t border-border">
+                  <p className="text-[9px] font-semibold text-text-dim uppercase tracking-wider mb-1">Theme Preset</p>
+                  <select
+                    value={currentTheme}
+                    onChange={(e) => setTheme(e.target.value)}
+                    className="w-full bg-bg-elevated border border-border text-xs rounded p-1 font-medium text-text-main outline-none cursor-pointer"
+                  >
+                    <option value="glass">Glass (VisionOS)</option>
+                    <option value="cyberpunk">Cyberpunk</option>
+                    <option value="brutalist">Neo Brutalist</option>
+                    <option value="terminal">Retro Terminal</option>
+                    <option value="claymorphism">Claymorphism</option>
+                  </select>
+                </div>
                 <DropdownMenuSeparator className="bg-border" />
                 <div className="p-1">
                   <DropdownMenuItem
@@ -443,7 +459,7 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
       </aside>
 
       {/* Mobile Top Header */}
-      <header className="md:hidden sticky top-0 z-40 h-14 bg-bg-card border-b border-border flex items-center justify-between px-4">
+      <header className={cn("md:hidden sticky top-0 z-40 h-14 flex items-center justify-between px-4", themeTokens.navbarBg)}>
         <div className="flex items-center gap-2">
           <div className="w-6 h-6 rounded bg-primary flex items-center justify-center">
             <Terminal className="w-3.5 h-3.5 text-white" />
@@ -483,6 +499,20 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
                 <DropdownMenuItem onClick={() => setLocation("/dashboard?view=profile")} className="cursor-pointer hover:bg-bg-elevated px-2 py-1.5 text-xs font-medium">
                   Profile Settings
                 </DropdownMenuItem>
+                <div className="px-2 py-1.5 border-t border-border">
+                  <p className="text-[9px] font-semibold text-text-dim uppercase tracking-wider mb-1">Theme</p>
+                  <select
+                    value={currentTheme}
+                    onChange={(e) => setTheme(e.target.value)}
+                    className="w-full bg-bg-elevated border border-border text-xs rounded p-1 font-medium text-text-main outline-none cursor-pointer"
+                  >
+                    <option value="glass">Glass (VisionOS)</option>
+                    <option value="cyberpunk">Cyberpunk</option>
+                    <option value="brutalist">Neo Brutalist</option>
+                    <option value="terminal">Retro Terminal</option>
+                    <option value="claymorphism">Claymorphism</option>
+                  </select>
+                </div>
                 {isInstallable && (
                   <DropdownMenuItem onClick={() => setShowInstallDialog(true)} className="cursor-pointer text-primary hover:bg-primary/5 px-2 py-1.5 text-xs font-medium">
                     Install App
@@ -503,7 +533,7 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
       {/* Main Content Area */}
       <div className="flex-1 md:pl-64 flex flex-col min-w-0">
         {/* Desktop Top command bar */}
-        <header className="hidden md:flex sticky top-0 z-20 h-14 bg-bg-main/80 backdrop-blur-md border-b border-border/60 items-center justify-between px-8">
+        <header className={cn("hidden md:flex sticky top-0 z-20 h-14 items-center justify-between px-8 bg-opacity-80 backdrop-blur-md border-b border-border/60", themeTokens.navbarBg)}>
           <div className="flex items-center gap-3">
             <span className="text-xs font-medium text-text-dim uppercase tracking-wider">Workspace</span>
             <ChevronRight className="w-3 h-3 text-text-dim" />
@@ -563,7 +593,7 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
       </div>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-bg-card/95 backdrop-blur-lg border-t border-border">
+      <nav className={cn("md:hidden fixed bottom-0 left-0 right-0 z-50 backdrop-blur-lg border-t border-border", themeTokens.navbarBg)}>
         <div className="grid grid-cols-5 h-16">
           {tabs.map((tab) => {
             const Icon = tab.icon;
@@ -574,7 +604,7 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
                 onClick={() => handleTabClick(tab.path)}
                 className={cn(
                   "flex flex-col items-center justify-center gap-1 transition-all",
-                  isActive ? "text-primary bg-primary/[0.03]" : "text-text-muted"
+                  isActive ? themeTokens.accentText : "text-text-muted"
                 )}
               >
                 <Icon className="w-5 h-5 shrink-0" />

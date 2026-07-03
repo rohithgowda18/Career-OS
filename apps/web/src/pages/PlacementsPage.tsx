@@ -4,20 +4,17 @@ import { placementsApi } from "@/lib/api/placementsApi";
 import { Button } from "@/components/ui/button";
 import DashboardLayout from "@/components/DashboardLayout";
 import PlacementTable from "@/components/PlacementTable";
-import PlacementKanbanView from "@/components/views/PlacementKanbanView";
 import AddPlacementModal from "@/components/AddPlacementModal";
 import { cn } from "@/lib/utils";
 import {
   Plus,
   Briefcase,
   Loader2,
-  Layers,
   TableProperties
 } from "lucide-react";
 
 export default function PlacementsPage() {
   const [showAddModal, setShowAddModal] = useState(false);
-  const [viewMode, setViewMode] = useState<"table" | "kanban">("table");
   const [page, setPage] = useState(0);
   const PAGE_SIZE = 10;
 
@@ -56,30 +53,6 @@ export default function PlacementsPage() {
           </div>
           
           <div className="flex items-center gap-2.5 self-end sm:self-auto">
-            {/* View Mode Toggle */}
-            <div className="flex gap-1 p-1 border border-border rounded-lg bg-bg-card">
-              <button
-                onClick={() => setViewMode("table")}
-                className={cn(
-                  "flex items-center gap-1.5 py-1 px-3 rounded-md text-[11px] font-semibold transition-all",
-                  viewMode === "table" ? "bg-bg-elevated text-text-main" : "text-text-muted hover:text-text-main"
-                )}
-              >
-                <TableProperties className="w-3.5 h-3.5" />
-                <span>Table</span>
-              </button>
-              <button
-                onClick={() => setViewMode("kanban")}
-                className={cn(
-                  "flex items-center gap-1.5 py-1 px-3 rounded-md text-[11px] font-semibold transition-all",
-                  viewMode === "kanban" ? "bg-bg-elevated text-text-main" : "text-text-muted hover:text-text-main"
-                )}
-              >
-                <Layers className="w-3.5 h-3.5" />
-                <span>Kanban</span>
-              </button>
-            </div>
-
             <Button
               onClick={() => setShowAddModal(true)}
               className="btn-primary h-9 px-4"
@@ -120,11 +93,7 @@ export default function PlacementsPage() {
         )}
 
         {/* Data View */}
-        {viewMode === "table" ? (
-          <PlacementTable page={page} setPage={setPage} pageSize={PAGE_SIZE} />
-        ) : (
-          <PlacementKanbanView />
-        )}
+        <PlacementTable page={page} setPage={setPage} pageSize={PAGE_SIZE} />
 
         {/* Add Modal */}
         <AddPlacementModal open={showAddModal} onOpenChange={setShowAddModal} />

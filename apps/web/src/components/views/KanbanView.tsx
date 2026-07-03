@@ -18,6 +18,8 @@ import AddApplicationModal from "@/components/AddApplicationModal";
 import ApplicationCard from "@/components/ApplicationCard";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { useTheme } from "@/contexts/ThemeContext";
+import { Badge } from "@/components/ui/badge";
 
 const STATUSES = [
   "Interested",
@@ -36,6 +38,7 @@ const STATUS_BADGE_CLASSES: Record<string, string> = {
 };
 
 export default function KanbanView() {
+  const { themeTokens } = useTheme();
   const [showAddModal, setShowAddModal] = useState(false);
   const PAGE_SIZE = 8;
   const [page, setPage] = useState(0);
@@ -143,11 +146,11 @@ export default function KanbanView() {
       ) : (
         <>
           {/* Desktop Table/List Hybrid View */}
-          <div className="hidden md:block bg-bg-card border border-border rounded-xl overflow-hidden shadow-xs">
+          <div className={cn("hidden md:block overflow-hidden", themeTokens.card)}>
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="border-b border-border bg-bg-elevated/20">
+                  <tr className={themeTokens.tableHeaderClass}>
                     <th className="p-3 text-[11px] font-semibold text-text-dim uppercase tracking-wider">Event / Company</th>
                     <th className="p-3 text-[11px] font-semibold text-text-dim uppercase tracking-wider">Category</th>
                     <th className="p-3 text-[11px] font-semibold text-text-dim uppercase tracking-wider">Status</th>
@@ -162,10 +165,10 @@ export default function KanbanView() {
                     const isUrgent = dl && dl.getTime() - Date.now() < 3 * 24 * 60 * 60 * 1000;
                     
                     return (
-                      <tr key={app.id} className="hover:bg-bg-elevated/15 transition-colors group">
+                      <tr key={app.id} className={cn("transition-colors group", themeTokens.tableRowClass)}>
                         <td className="p-3">
                           <div className="flex items-center gap-2">
-                            <span className="font-semibold text-text-main text-xs">{app.eventName}</span>
+                            <span className={cn("font-semibold text-xs", themeTokens.headingColor)}>{app.eventName}</span>
                             {app.url && (
                               <a
                                 href={app.url}
@@ -178,11 +181,24 @@ export default function KanbanView() {
                             )}
                           </div>
                         </td>
-                        <td className="p-3 text-xs text-text-muted">{app.eventType}</td>
+                        <td className={cn("p-3 text-xs", themeTokens.textColor)}>{app.eventType}</td>
                         <td className="p-3 text-xs">
-                          <span className={cn("px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider border", STATUS_BADGE_CLASSES[app.status] || "bg-bg-elevated text-text-muted border-border")}>
+                          <Badge
+                            statusColor={
+                              app.status === "Accepted"
+                                ? "green"
+                                : app.status === "Rejected"
+                                ? "red"
+                                : app.status === "UnderReview"
+                                ? "orange"
+                                : app.status === "Applied"
+                                ? "blue"
+                                : "gray"
+                            }
+                            className="text-[10px]"
+                          >
                             {app.status === "UnderReview" ? "In Review" : app.status}
-                          </span>
+                          </Badge>
                         </td>
                         <td className="p-3 text-xs">
                           {dl ? (

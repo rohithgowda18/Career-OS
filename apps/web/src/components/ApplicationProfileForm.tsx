@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
+import { useTheme } from "@/contexts/ThemeContext";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -20,6 +22,7 @@ import {
 } from "lucide-react";
 
 export default function ApplicationProfileForm() {
+  const { currentTheme, setTheme } = useTheme();
   const queryClient = useQueryClient();
   const { data: profile, isLoading } = useQuery({
     queryKey: ["user", "profile"],
@@ -236,6 +239,42 @@ export default function ApplicationProfileForm() {
                   />
                   <span>Send weekly digest summary of upcoming calendar deadlines</span>
                 </label>
+              </div>
+            </div>
+
+            {/* Section 6: Appearance (Theme Settings) */}
+            <div className="space-y-4">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-text-dim border-b border-border/40 pb-2 flex items-center gap-2">
+                <Sliders className="w-3.5 h-3.5" /> Appearance Settings
+              </h3>
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-2">
+                {[
+                  { id: "glass", name: "Glass (VisionOS)", previewBg: "bg-gradient-to-br from-indigo-200 to-rose-200", accent: "bg-violet-600" },
+                  { id: "cyberpunk", name: "Cyberpunk", previewBg: "bg-[#04040a]", accent: "bg-cyan-400" },
+                  { id: "brutalist", name: "Neo Brutalist", previewBg: "bg-[#eae6e1]", accent: "bg-black" },
+                  { id: "terminal", name: "Retro Terminal", previewBg: "bg-black", accent: "bg-[#00ff00]" },
+                  { id: "claymorphism", name: "Claymorphism", previewBg: "bg-sky-100", accent: "bg-pink-400" }
+                ].map((t) => {
+                  const isSelected = currentTheme === t.id;
+                  return (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => setTheme(t.id)}
+                      className={cn(
+                        "flex flex-col items-center gap-2 p-3 rounded-xl border text-center transition-all cursor-pointer",
+                        isSelected 
+                          ? "border-primary bg-primary/5 ring-2 ring-primary/20" 
+                          : "border-border hover:bg-bg-elevated/40"
+                      )}
+                    >
+                      <div className={cn("w-10 h-10 rounded-full flex items-center justify-center border border-border shadow-sm", t.previewBg)}>
+                        <div className={cn("w-4 h-4 rounded-full", t.accent)} />
+                      </div>
+                      <span className="text-[11px] font-bold text-text-main leading-tight">{t.name}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
