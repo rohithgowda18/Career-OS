@@ -20,7 +20,8 @@ import {
   ArrowRight,
   Sparkles,
   Command,
-  Plus
+  Plus,
+  Palette
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -483,6 +484,44 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
+              <button 
+                title="Change Theme"
+                className="p-1.5 rounded-lg border border-border text-text-muted hover:text-text-main bg-bg-elevated/40 cursor-pointer"
+              >
+                <Palette className="w-4 h-4" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48 bg-bg-card border-border text-text-main mt-1">
+              <div className="px-2.5 py-1.5 border-b border-border">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-text-dim">Choose Theme</p>
+              </div>
+              <div className="p-1 space-y-0.5">
+                <DropdownMenuItem onClick={() => setTheme("glass")} className={cn("cursor-pointer rounded-md px-2.5 py-1.5 text-xs font-medium flex items-center justify-between", currentTheme === "glass" && "bg-primary/10 text-primary")}>
+                  <span>Glass (VisionOS)</span>
+                  <span className="w-2.5 h-2.5 rounded-full bg-violet-500 border border-white/20" />
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTheme("cyberpunk")} className={cn("cursor-pointer rounded-md px-2.5 py-1.5 text-xs font-medium flex items-center justify-between", currentTheme === "cyberpunk" && "bg-primary/10 text-primary")}>
+                  <span>Cyberpunk</span>
+                  <span className="w-2.5 h-2.5 rounded-full bg-yellow-400 border border-white/20" />
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTheme("brutalist")} className={cn("cursor-pointer rounded-md px-2.5 py-1.5 text-xs font-medium flex items-center justify-between", currentTheme === "brutalist" && "bg-primary/10 text-primary")}>
+                  <span>Neo Brutalist</span>
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 border border-white/20" />
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTheme("terminal")} className={cn("cursor-pointer rounded-md px-2.5 py-1.5 text-xs font-medium flex items-center justify-between", currentTheme === "terminal" && "bg-primary/10 text-primary")}>
+                  <span>Retro Terminal</span>
+                  <span className="w-2.5 h-2.5 rounded-full bg-green-500 border border-white/20 font-mono text-[9px] flex items-center justify-center text-black">$&gt;</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTheme("claymorphism")} className={cn("cursor-pointer rounded-md px-2.5 py-1.5 text-xs font-medium flex items-center justify-between", currentTheme === "claymorphism" && "bg-primary/10 text-primary")}>
+                  <span>Claymorphism</span>
+                  <span className="w-2.5 h-2.5 rounded-full bg-pink-400 border border-white/20" />
+                </DropdownMenuItem>
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
               <button className="flex items-center outline-none">
                 <Avatar className="h-7 w-7 border border-border">
                   <AvatarFallback className="text-[10px] font-semibold bg-bg-elevated text-primary">
@@ -540,7 +579,46 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
             <span className="text-xs font-semibold text-text-main capitalize">{activeTab === "kanban" ? "Applications" : activeTab}</span>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            {/* Desktop Theme Selector Icon */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button 
+                  title="Change Theme"
+                  className="p-1.5 h-8 w-8 flex items-center justify-center rounded-lg border border-border text-text-muted hover:text-text-main bg-bg-elevated/40 hover:bg-bg-elevated/80 transition-all cursor-pointer"
+                >
+                  <Palette className="w-4 h-4" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48 bg-bg-card border-border text-text-main mt-1">
+                <div className="px-2.5 py-1.5 border-b border-border">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-text-dim">Choose Theme</p>
+                </div>
+                <div className="p-1 space-y-0.5">
+                  <DropdownMenuItem onClick={() => setTheme("glass")} className={cn("cursor-pointer rounded-md px-2.5 py-1.5 text-xs font-medium flex items-center justify-between", currentTheme === "glass" && "bg-primary/10 text-primary")}>
+                    <span>Glass (VisionOS)</span>
+                    <span className="w-2.5 h-2.5 rounded-full bg-violet-500 border border-white/20" />
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setTheme("cyberpunk")} className={cn("cursor-pointer rounded-md px-2.5 py-1.5 text-xs font-medium flex items-center justify-between", currentTheme === "cyberpunk" && "bg-primary/10 text-primary")}>
+                    <span>Cyberpunk</span>
+                    <span className="w-2.5 h-2.5 rounded-full bg-yellow-400 border border-white/20" />
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setTheme("brutalist")} className={cn("cursor-pointer rounded-md px-2.5 py-1.5 text-xs font-medium flex items-center justify-between", currentTheme === "brutalist" && "bg-primary/10 text-primary")}>
+                    <span>Neo Brutalist</span>
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 border border-white/20" />
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setTheme("terminal")} className={cn("cursor-pointer rounded-md px-2.5 py-1.5 text-xs font-medium flex items-center justify-between", currentTheme === "terminal" && "bg-primary/10 text-primary")}>
+                    <span>Retro Terminal</span>
+                    <span className="w-2.5 h-2.5 rounded-full bg-green-500 border border-white/20 font-mono text-[9px] flex items-center justify-center text-black">$&gt;</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setTheme("claymorphism")} className={cn("cursor-pointer rounded-md px-2.5 py-1.5 text-xs font-medium flex items-center justify-between", currentTheme === "claymorphism" && "bg-primary/10 text-primary")}>
+                    <span>Claymorphism</span>
+                    <span className="w-2.5 h-2.5 rounded-full bg-pink-400 border border-white/20" />
+                  </DropdownMenuItem>
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button size="sm" className="bg-primary hover:bg-primary-hover text-white h-8 px-3 text-xs font-semibold cursor-pointer">
