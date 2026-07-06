@@ -429,20 +429,7 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
                     Profile Settings
                   </DropdownMenuItem>
                 </div>
-                <div className="px-2.5 py-2 border-t border-border">
-                  <p className="text-[9px] font-semibold text-text-dim uppercase tracking-wider mb-1">Theme Preset</p>
-                  <select
-                    value={currentTheme}
-                    onChange={(e) => setTheme(e.target.value)}
-                    className="w-full bg-bg-elevated border border-border text-xs rounded p-1 font-medium text-text-main outline-none cursor-pointer"
-                  >
-                    <option value="glass">Glass (VisionOS)</option>
-                    <option value="cyberpunk">Cyberpunk</option>
-                    <option value="brutalist">Neo Brutalist</option>
-                    <option value="terminal">Retro Terminal</option>
-                    <option value="claymorphism">Claymorphism</option>
-                  </select>
-                </div>
+
                 <DropdownMenuSeparator className="bg-border" />
                 <div className="p-1">
                   <DropdownMenuItem
@@ -538,20 +525,7 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
                 <DropdownMenuItem onClick={() => setLocation("/dashboard?view=profile")} className="cursor-pointer hover:bg-bg-elevated px-2 py-1.5 text-xs font-medium">
                   Profile Settings
                 </DropdownMenuItem>
-                <div className="px-2 py-1.5 border-t border-border">
-                  <p className="text-[9px] font-semibold text-text-dim uppercase tracking-wider mb-1">Theme</p>
-                  <select
-                    value={currentTheme}
-                    onChange={(e) => setTheme(e.target.value)}
-                    className="w-full bg-bg-elevated border border-border text-xs rounded p-1 font-medium text-text-main outline-none cursor-pointer"
-                  >
-                    <option value="glass">Glass (VisionOS)</option>
-                    <option value="cyberpunk">Cyberpunk</option>
-                    <option value="brutalist">Neo Brutalist</option>
-                    <option value="terminal">Retro Terminal</option>
-                    <option value="claymorphism">Claymorphism</option>
-                  </select>
-                </div>
+
                 {isInstallable && (
                   <DropdownMenuItem onClick={() => setShowInstallDialog(true)} className="cursor-pointer text-primary hover:bg-primary/5 px-2 py-1.5 text-xs font-medium">
                     Install App
