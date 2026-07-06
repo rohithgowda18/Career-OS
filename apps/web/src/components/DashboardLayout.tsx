@@ -316,7 +316,7 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
   };
 
   return (
-    <div className={cn("min-h-screen font-sans flex flex-col pb-20 md:pb-0 relative", themeTokens.pageBg)}>
+    <div className={cn("min-h-screen font-sans flex flex-col pb-28 md:pb-0 relative", themeTokens.pageBg)}>
       {/* Pull to Refresh Indicator */}
       {(pullDistance > 0 || isRefreshing) && (
         <div 
@@ -671,7 +671,7 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
       </div>
 
       {/* Mobile Bottom Navigation */}
-      <nav className={cn("md:hidden fixed bottom-0 left-0 right-0 z-50 backdrop-blur-lg border-t border-border", themeTokens.navbarBg)}>
+      <nav className={cn("md:hidden fixed bottom-4 left-4 right-4 z-50 backdrop-blur-lg border border-border/80 rounded-2xl shadow-xl px-2", themeTokens.navbarBg)}>
         <div className="grid grid-cols-5 h-16">
           {tabs.map((tab) => {
             const Icon = tab.icon;
@@ -681,12 +681,20 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
                 key={tab.id}
                 onClick={() => handleTabClick(tab.path)}
                 className={cn(
-                  "flex flex-col items-center justify-center gap-1 transition-all",
-                  isActive ? themeTokens.accentText : "text-text-muted"
+                  "flex flex-col items-center justify-center gap-1 transition-all relative py-1 rounded-xl cursor-pointer",
+                  isActive ? themeTokens.accentText : "text-text-muted hover:text-text-main"
                 )}
               >
-                <Icon className="w-5 h-5 shrink-0" />
-                <span className="text-[10px] font-medium leading-none">{tab.label}</span>
+                <div className={cn(
+                  "p-1.5 rounded-xl transition-all duration-300", 
+                  isActive ? "bg-primary/10 text-primary scale-110" : ""
+                )}>
+                  <Icon className="w-5 h-5 shrink-0" />
+                </div>
+                <span className="text-[9px] font-semibold tracking-wide uppercase leading-none mt-0.5">{tab.label}</span>
+                {isActive && (
+                  <span className="absolute bottom-1 w-1 h-1 rounded-full bg-primary animate-pulse" />
+                )}
               </button>
             );
           })}
@@ -827,7 +835,7 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
       </Dialog>
 
       {/* Mobile Global FAB */}
-      <div className="md:hidden fixed bottom-20 right-4 z-40">
+      <div className="md:hidden fixed bottom-24 right-4 z-40">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
