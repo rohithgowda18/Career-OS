@@ -242,7 +242,7 @@ export default function ApplicationProfileForm() {
               </div>
             </div>
 
-            {/* Section 6: Appearance (Theme Settings) */}
+            {/* Section 6: Appearance (Theme Settings)
             <div className="space-y-4">
               <h3 className="text-xs font-semibold uppercase tracking-wider text-text-dim border-b border-border/40 pb-2 flex items-center gap-2">
                 <Sliders className="w-3.5 h-3.5" /> Appearance Settings
@@ -276,7 +276,7 @@ export default function ApplicationProfileForm() {
                   );
                 })}
               </div>
-            </div>
+            </div> */}
 
             {/* Submit Action */}
             <div className="pt-4 border-t border-border/60 flex justify-end">
