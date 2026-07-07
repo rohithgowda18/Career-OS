@@ -72,3 +72,4 @@ UPDATE placements SET status = 'APPLIED' WHERE status = 'SAVED';
 -- Add preference fields to user_profiles table if they don't exist
 ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS email_alerts BOOLEAN DEFAULT TRUE NOT NULL;
 ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS weekly_digest BOOLEAN DEFAULT FALSE NOT NULL;
+

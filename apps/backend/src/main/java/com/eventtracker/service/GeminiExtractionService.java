@@ -1,6 +1,7 @@
 package com.eventtracker.service;
 
 import com.eventtracker.dto.PlacementDTO;
+import com.eventtracker.dto.ApplicationDTO;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -229,5 +230,174 @@ public class GeminiExtractionService {
         }
         String envModel = System.getenv("GEMINI_API_MODEL");
         return (envModel != null && !envModel.trim().isEmpty()) ? envModel : "gemini-2.5-flash";
+    }
+
+    public String classifyEmail(String emailContent) {
+        String apiKey = getApiKey();
+        if (apiKey == null || apiKey.trim().isEmpty()) {
+            log.error("Gemini API key is not configured");
+            return "IRRELEVANT";
+        }
+
+        if (emailContent == null || emailContent.trim().isEmpty()) {
+            return "IRRELEVANT";
+        }
+
+        String prompt = "Classify the following email. Is it related to a specific job/internship application (including assessment tests, interviews, offers, rejections) or a specific hackathon/workshop/conference registration?\n\n"
+                + "Return ONLY a single word response in uppercase: 'PLACEMENT' (for job/internship/career roles), 'APPLICATION' (for hackathons, workshops, conferences, events), or 'IRRELEVANT' (for newsletters, spam, generic marketing, social notifications, or general emails).\n\n"
+                + "Email Content:\n"
+                + emailContent;
+
+        try {
+            HttpClient client = HttpClient.newBuilder()
+                    .connectTimeout(Duration.ofSeconds(15))
+                    .build();
+
+            Map<String, Object> textPart = Map.of("text", prompt);
+            Map<String, Object> parts = Map.of("parts", List.of(textPart));
+
+            Map<String, Object> requestBodyMap = Map.of("contents", List.of(parts));
+
+            String requestBody = objectMapper.writeValueAsString(requestBodyMap);
+            String modelName = getModel();
+            String url = "https://generativelanguage.googleapis.com/v1beta/models/" + modelName + ":generateContent?key=" + apiKey;
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .timeout(Duration.ofSeconds(30))
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(requestBody))
+                    .build();
+
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() == 200) {
+                Map<String, Object> responseMap = objectMapper.readValue(response.body(), Map.class);
+                List<Map<String, Object>> candidates = (List<Map<String, Object>>) responseMap.get("candidates");
+                if (candidates != null && !candidates.isEmpty()) {
+                    Map<String, Object> contentMap = (Map<String, Object>) candidates.get(0).get("content");
+                    List<Map<String, Object>> resParts = (List<Map<String, Object>>) contentMap.get("parts");
+                    if (resParts != null && !resParts.isEmpty()) {
+                        String result = (String) resParts.get(0).get("text");
+                        if (result != null) {
+                            result = result.trim().toUpperCase().replaceAll("[^A-Z]", "");
+                            if ("PLACEMENT".equals(result) || "APPLICATION".equals(result)) {
+                                return result;
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error during email classification", e);
+        }
+        return "IRRELEVANT";
+    }
+
+    public ApplicationDTO extractApplicationDetails(String emailContent) {
+        String apiKey = getApiKey();
+        if (apiKey == null || apiKey.trim().isEmpty()) {
+            log.error("Gemini API key is not configured");
+            throw new IllegalStateException("Gemini API key is not configured.");
+        }
+
+        if (emailContent == null || emailContent.trim().isEmpty()) {
+            throw new IllegalArgumentException("Email content cannot be empty.");
+        }
+
+        StringBuilder schemaDesc = new StringBuilder();
+        for (Field field : ApplicationDTO.class.getDeclaredFields()) {
+            String name = field.getName();
+            if (name.equals("id") || name.equals("createdAt") || name.equals("updatedAt")) {
+                continue;
+            }
+            schemaDesc.append("- ").append(name).append(" (type: ").append(field.getType().getSimpleName()).append(")\n");
+        }
+
+        String prompt = "You are an information extraction system.\n"
+                + "Extract application information (hackathon, workshop, conference, or internship event details) from the registration/acceptance email.\n"
+                + "Return ONLY valid JSON.\n\n"
+                + "Rules:\n"
+                + "* Use null for missing values.\n"
+                + "* Dates (deadline) must be formatted as ISO-8601 (YYYY-MM-DDTHH:MM:SS) if found, or null if not found.\n"
+                + "* For eventType, choose exactly one from: Hackathon, Workshop, Conference, Internship, Other.\n"
+                + "* For status, choose exactly one from: Interested, Applied, UnderReview, Accepted, Rejected.\n"
+                + "* Do not return markdown.\n"
+                + "* Do not return explanations.\n"
+                + "* Do not return code blocks.\n"
+                + "* Return a JSON object matching the provided schema exactly.\n\n"
+                + "IMPORTANT:\n"
+                + "For URLs, email addresses, and names: Copy values exactly from the source text.\n\n"
+                + "Expected Fields:\n"
+                + schemaDesc.toString()
+                + "\nEmail Content:\n"
+                + emailContent;
+
+        int maxAttempts = 3;
+        Exception lastException = null;
+
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+                HttpClient client = HttpClient.newBuilder()
+                        .connectTimeout(Duration.ofSeconds(15))
+                        .build();
+
+                Map<String, Object> textPart = Map.of("text", prompt);
+                Map<String, Object> parts = Map.of("parts", List.of(textPart));
+                Map<String, Object> generationConfig = Map.of("responseMimeType", "application/json");
+
+                Map<String, Object> requestBodyMap = new HashMap<>();
+                requestBodyMap.put("contents", List.of(parts));
+                requestBodyMap.put("generationConfig", generationConfig);
+
+                String requestBody = objectMapper.writeValueAsString(requestBodyMap);
+                String modelName = getModel();
+                String url = "https://generativelanguage.googleapis.com/v1beta/models/" + modelName + ":generateContent?key=" + apiKey;
+
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create(url))
+                        .timeout(Duration.ofSeconds(30))
+                        .header("Content-Type", "application/json")
+                        .POST(HttpRequest.BodyPublishers.ofString(requestBody))
+                        .build();
+
+                HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+                if (response.statusCode() != 200) {
+                    throw new RuntimeException("Gemini API returned status code " + response.statusCode());
+                }
+
+                Map<String, Object> responseMap = objectMapper.readValue(response.body(), Map.class);
+                List<Map<String, Object>> candidates = (List<Map<String, Object>>) responseMap.get("candidates");
+                Map<String, Object> contentMap = (Map<String, Object>) candidates.get(0).get("content");
+                List<Map<String, Object>> resParts = (List<Map<String, Object>>) contentMap.get("parts");
+                String extractedJson = (String) resParts.get(0).get("text");
+
+                extractedJson = extractedJson.trim();
+                if (extractedJson.startsWith("```")) {
+                    int firstLineEnd = extractedJson.indexOf('\n');
+                    int lastBackticks = extractedJson.lastIndexOf("```");
+                    if (firstLineEnd != -1 && lastBackticks != -1 && lastBackticks > firstLineEnd) {
+                        extractedJson = extractedJson.substring(firstLineEnd + 1, lastBackticks).trim();
+                    }
+                }
+
+                ApplicationDTO dto = objectMapper.readValue(extractedJson, ApplicationDTO.class);
+                return dto;
+
+            } catch (Exception e) {
+                log.warn("Gemini application extraction attempt {} failed: {}", attempt, e.getMessage());
+                lastException = e;
+                if (attempt < maxAttempts) {
+                    try {
+                        Thread.sleep(1000 * attempt);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        throw new RuntimeException(ie);
+                    }
+                }
+            }
+        }
+        throw new RuntimeException("All extraction attempts failed.", lastException);
     }
 }

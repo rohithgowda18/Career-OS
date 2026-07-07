@@ -4,6 +4,7 @@ import com.eventtracker.dto.ApplicationDTO;
 import com.eventtracker.entity.Application;
 import com.eventtracker.entity.User;
 import com.eventtracker.service.ApplicationService;
+import com.eventtracker.service.GeminiExtractionService;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +17,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Slf4j
@@ -25,6 +27,24 @@ import java.util.Optional;
 public class ApplicationController {
 
     private final ApplicationService applicationService;
+    private final GeminiExtractionService geminiExtractionService;
+
+    @PostMapping("/extract")
+    @Operation(operationId = "extractApplication", summary = "Extract application details using AI")
+    public ResponseEntity<?> extract(@RequestBody Map<String, String> request) {
+        String emailContent = request.get("emailContent");
+        if (emailContent == null || emailContent.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body("emailContent is required");
+        }
+        try {
+            ApplicationDTO result = geminiExtractionService.extractApplicationDetails(emailContent);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            log.error("AI Extraction failed for application", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to extract application details: " + e.getMessage());
+        }
+    }
 
     private User getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();

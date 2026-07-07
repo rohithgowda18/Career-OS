@@ -18,7 +18,7 @@ import {
   Globe, 
   MapPin, 
   Sliders, 
-  ShieldAlert 
+  ShieldAlert
 } from "lucide-react";
 
 export default function ApplicationProfileForm() {
@@ -63,6 +63,7 @@ export default function ApplicationProfileForm() {
     },
     onError: (err: any) => toast.error(err.message || "Failed to update profile settings"),
   });
+
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -241,6 +242,8 @@ export default function ApplicationProfileForm() {
                 </label>
               </div>
             </div>
+
+
 
             {/* Section 6: Appearance (Theme Settings)
             <div className="space-y-4">

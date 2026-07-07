@@ -32,4 +32,5 @@ export const applicationsApi = {
   create: async (data: any) => (await restClient.post('/api/applications', data)).data,
   update: async ({ id, ...data }: { id: string | number; [key: string]: any }) => (await restClient.put(`/api/applications/${id}`, data)).data,
   delete: async (id: string | number) => (await restClient.delete(`/api/applications/${id}`)).data,
+  extract: async (emailContent: string) => (await restClient.post('/api/applications/extract', { emailContent })).data,
 };
