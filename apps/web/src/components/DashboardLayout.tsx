@@ -540,6 +540,16 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
               </div>
             </DropdownMenuContent>
           </DropdownMenu>
+
+          {isInstallable && (
+            <button 
+              onClick={() => setShowInstallDialog(true)}
+              className="p-1.5 rounded-lg border border-border text-text-muted hover:text-text-main bg-bg-elevated/40 cursor-pointer"
+              title="Install App"
+            >
+              <Smartphone className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </header>
 
