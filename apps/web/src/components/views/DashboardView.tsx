@@ -56,14 +56,14 @@ export default function DashboardView() {
 
   // Fetch placements list (to extract placement interview deadlines and status distributions)
   const placementsQuery = useQuery({
-    queryKey: ["placements", { page: 0, size: 100, sort: "id,desc" }],
-    queryFn: () => placementsApi.list({ page: 0, size: 100, sort: "id,desc" }),
+    queryKey: ["placements", { page: 0, size: 1000, sort: "id,desc" }],
+    queryFn: () => placementsApi.list({ page: 0, size: 1000, sort: "id,desc" }),
   });
 
   // Fetch applications list (to identify pending response lists)
   const applicationsQuery = useQuery({
-    queryKey: ["applications", { page: 0, size: 100, sort: "deadline,asc" }],
-    queryFn: () => applicationsApi.list({ page: 0, size: 100, sort: "deadline,asc" }),
+    queryKey: ["applications", { page: 0, size: 1000, sort: "deadline,asc" }],
+    queryFn: () => applicationsApi.list({ page: 0, size: 1000, sort: "deadline,asc" }),
   });
 
   const isLoading = dashboardQuery.isLoading || placementsQuery.isLoading || applicationsQuery.isLoading;

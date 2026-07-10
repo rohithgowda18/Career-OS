@@ -11,6 +11,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.eventtracker.util.UrlUtils;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -24,7 +25,7 @@ public class PlacementService {
     private final PlacementRepository placementRepository;
 
     public Placement createPlacement(User user, PlacementDTO request) {
-        String normLink = normalizeUrl(request.getApplicationLink());
+        String normLink = UrlUtils.normalizeUrl(request.getApplicationLink());
         placementRepository.findDuplicate(user.getId(), request.getCompanyName(), request.getRole(), normLink)
             .ifPresent(p -> {
                 throw new DuplicatePlacementException("Placement for this company and role with this link is already saved in your tracker");
@@ -73,7 +74,7 @@ public class PlacementService {
                 .orElseThrow(() -> new IllegalArgumentException("Placement not found"));
 
         // Check if there is another entry with the same company, role & link
-        String normLink = normalizeUrl(request.getApplicationLink());
+        String normLink = UrlUtils.normalizeUrl(request.getApplicationLink());
         placementRepository.findDuplicate(userId, request.getCompanyName(), request.getRole(), normLink)
             .ifPresent(p -> {
                 if (!p.getId().equals(id)) {
@@ -109,42 +110,6 @@ public class PlacementService {
         return PlacementStatus.APPLIED;
     }
 
-    private String normalizeUrl(String url) {
-        if (url == null || url.isBlank()) return null;
-        
-        String trimmed = url.trim();
-        int doubleSlashIndex = trimmed.indexOf("://");
-        int pathStartIndex;
-        if (doubleSlashIndex != -1) {
-            pathStartIndex = trimmed.indexOf('/', doubleSlashIndex + 3);
-        } else {
-            pathStartIndex = trimmed.indexOf('/');
-        }
-        
-        String protocolAndDomain;
-        String pathAndQuery;
-        
-        if (pathStartIndex != -1) {
-            protocolAndDomain = trimmed.substring(0, pathStartIndex).toLowerCase();
-            pathAndQuery = trimmed.substring(pathStartIndex);
-        } else {
-            protocolAndDomain = trimmed.toLowerCase();
-            pathAndQuery = "";
-        }
-        
-        int queryIndex = pathAndQuery.indexOf('?');
-        if (queryIndex != -1) {
-            pathAndQuery = pathAndQuery.substring(0, queryIndex);
-        }
-        
-        if (pathAndQuery.endsWith("/") && pathAndQuery.length() > 1) {
-            pathAndQuery = pathAndQuery.substring(0, pathAndQuery.length() - 1);
-        } else if (pathAndQuery.equals("/")) {
-            pathAndQuery = "";
-        }
-        
-        return protocolAndDomain + pathAndQuery;
-    }
 
     public PlacementDTO convertToDTO(Placement p) {
         PlacementDTO dto = new PlacementDTO();

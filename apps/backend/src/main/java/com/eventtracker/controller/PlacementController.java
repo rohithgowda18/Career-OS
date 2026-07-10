@@ -36,6 +36,9 @@ public class PlacementController {
         if (emailContent == null || emailContent.trim().isEmpty()) {
             return ResponseEntity.badRequest().body("emailContent is required");
         }
+        if (emailContent.length() > 10000) {
+            return ResponseEntity.badRequest().body("emailContent length exceeds limit of 10000 characters");
+        }
         try {
             PlacementDTO result = geminiExtractionService.extractPlacementDetails(emailContent);
             return ResponseEntity.ok(result);

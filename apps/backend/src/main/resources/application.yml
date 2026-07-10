@@ -8,7 +8,7 @@ spring:
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/event_tracker_db}
     username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:Rohk_1265}
+    password: ${DB_PASSWORD:}
 
   jpa:
     hibernate:
@@ -86,7 +86,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: "*"
+        include: "health,info"
 
   endpoint:
     health:

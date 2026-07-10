@@ -74,13 +74,14 @@ public class SecurityConfig {
                                 "/api/auth/register",
                                 "/oauth2/**",
                                 "/login/oauth2/**",
-                                "/actuator/**",
+                                "/actuator/health",
                                 "/v3/api-docs/**",
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",
                                 "/swagger-resources/**",
                                 "/webjars/**"
                         ).permitAll()
+                        .requestMatchers("/actuator/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)

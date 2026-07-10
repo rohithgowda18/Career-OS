@@ -31,8 +31,8 @@ export default function PlacementKanbanView() {
   const queryClient = useQueryClient();
 
   const placementsQuery = useQuery({
-    queryKey: ["placements", { page: 0, size: 100, sort: "id,desc" }],
-    queryFn: () => placementsApi.list({ page: 0, size: 100, sort: "id,desc" }),
+    queryKey: ["placements", { page: 0, size: 1000, sort: "id,desc" }],
+    queryFn: () => placementsApi.list({ page: 0, size: 1000, sort: "id,desc" }),
   });
 
   const updateMutation = useMutation({

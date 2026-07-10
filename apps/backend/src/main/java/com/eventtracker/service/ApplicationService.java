@@ -10,6 +10,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.eventtracker.util.UrlUtils;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -23,7 +24,7 @@ public class ApplicationService {
     private final ApplicationRepository applicationRepository;
 
     public Application createApplication(User user, ApplicationDTO dto) {
-        String normalizedUrl = normalizeUrl(dto.getUrl());
+        String normalizedUrl = UrlUtils.normalizeUrl(dto.getUrl());
         
         if (normalizedUrl != null) {
             applicationRepository.findByUserIdAndUrl(user.getId(), normalizedUrl)
@@ -63,42 +64,6 @@ public class ApplicationService {
         return Application.ApplicationStatus.Interested;
     }
 
-    private String normalizeUrl(String url) {
-        if (url == null || url.isBlank()) return null;
-        
-        String trimmed = url.trim();
-        int doubleSlashIndex = trimmed.indexOf("://");
-        int pathStartIndex;
-        if (doubleSlashIndex != -1) {
-            pathStartIndex = trimmed.indexOf('/', doubleSlashIndex + 3);
-        } else {
-            pathStartIndex = trimmed.indexOf('/');
-        }
-        
-        String protocolAndDomain;
-        String pathAndQuery;
-        
-        if (pathStartIndex != -1) {
-            protocolAndDomain = trimmed.substring(0, pathStartIndex).toLowerCase();
-            pathAndQuery = trimmed.substring(pathStartIndex);
-        } else {
-            protocolAndDomain = trimmed.toLowerCase();
-            pathAndQuery = "";
-        }
-        
-        int queryIndex = pathAndQuery.indexOf('?');
-        if (queryIndex != -1) {
-            pathAndQuery = pathAndQuery.substring(0, queryIndex);
-        }
-        
-        if (pathAndQuery.endsWith("/") && pathAndQuery.length() > 1) {
-            pathAndQuery = pathAndQuery.substring(0, pathAndQuery.length() - 1);
-        } else if (pathAndQuery.equals("/")) {
-            pathAndQuery = "";
-        }
-        
-        return protocolAndDomain + pathAndQuery;
-    }
 
     public Optional<Application> findById(Long id, Long userId) {
         return applicationRepository.findByIdAndUserId(id, userId);

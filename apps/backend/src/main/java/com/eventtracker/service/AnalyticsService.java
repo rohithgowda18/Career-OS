@@ -8,6 +8,8 @@ import com.eventtracker.repository.PlacementRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import com.eventtracker.dto.ApplicationDTO;
+
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.HashMap;
@@ -87,7 +89,7 @@ public class AnalyticsService {
         // Upcoming deadlines within 7 days (sorted by deadline ascending)
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime sevenDaysFromNow = now.plusDays(7);
-        List<Application> upcomingDeadlines = allApps.stream()
+        List<ApplicationDTO> upcomingDeadlines = allApps.stream()
                 .filter(app -> app.getDeadline() != null)
                 .filter(app -> {
                     LocalDateTime deadline = app.getDeadline();
@@ -95,6 +97,7 @@ public class AnalyticsService {
                 })
                 .sorted((a, b) -> a.getDeadline().compareTo(b.getDeadline()))
                 .limit(5)
+                .map(this::convertToDTO)
                 .collect(Collectors.toList());
 
         long upcomingDeadlinesCount = allApps.stream()
@@ -106,9 +109,10 @@ public class AnalyticsService {
                 .count();
 
         // Recent activity (5 most recently created)
-        List<Application> recentActivity = allApps.stream()
+        List<ApplicationDTO> recentActivity = allApps.stream()
                 .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
                 .limit(5)
+                .map(this::convertToDTO)
                 .collect(Collectors.toList());
 
         // Build response
@@ -119,6 +123,21 @@ public class AnalyticsService {
         dashboard.put("immediateDeadlines", upcomingDeadlines);
         dashboard.put("recentActivity", recentActivity);
         return dashboard;
+    }
+
+    private ApplicationDTO convertToDTO(Application app) {
+        ApplicationDTO dto = new ApplicationDTO();
+        dto.setId(app.getId());
+        dto.setEventName(app.getEventName());
+        dto.setEventType(app.getEventType().toString());
+        dto.setStatus(app.getStatus().toString());
+        dto.setDeadline(app.getDeadline());
+        dto.setNotes(app.getNotes());
+        dto.setUrl(app.getUrl());
+        dto.setLocation(app.getLocation());
+        dto.setCreatedAt(app.getCreatedAt());
+        dto.setUpdatedAt(app.getUpdatedAt());
+        return dto;
     }
 
     public Map<String, Object> getPlacementAnalytics(Long userId) {

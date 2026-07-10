@@ -8,6 +8,7 @@ const AnalyticsDashboard = React.lazy(() => import("@/components/AnalyticsDashbo
 const ApplicationProfileForm = React.lazy(() => import("@/components/ApplicationProfileForm"));
 import DashboardLayout from "@/components/DashboardLayout";
 import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
 
 // Patch history methods to dispatch custom locationchange events on navigation
 if (typeof window !== "undefined" && !(window.history as any)._patched) {
@@ -36,6 +37,7 @@ if (typeof window !== "undefined" && !(window.history as any)._patched) {
 
 export default function Home() {
   const { user, loading } = useAuth();
+  const [, setLocation] = useLocation();
   const [searchParams, setSearchParams] = useState(new URLSearchParams(window.location.search));
 
   useEffect(() => {
@@ -58,7 +60,7 @@ export default function Home() {
   }
 
   if (!loading && !user) {
-    window.location.href = "/login";
+    setLocation("/login");
     return null;
   }
 

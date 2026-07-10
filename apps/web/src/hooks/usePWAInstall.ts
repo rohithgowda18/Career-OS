@@ -16,9 +16,7 @@ export function usePWAInstall() {
 
   const isInstallable = (installPromptEvent !== null || isIOS) && !isInstalled;
 
-  useEffect(() => {
-    console.log("PWA Status Update - installPromptEvent:", installPromptEvent, "isInstalled:", isInstalled, "isInstallable:", isInstallable, "isIOS:", isIOS);
-  }, [installPromptEvent, isInstalled, isInstallable, isIOS]);
+  // Status logs removed for production
 
   useEffect(() => {
     const checkStandalone = () => {
@@ -39,13 +37,11 @@ export function usePWAInstall() {
     setIsIOS(checkIOS());
 
     const handleBeforeInstallPrompt = (e: Event) => {
-      console.log("PWA install available");
       e.preventDefault();
       setInstallPromptEvent(e as BeforeInstallPromptEvent);
     };
 
     const handleAppInstalled = () => {
-      console.log("App was installed.");
       setIsInstalled(true);
       setInstallPromptEvent(null);
     };
