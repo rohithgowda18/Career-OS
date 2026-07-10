@@ -50,7 +50,7 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
   const { user, loading, logout } = useAuth();
   const [, setLocation] = useLocation();
   const [showInstallDialog, setShowInstallDialog] = useState(false);
-  const { isInstallable, isIOS, triggerInstall } = usePWAInstall();
+  const { isInstallable, isIOS, triggerInstall, isInstalled, installPromptEvent } = usePWAInstall();
   const [isOnline, setIsOnline] = useState(typeof window !== "undefined" ? window.navigator.onLine : true);
   const [isMac, setIsMac] = useState(true);
 
@@ -217,6 +217,10 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
 
   const handleConfirmInstall = async () => {
     setShowInstallDialog(false);
+    if (!isIOS && !installPromptEvent) {
+      toast.info("Installation is managed by your browser. If already installed, you can open OMP from your applications. Otherwise, look for the 'Install' icon in the browser address bar.", { duration: 6000 });
+      return;
+    }
     try {
       const outcome = await triggerInstall();
       if (outcome === "accepted") {
@@ -394,7 +398,7 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
 
         {/* Install Prompts & Profile at Bottom */}
         <div className="p-4 border-t border-border space-y-3.5">
-          {isInstallable && (
+          {!isInstalled && (
             <button
               onClick={() => setShowInstallDialog(true)}
               className="w-full flex items-center gap-2 px-3.5 py-2 rounded-lg bg-primary/10 border border-primary/20 hover:bg-primary/15 hover:border-primary/35 text-[12px] font-medium text-primary transition-all text-left"
@@ -526,7 +530,7 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
                   Profile Settings
                 </DropdownMenuItem>
 
-                {isInstallable && (
+                {!isInstalled && (
                   <DropdownMenuItem onClick={() => setShowInstallDialog(true)} className="cursor-pointer text-primary hover:bg-primary/5 px-2 py-1.5 text-xs font-medium">
                     Install App
                   </DropdownMenuItem>
@@ -541,7 +545,7 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {isInstallable && (
+          {!isInstalled && (
             <button 
               onClick={() => setShowInstallDialog(true)}
               className="p-1.5 rounded-lg border border-border text-text-muted hover:text-text-main bg-bg-elevated/40 cursor-pointer"
