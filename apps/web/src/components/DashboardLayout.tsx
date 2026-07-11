@@ -21,7 +21,8 @@ import {
   Sparkles,
   Command,
   Plus,
-  Palette
+  Palette,
+  RefreshCw
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -107,6 +108,51 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
     window.addEventListener("pwa-update-available", handleUpdate);
     return () => window.removeEventListener("pwa-update-available", handleUpdate);
   }, []);
+
+  const [checkingUpdates, setCheckingUpdates] = useState(false);
+
+  const checkForUpdates = async () => {
+    if (checkingUpdates) return;
+    if (!('serviceWorker' in navigator)) {
+      toast.error("PWA updates not supported on this browser.");
+      return;
+    }
+
+    setCheckingUpdates(true);
+    const loadingToast = toast.loading("Checking for updates...");
+    
+    try {
+      const registration = await navigator.serviceWorker.getRegistration();
+      if (!registration) {
+        toast.dismiss(loadingToast);
+        toast.warning("No active service worker found.");
+        setCheckingUpdates(false);
+        return;
+      }
+
+      let updateFound = false;
+      const onUpdateFound = () => {
+        updateFound = true;
+      };
+      window.addEventListener("pwa-update-available", onUpdateFound);
+
+      await registration.update();
+
+      setTimeout(() => {
+        window.removeEventListener("pwa-update-available", onUpdateFound);
+        toast.dismiss(loadingToast);
+        setCheckingUpdates(false);
+        if (!updateFound) {
+          toast.success("App is already up-to-date!");
+        }
+      }, 2000);
+
+    } catch (err) {
+      toast.dismiss(loadingToast);
+      toast.error("Failed to check for updates.");
+      setCheckingUpdates(false);
+    }
+  };
 
   // Mobile Pull-to-refresh implementation
   useEffect(() => {
@@ -432,6 +478,10 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
                   <DropdownMenuItem onClick={() => setLocation("/dashboard?view=profile")} className="cursor-pointer hover:bg-bg-elevated rounded-md px-2.5 py-1.5 text-xs font-medium">
                     Profile Settings
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={checkForUpdates} className="cursor-pointer hover:bg-bg-elevated rounded-md px-2.5 py-1.5 text-xs font-medium flex items-center gap-2">
+                    <RefreshCw className={cn("h-3.5 w-3.5 text-text-dim", checkingUpdates && "animate-spin")} />
+                    <span>Check for Updates</span>
+                  </DropdownMenuItem>
                 </div>
 
                 <DropdownMenuSeparator className="bg-border" />
@@ -528,6 +578,10 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
               <div className="p-1">
                 <DropdownMenuItem onClick={() => setLocation("/dashboard?view=profile")} className="cursor-pointer hover:bg-bg-elevated px-2 py-1.5 text-xs font-medium">
                   Profile Settings
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={checkForUpdates} className="cursor-pointer hover:bg-bg-elevated px-2 py-1.5 text-xs font-medium flex items-center gap-2">
+                  <RefreshCw className={cn("h-3.5 w-3.5 text-text-dim", checkingUpdates && "animate-spin")} />
+                  <span>Check for Updates</span>
                 </DropdownMenuItem>
 
                 {!isInstalled && (
