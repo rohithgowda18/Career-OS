@@ -1,87 +1,97 @@
-# Backend Architecture & Rationale (Spring Boot)
+# Backend Services & APIs Guide
 
-This document provides a senior-level technical specification of the Event Application Tracker backend, detailing the **Architectural Approaches**, **Core Tools**, and the **Engineering Rationale** behind every decision.
-
----
-
-## 🏗️ 1. Architectural Philosophy: The N-Tier Pattern
-The backend implements a strict **N-Tier (Layered) Architecture**:
--   **Approach**: Separation of concerns into `Controller`, `Service`, and `Repository` layers.
--   **Why**: 
-    -   **Maintainability**: Changes to the database schema (Repository) don't affect the HTTP interface (Controller).
-    -   **Testability**: Service logic can be unit tested in isolation using Mockito.
-    -   **Persistence Layer**: Spring Data JPA repositories with SQL Script Initialization (`schema.sql`).
-    -   **Consistency**: A standardized pattern makes the codebase predictable for new developers.
+This document describes the Spring Boot architecture, service layers, and configuration details for the OMP backend.
 
 ---
 
-## 📊 2. Data Modeling & Persistence
-
-### Relational Strategy (PostgreSQL + Hibernate)
--   **Approach**: Highly normalized relational schema with strict foreign key constraints.
--   **Tool: Spring Data JPA**:
-    -   **Rationale**: We use JPA (Hibernate implementation) to map Java objects to database rows. This abstracts away the complexity of raw JDBC and prevents common issues like SQL injection.
--   **Tool: Spring Boot SQL Initialization**: Uses `schema.sql` to define indices, foreign keys, and unique constraints explicitly.
-
-### Entities Detail
-1.  **`User`**: Implements Spring Security's `UserDetails`. Centralizes identity.
-2.  **`Application`**: Features a **Unique Constraint** on `(user_id, event_url)`.
-    -   **Rationale**: This prevents a user from tracking the same event multiple times, ensuring data cleanliness at the database level.
-3.  **`UserProfile`**: Linked via `@OneToOne`.
-    -   **Rationale**: We separate "Account Data" (User) from "Personal Data" (Profile) to optimize query performance and enhance privacy controls.
-4.  **`Placement`**: Represents job and internship tracking records. Features a multi-column **Unique Index** on `(user_id, company_name, role, application_link)`.
-    -   **Rationale**: Restricts data entry duplicates at the database layer while accommodating situations where a candidate applies to different roles at the same company.
+## 🛠️ 1. Core Technology Stack
+-   **Java 17/21**: Object-oriented application execution.
+-   **Spring Boot 3.2**: Rapid application configuration and deployment starter.
+-   **Spring Security**: Handles stateless token authorization and security filters.
+-   **Spring Data JPA / Hibernate**: Automatically maps Java classes to database schemas.
+-   **JJWT (JSON Web Token)**: Enforces signed HS512 cryptographic verification.
+-   **Gemini Client (Google AI SDK)**: Links the application with `gemini-2.5-flash` model for AI operations.
 
 ---
 
-## 🛠️ 3. Core Service Logic
-
-### URL Normalization Approach
--   **Implementation**: `ApplicationService.normalizeUrl()`.
--   **Rationale**: URLs are notoriously messy (UTM parameters, trailing slashes, protocol differences). By normalizing every URL before storage, we ensure that our "Unique Constraint" works effectively across different variations of the same link.
-
-### Enum Strategy
--   **Approach**: Database storage as `STRING`.
--   **Rationale**: While `ORDINAL` is more compact, `STRING` is human-readable and resilient to changes in enum order, making database debugging significantly easier.
-
-### AI-Assisted Extraction (Gemini integration)
--   **Implementation**: `GeminiExtractionService.java`.
--   **Model**: Defaults to `gemini-2.5-flash`.
--   **Rationale**: Allows users to paste recruitment emails to auto-fill job fields, minimizing manual entry friction.
--   **Technical Rationale**:
-    -   *Reflection-driven prompt*: The service inspects `PlacementDTO` properties dynamically using reflection to build the instructions schema.
-    -   *Strict JSON enforce*: Uses Gemini's `responseMimeType: "application/json"` parameters to ensure the model responds with structured, parseable schema elements.
-    -   *URL Preservation*: Matches parsed URLs from the prompt response back against raw regex-extracted URLs from the original text to guarantee URL integrity.
-    -   *Fault Tolerance*: Employs a 3-attempt exponential backoff retry wrapper to handle transient Network or Rate Limit failures.
-
-### Email Notification System
--   **Implementation**: `EmailService.java`.
--   **Mechanism**: Uses Spring's `JavaMailSender` configured via SMTP.
--   **Rationale**: Delivers status transition alerts and weekly digests to help users stay on top of upcoming calendar deadlines.
-
----
-
-## 📡 4. API Specification & DTO Pattern
-
-### The DTO (Data Transfer Object) Approach
--   **Implementation**: `ApplicationDTO`, `PlacementDTO`, `AuthDTO`, etc.
--   **Why**: We **never** expose internal JPA entities directly to the API.
--   **Security**: Prevents sensitive fields (like passwords or internal IDs) from leaking.
--   **Flexibility**: Allows the API contract to remain stable even if the underlying database schema changes.
-
-### Key API Endpoints
-| Endpoint | Method | Logic |
-| :--- | :--- | :--- |
-| `/api/auth/login` | `POST` | Authenticates credentials and issues a JWT. |
-| `/api/applications` | `POST` | Validates, normalizes, and stores new application records. |
-| `/api/placements` | `POST` | Processes, validates, and stores job/internship applications. |
-| `/api/placements/extract` | `POST` | Interfaces with Gemini API to extract DTO details from raw email text. |
-| `/api/analytics/summary` | `GET` | Aggregates event totals, success rates, and category statistics. |
-| `/api/placements/analytics` | `GET` | Computes conversion rates (Applied → Assessment → Interview → Offer). |
+## 📂 2. Directory and Package Structure
+The backend codebase lives under `apps/backend/src/main/java/com/eventtracker/`:
+```
+com.eventtracker/
+├── controller/         # REST API Handlers exposing endpoints
+│   ├── ApplicationController.java   # Applications CRUD & text ingestion
+│   ├── AuthController.java          # Login, Registration, & Session retrieval
+│   ├── PlacementController.java     # Placements CRUD & AI extraction endpoints
+│   ├── ImportController.java        # Process raw CSV data imports
+├── dto/                # Data Transfer Objects sanitizing API payloads
+├── entity/             # Hibernate JPA database definitions
+├── repository/         # Data access interfaces mapping SQL actions
+├── security/           # Spring Security, filters, & Jwt providers
+│   ├── JwtAuthenticationFilter.java  # Request authorization filter
+│   ├── JwtTokenProvider.java          # Cryptographic JWT helpers
+│   ├── SecurityConfig.java            # CORS & endpoint permissions
+│   └── oauth/                         # OAuth2 login success callbacks
+├── service/            # Business validation logic
+│   ├── AnalyticsService.java          # Aggregate conversion metrics & acceptance yields
+│   ├── ApplicationService.java        # Core application CRUD logic
+│   ├── PlacementService.java          # Core placement tracking logics
+│   ├── GeminiExtractionService.java   # Generative AI extraction service
+│   ├── ImportService.java             # Parsing & batching user CSV imports
+├── util/               # Shared utilities
+│   ├── UrlUtils.java                  # Common domain-parsing and normalization helpers
+└── EventAppTrackerApplication.java     # Application entrypoint
+```
 
 ---
 
-## 🛡️ 5. Security Rationale
--   **Approach**: **Stateless JWT**.
--   **Why**: Standard HTTP sessions require "Sticky Sessions" or a shared session store (like Redis) which adds complexity. JWTs are self-contained, allowing the backend to scale horizontally effortlessly.
--   **Signature Logic**: Uses **HS512** with a minimum 64-byte key check at startup (`@PostConstruct`) to ensure production-grade security defaults.
+## 🏗️ 3. Decoupled Request Workflow
+OMP strictly uses the N-Tier layered design pattern. An incoming request moves through the following layers:
+```
+[Client Request] ──> [Controller] ──> [DTO] ──> [Service] ──> [Repository] ──> [Database]
+```
+1.  **Controller Layer**: Validates HTTP constraints. For example, text inputs to the AI extraction endpoints are capped at a maximum of 10,000 characters to prevent request exhaustion.
+2.  **DTO (Data Transfer Object)**: Maps request bodies to specific, clean Java inputs. Prevents accidental database updates by isolating raw JPA entity objects.
+3.  **Service Layer**: Executes validations and rules. Example: uses `UrlUtils.java` to clean and standardize user-submitted links (e.g., stripping query parameters, prefixing protocols) before saving.
+4.  **Repository Layer**: Translates actions into queries mapping the database.
+5.  **Entity**: Restores or persists Java models directly as relational data.
+
+---
+
+## 🤖 4. Gemini AI Placement Extraction Service
+
+The backend utilizes `GeminiExtractionService.java` to process unstructured copy-pasted texts (such as email offers, application confirmations, or job boards) and extract clean database models.
+
+-   **Model**: Google Gemini `gemini-2.5-flash`.
+-   **Prompt Schema**: Enforces structured JSON output. We define a JSON schema constraint so the AI agent outputs exactly:
+    ```json
+    {
+      "company": "Company Name",
+      "role": "Job Title/Role Name",
+      "status": "Applied | Assessment Scheduled | Interview Scheduled | Offer Received",
+      "deadline": "YYYY-MM-DDTHH:mm:ss"
+    }
+    ```
+-   **Processing**: If the LLM successfully parses the input text, the values are returned as an `ExtractionResultDTO` and instantly mapped into the user's `Placement` repository.
+
+---
+
+## 📡 5. REST API Specifications
+
+All endpoints (except login, register, and health checks) require the header `Authorization: Bearer <JWT>`.
+
+| Method | Endpoint | Description | Auth Scope |
+| :--- | :--- | :--- | :--- |
+| **POST** | `/api/auth/register` | Create a new user account | Public |
+| **POST** | `/api/auth/login` | Login and receive a 15-day JWT token | Public |
+| **GET** | `/api/auth/me` | Fetch active user information | User JWT |
+| **GET** | `/api/applications` | List and search tracking applications | User JWT |
+| **POST** | `/api/applications` | Create a tracking application record | User JWT |
+| **PUT** | `/api/applications/{id}` | Update an application's details | User JWT |
+| **DELETE** | `/api/applications/{id}` | Delete an application | User JWT |
+| **POST** | `/api/placements` | Create a placement entry | User JWT |
+| **PUT** | `/api/placements/{id}` | Update a placement entry | User JWT |
+| **POST** | `/api/placements/extract` | Extract placement data from text using Gemini | User JWT |
+| **POST** | `/api/import/csv` | Batch import data from a CSV file | User JWT |
+| **GET** | `/api/analytics/dashboard` | Fetch compiled analytics and Conversion Yields | User JWT |
+| **GET** | `/actuator/health` | Service status checks | Public |
+| **GET** | `/actuator/**` | System metrics & debugging logs | Admin Only |
