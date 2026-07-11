@@ -4,6 +4,8 @@ import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 
+import { saveTokenToIndexedDB } from "@/lib/restClient";
+
 export default function OAuthSuccessPage() {
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
@@ -14,12 +16,14 @@ export default function OAuthSuccessPage() {
 
     if (token) {
       localStorage.setItem("token", token);
-      document.cookie = `token=${token}; max-age=1296000; path=/; samesite=lax`;
-      toast.success("OAuth Authentication Successful");
-      
-      // Invalidate queries to refresh user state
-      queryClient.invalidateQueries({ queryKey: ["auth", "me"] }).then(() => {
-        setLocation("/dashboard");
+      const secureFlag = typeof window !== 'undefined' && window.location.protocol === 'https:' ? '; secure' : '';
+      document.cookie = `token=${token}; max-age=1296000; path=/; samesite=lax${secureFlag}`;
+      saveTokenToIndexedDB(token).then(() => {
+        toast.success("OAuth Authentication Successful");
+        // Invalidate queries to refresh user state
+        queryClient.invalidateQueries({ queryKey: ["auth", "me"] }).then(() => {
+          setLocation("/dashboard");
+        });
       });
     } else {
       toast.error("Authentication failed: No token received");

@@ -3,6 +3,8 @@ import { useLocation } from "wouter";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { authApi } from "@/lib/api/authApi";
 
+import { removeTokenFromIndexedDB } from "@/lib/restClient";
+
 export function useAuth() {
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
@@ -16,7 +18,9 @@ export function useAuth() {
 
   const logout = useCallback(async () => {
     localStorage.removeItem("token");
-    document.cookie = "token=; max-age=0; path=/; samesite=lax";
+    const secureFlag = typeof window !== 'undefined' && window.location.protocol === 'https:' ? '; secure' : '';
+    document.cookie = `token=; max-age=0; path=/; samesite=lax${secureFlag}`;
+    await removeTokenFromIndexedDB();
     queryClient.clear();
     setLocation("/login");
   }, [queryClient, setLocation]);

@@ -29,23 +29,117 @@ const restClient = axios.create({
 });
 
 
-const getStoredToken = () => {
+const dbName = 'OMPAuthDB';
+const storeName = 'auth';
+
+export const saveTokenToIndexedDB = (token: string): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    if (typeof window === 'undefined') return resolve();
+    const request = indexedDB.open(dbName, 1);
+    request.onupgradeneeded = () => {
+      request.result.createObjectStore(storeName);
+    };
+    request.onsuccess = () => {
+      const db = request.result;
+      try {
+        const tx = db.transaction(storeName, 'readwrite');
+        const store = tx.objectStore(storeName);
+        store.put(token, 'token');
+        tx.oncomplete = () => {
+          db.close();
+          resolve();
+        };
+      } catch (e) {
+        reject(e);
+      }
+    };
+    request.onerror = () => reject(request.error);
+  });
+};
+
+export const getTokenFromIndexedDB = (): Promise<string | null> => {
+  return new Promise((resolve) => {
+    if (typeof window === 'undefined') return resolve(null);
+    const request = indexedDB.open(dbName, 1);
+    request.onupgradeneeded = () => {
+      request.result.createObjectStore(storeName);
+    };
+    request.onsuccess = () => {
+      const db = request.result;
+      try {
+        const tx = db.transaction(storeName, 'readonly');
+        const store = tx.objectStore(storeName);
+        const getReq = store.get('token');
+        getReq.onsuccess = () => {
+          db.close();
+          resolve(getReq.result || null);
+        };
+        getReq.onerror = () => {
+          db.close();
+          resolve(null);
+        };
+      } catch (e) {
+        resolve(null);
+      }
+    };
+    request.onerror = () => resolve(null);
+  });
+};
+
+export const removeTokenFromIndexedDB = (): Promise<void> => {
+  return new Promise((resolve) => {
+    if (typeof window === 'undefined') return resolve();
+    const request = indexedDB.open(dbName, 1);
+    request.onsuccess = () => {
+      const db = request.result;
+      try {
+        const tx = db.transaction(storeName, 'readwrite');
+        const store = tx.objectStore(storeName);
+        store.delete('token');
+        tx.oncomplete = () => {
+          db.close();
+          resolve();
+        };
+      } catch (e) {
+        resolve();
+      }
+    };
+    request.onerror = () => resolve();
+  });
+};
+
+const getStoredTokenAsync = async () => {
   if (typeof window === 'undefined') return null;
+  
+  // 1. Try LocalStorage
   let token = localStorage.getItem('token');
-  if (!token) {
-    const match = document.cookie.match(/(^| )token=([^;]+)/);
-    if (match) {
-      token = match[2];
-      localStorage.setItem('token', token);
-    }
+  if (token) return token;
+
+  // 2. Try Cookie
+  const match = document.cookie.match(/(^| )token=([^;]+)/);
+  if (match) {
+    token = match[2];
+    localStorage.setItem('token', token);
+    await saveTokenToIndexedDB(token);
+    return token;
   }
-  return token;
+
+  // 3. Try IndexedDB (main survival layer for mobile PWA standalone mode)
+  token = await getTokenFromIndexedDB();
+  if (token) {
+    localStorage.setItem('token', token);
+    const secureFlag = window.location.protocol === 'https:' ? '; secure' : '';
+    document.cookie = `token=${token}; max-age=1296000; path=/; samesite=lax${secureFlag}`;
+    return token;
+  }
+
+  return null;
 };
 
 // Add a request interceptor to include the JWT token
 restClient.interceptors.request.use(
-  (config) => {
-    const token = getStoredToken();
+  async (config) => {
+    const token = await getStoredTokenAsync();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -69,11 +163,13 @@ restClient.interceptors.response.use(
     }
     return response;
   },
-  (error) => {
+  async (error) => {
     if (error.response?.status === 401) {
       // Clear token and redirect to login if unauthorized
       localStorage.removeItem('token');
-      document.cookie = 'token=; max-age=0; path=/; samesite=lax';
+      const secureFlag = typeof window !== 'undefined' && window.location.protocol === 'https:' ? '; secure' : '';
+      document.cookie = `token=; max-age=0; path=/; samesite=lax${secureFlag}`;
+      await removeTokenFromIndexedDB();
       window.location.href = '/login';
     }
 
