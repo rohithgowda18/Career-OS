@@ -29,10 +29,23 @@ const restClient = axios.create({
 });
 
 
+const getStoredToken = () => {
+  if (typeof window === 'undefined') return null;
+  let token = localStorage.getItem('token');
+  if (!token) {
+    const match = document.cookie.match(/(^| )token=([^;]+)/);
+    if (match) {
+      token = match[2];
+      localStorage.setItem('token', token);
+    }
+  }
+  return token;
+};
+
 // Add a request interceptor to include the JWT token
 restClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    const token = getStoredToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -60,6 +73,7 @@ restClient.interceptors.response.use(
     if (error.response?.status === 401) {
       // Clear token and redirect to login if unauthorized
       localStorage.removeItem('token');
+      document.cookie = 'token=; max-age=0; path=/; samesite=lax';
       window.location.href = '/login';
     }
 

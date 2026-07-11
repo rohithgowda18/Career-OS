@@ -14,6 +14,7 @@ export default function OAuthSuccessPage() {
 
     if (token) {
       localStorage.setItem("token", token);
+      document.cookie = `token=${token}; max-age=1296000; path=/; samesite=lax`;
       toast.success("OAuth Authentication Successful");
       
       // Invalidate queries to refresh user state

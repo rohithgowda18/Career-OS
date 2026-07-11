@@ -16,6 +16,7 @@ export function useAuth() {
 
   const logout = useCallback(async () => {
     localStorage.removeItem("token");
+    document.cookie = "token=; max-age=0; path=/; samesite=lax";
     queryClient.clear();
     setLocation("/login");
   }, [queryClient, setLocation]);
