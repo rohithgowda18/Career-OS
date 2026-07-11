@@ -51,5 +51,5 @@ We intentionally avoid server-side sessions.
 ### **Approach**: Global Interception
 -   **Implementation**: `restClient.ts`.
 -   **Rationale**: 
-    -   **Token Persistence**: Storing the token in `localStorage` allows the user to stay logged in across tab closes.
-    -   **Graceful Degradation**: If the token expires, the **Response Interceptor** catches the `401` error, clears the invalid token, and redirects the user to login, providing a seamless UX.
+    -   **3-Tier Token Persistence**: To guarantee that the session persists even in standalone mobile PWA wrappers (where mobile OSs aggressively wipe `localStorage` on app close), the token is saved concurrently in `localStorage`, persistent `document.cookie` (with the `secure` flag on HTTPS), and `IndexedDB`. When relaunching the PWA, an async request interceptor fallback automatically restores the token from `IndexedDB` to heal the state.
+    -   **Graceful Degradation**: If the token expires (after 15 days), the **Response Interceptor** catches the `401` error, clears the invalid token across all three storage layers, and redirects the user to login, providing a seamless UX.

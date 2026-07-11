@@ -32,7 +32,8 @@ The codebase is organized as a structured monorepo:
 Every feature listed here is verified to be fully or partially implemented in the source code.
 
 ### 1. ?? Security & Identity Control
-*   **Stateless Authentication**: Session management using JSON Web Token (JWT) signatures (HS512).
+*   **Persistent Stateless Sessions**: Token-based authorization using JSON Web Tokens (JWT) signed with HS512. The token expiration is set to 15 days (1,296,000,000 ms) to reduce login prompts.
+*   **3-Tier PWA Session Redundancy**: On the client-side, the token is saved simultaneously to LocalStorage, browser Cookies (with the secure flag on HTTPS), and IndexedDB. A request interceptor fallback automatically restores the token from IndexedDB if the mobile operating system's standalone PWA sandbox terminates the WebKit process and wipes localStorage.
 *   **OAuth2 Integration**: Login handlers for Google and GitHub social authentication.
 *   **Password Hashing**: BCrypt hashing for credentials.
 *   **Global CORS**: Pre-configured cross-origin request policies.
