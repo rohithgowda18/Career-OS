@@ -23,8 +23,8 @@ export default defineConfig({
         globPatterns: ["**/*.{js,css,html,ico,png,svg,webmanifest}"],
       },
       manifest: {
-        name: "Opportunity Management Platform",
-        short_name: "OMP",
+        name: "Career OS",
+        short_name: "Career OS",
         description: "Track and manage your event applications and placements with ease",
         theme_color: "#0f172a",
         background_color: "#020617",
