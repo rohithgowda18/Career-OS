@@ -1,21 +1,12 @@
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { skillsApi } from "@/lib/api/skillsApi";
-import {
-  ChevronLeft,
-  ChevronRight,
-  Edit2,
-  Trash2,
-  Loader2,
-  Award
-} from "lucide-react";
+import { Loader2, Award, Edit2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import EditSkillModal from "@/components/EditSkillModal";
+import EditCategorySkillsModal from "@/components/EditCategorySkillsModal";
 import EmptyState from "@/components/ui/EmptyState";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
 import { useTheme } from "@/contexts/ThemeContext";
-import { Badge } from "@/components/ui/badge";
 
 interface SkillTableProps {
   page: number;
@@ -25,57 +16,59 @@ interface SkillTableProps {
 }
 
 const CATEGORY_LABELS: Record<string, string> = {
-  PROGRAMMING_LANGUAGE: "Programming Language",
-  FRAMEWORK: "Framework",
-  DATABASE: "Database",
-  TOOL: "Tool",
-  CONCEPT: "Concept",
-  OTHER: "Other",
-};
-
-const LEVEL_LABELS: Record<string, string> = {
-  BEGINNER: "Beginner",
-  INTERMEDIATE: "Intermediate",
-  ADVANCED: "Advanced",
-};
-
-const LEVEL_COLORS: Record<string, "blue" | "orange" | "green"> = {
-  BEGINNER: "blue",
-  INTERMEDIATE: "orange",
-  ADVANCED: "green",
+  BACKEND: "Backend Development",
+  FRONTEND: "Frontend",
+  DATABASE: "Databases",
+  DEVOPS: "DevOps",
+  CLOUD: "Cloud",
+  COMPUTER_SCIENCE: "Computer Science",
+  AI_ML: "AI / Machine Learning",
+  MOBILE: "Mobile",
+  TESTING: "Testing",
+  OTHER: "Others",
 };
 
 export default function SkillTable({ page, setPage, pageSize, search }: SkillTableProps) {
   const { themeTokens } = useTheme();
-  const [selectedSkill, setSelectedSkill] = useState<any>(null);
+  const [selectedCategory, setSelectedCategory] = useState<any>(null);
   const [showEditModal, setShowEditModal] = useState(false);
-  const queryClient = useQueryClient();
 
+  // Load all skills for grouping in the portfolio view
   const skillsQuery = useQuery({
-    queryKey: ["skills", page, search],
-    queryFn: () => skillsApi.list({ page, size: pageSize, search }),
+    queryKey: ["skills", search],
+    queryFn: () => skillsApi.list({ page: 0, size: 1000, search }),
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: skillsApi.delete,
-    onSuccess: () => {
-      toast.success("Skill deleted successfully");
-      queryClient.invalidateQueries({ queryKey: ["skills"] });
-    },
-    onError: (error: any) => {
-      toast.error(error.message || "Failed to delete skill");
-    },
-  });
+  const skills = skillsQuery.data?.content || [];
 
-  const handleEdit = (skill: any) => {
-    setSelectedSkill(skill);
+  const groupedSkills = useMemo(() => {
+    const groups: Record<string, any[]> = {};
+    Object.keys(CATEGORY_LABELS).forEach(cat => {
+      groups[cat] = [];
+    });
+
+    skills.forEach((s: any) => {
+      if (groups[s.category]) {
+        groups[s.category].push(s);
+      } else {
+        // Fallback fallback
+        if (!groups[s.category]) {
+          groups[s.category] = [];
+        }
+        groups[s.category].push(s);
+      }
+    });
+
+    return groups;
+  }, [skills]);
+
+  const handleEditCategory = (cat: string, label: string, catSkills: any[]) => {
+    setSelectedCategory({
+      category: cat,
+      categoryLabel: label,
+      skills: catSkills,
+    });
     setShowEditModal(true);
-  };
-
-  const handleDelete = (id: number, name: string) => {
-    if (window.confirm(`Are you sure you want to delete "${name}"?`)) {
-      deleteMutation.mutate(id);
-    }
   };
 
   if (skillsQuery.isLoading) {
@@ -86,8 +79,6 @@ export default function SkillTable({ page, setPage, pageSize, search }: SkillTab
       </div>
     );
   }
-
-  const { content: skills, totalPages, totalElements } = skillsQuery.data || { content: [], totalPages: 0, totalElements: 0 };
 
   if (skills.length === 0) {
     return (
@@ -100,125 +91,74 @@ export default function SkillTable({ page, setPage, pageSize, search }: SkillTab
   }
 
   return (
-    <div className="space-y-4">
-      {/* Desktop Table View */}
-      <div className="hidden md:block overflow-hidden rounded-xl border border-border/60 bg-bg-card shadow-xs">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className={cn("border-b border-border/60 text-[10px] font-bold uppercase tracking-wider text-text-dim", themeTokens.tableHeaderClass)}>
-                <th className="p-3">Skill</th>
-                <th className="p-3">Category</th>
-                <th className="p-3">Level</th>
-                <th className="p-3 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border/60">
-              {skills.map((s: any) => (
-                <tr key={s.id} className={cn("transition-colors group", themeTokens.tableRowClass)}>
-                  <td className={cn("p-3 font-semibold text-xs truncate max-w-[150px]", themeTokens.headingColor)}>{s.name}</td>
-                  <td className={cn("p-3 text-xs", themeTokens.textColor)}>{CATEGORY_LABELS[s.category] || s.category}</td>
-                  <td className="p-3 text-xs">
-                    <Badge statusColor={LEVEL_COLORS[s.level] || "blue"} className="text-[10px]">
-                      {LEVEL_LABELS[s.level] || s.level}
-                    </Badge>
-                  </td>
-                  <td className="p-3 text-right">
-                    <div className="flex items-center justify-end gap-1 opacity-75 group-hover:opacity-100 transition-opacity">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleEdit(s)}
-                        className="h-8 w-8 text-text-dim hover:text-primary hover:bg-bg-elevated cursor-pointer"
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDelete(s.id, s.name)}
-                        className="h-8 w-8 text-text-dim hover:text-danger hover:bg-danger/10 cursor-pointer"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+    <div className="space-y-6 bg-bg-card border border-border/60 rounded-xl p-6 md:p-8 shadow-xs">
+      <div className="divide-y divide-border/40 space-y-6">
+        {Object.entries(groupedSkills).map(([cat, catSkills], index) => {
+          if (catSkills.length === 0) return null;
+          const label = CATEGORY_LABELS[cat] || cat;
 
-      {/* Mobile Grid/List View */}
-      <div className="grid grid-cols-1 gap-3 md:hidden">
-        {skills.map((s: any) => (
-          <div key={s.id} className="p-4 rounded-xl border border-border/60 bg-bg-card space-y-3 shadow-xs">
-            <div className="flex items-center justify-between">
-              <h3 className={cn("text-sm font-bold truncate pr-2", themeTokens.headingColor)}>{s.name}</h3>
-              <Badge statusColor={LEVEL_COLORS[s.level] || "blue"} className="text-[9px]">
-                {LEVEL_LABELS[s.level] || s.level}
-              </Badge>
-            </div>
-            <div className="flex items-center justify-between text-xs text-text-muted">
-              <span>{CATEGORY_LABELS[s.category] || s.category}</span>
-              <div className="flex gap-1">
+          return (
+            <div
+              key={cat}
+              className={cn(
+                "space-y-4",
+                index > 0 ? "pt-6" : ""
+              )}
+            >
+              {/* Category Header */}
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-bold text-text-main flex items-center gap-1.5 uppercase tracking-wider">
+                  <span>{label}</span>
+                  <span className="text-[9px] text-text-dim bg-bg-elevated px-2 py-0.5 rounded-full font-extrabold">
+                    {catSkills.length}
+                  </span>
+                </h4>
                 <Button
                   variant="ghost"
-                  size="icon"
-                  onClick={() => handleEdit(s)}
-                  className="h-8 w-8 text-text-dim hover:text-primary hover:bg-bg-elevated cursor-pointer"
+                  size="sm"
+                  onClick={() => handleEditCategory(cat, label, catSkills)}
+                  className="h-8 px-2.5 text-xs font-semibold text-primary hover:bg-primary/10 flex items-center gap-1.5 cursor-pointer rounded-lg border border-primary/20 hover:border-primary/45 transition-colors"
                 >
-                  <Edit2 className="w-3.5 h-3.5" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleDelete(s.id, s.name)}
-                  className="h-8 w-8 text-text-dim hover:text-danger hover:bg-danger/10 cursor-pointer"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
+                  <Edit2 className="w-3 h-3" /> Edit
                 </Button>
               </div>
+
+              {/* Skills Grid */}
+              <div className="flex flex-wrap gap-2.5">
+                {catSkills.map((s: any) => (
+                  <div
+                    key={s.id}
+                    className="flex flex-col items-center bg-bg-main border border-border/80 rounded-xl px-3.5 py-2.5 min-w-[100px] text-center shadow-xs transition-transform hover:-translate-y-0.5"
+                  >
+                    <span className="text-xs font-bold text-text-main">{s.name}</span>
+                    <span className="text-[9px] text-text-muted mt-1.5 flex items-center gap-1.5 font-extrabold uppercase tracking-wider">
+                      <span
+                        className={cn(
+                          "w-1.5 h-1.5 rounded-full",
+                          s.level === "ADVANCED"
+                            ? "bg-green-500"
+                            : s.level === "INTERMEDIATE"
+                            ? "bg-orange-500"
+                            : "bg-blue-500"
+                        )}
+                      />
+                      {s.level.toLowerCase()}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
-      {/* Pagination Controls */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between border-t border-border/40 pt-4">
-          <p className="text-[10px] font-bold text-text-dim uppercase tracking-wider">
-            Showing Page {page + 1} of {totalPages} ({totalElements} total)
-          </p>
-          <div className="flex items-center gap-1.5">
-            <Button
-              variant="outline"
-              size="icon"
-              disabled={page === 0}
-              onClick={() => setPage(page - 1)}
-              className="h-8 w-8 bg-bg-card border-border/60 cursor-pointer"
-            >
-              <ChevronLeft className="w-4 h-4 text-text-main" />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              disabled={page >= totalPages - 1}
-              onClick={() => setPage(page + 1)}
-              className="h-8 w-8 bg-bg-card border-border/60 cursor-pointer"
-            >
-              <ChevronRight className="w-4 h-4 text-text-main" />
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {selectedSkill && (
-        <EditSkillModal
+      {selectedCategory && (
+        <EditCategorySkillsModal
           open={showEditModal}
           onOpenChange={setShowEditModal}
-          skill={selectedSkill}
+          category={selectedCategory.category}
+          categoryLabel={selectedCategory.categoryLabel}
+          skills={selectedCategory.skills}
         />
       )}
     </div>

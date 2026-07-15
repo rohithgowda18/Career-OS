@@ -463,11 +463,17 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
                 <button className="flex items-center gap-2.5 outline-none cursor-pointer group text-left min-w-0 flex-1">
                   <Avatar className="h-8 w-8 border border-border group-hover:border-text-muted transition-all">
                     <AvatarFallback className="text-xs font-semibold bg-bg-elevated text-primary">
-                      {user?.email?.charAt(0).toUpperCase() || "U"}
+                      {user?.displayName && user.displayName.trim() !== ""
+                        ? user.displayName.charAt(0).toUpperCase()
+                        : user?.email?.charAt(0).toUpperCase() || "U"}
                     </AvatarFallback>
                   </Avatar>
                   <div className="min-w-0 flex-1">
-                    <p className="text-[12px] font-medium text-text-main truncate leading-none mb-0.5">{user?.email?.split('@')[0]}</p>
+                    <p className="text-[12px] font-medium text-text-main truncate leading-none mb-0.5">
+                      {user?.displayName && user.displayName.trim() !== ""
+                        ? user.displayName
+                        : user?.email?.split('@')[0]}
+                    </p>
                     <p className="text-[10px] text-text-dim truncate leading-none">Settings</p>
                   </div>
                 </button>
@@ -475,7 +481,11 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
               <DropdownMenuContent align="start" side="top" className="w-52 mb-1 bg-bg-card border-border text-text-main">
                 <div className="flex flex-col p-2.5 border-b border-border">
                   <p className="text-[9px] font-semibold text-text-dim uppercase tracking-wider mb-0.5">Identity</p>
-                  <p className="text-xs font-medium truncate text-text-main">{user?.email}</p>
+                  <p className="text-xs font-medium truncate text-text-main">
+                    {user?.displayName && user.displayName.trim() !== ""
+                      ? `${user.displayName} (${user.email})`
+                      : user?.email}
+                  </p>
                 </div>
                 <div className="p-1">
                   <DropdownMenuItem onClick={() => setLocation("/dashboard?view=profile")} className="cursor-pointer hover:bg-bg-elevated rounded-md px-2.5 py-1.5 text-xs font-medium">
@@ -569,14 +579,20 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
               <button className="flex items-center outline-none">
                 <Avatar className="h-7 w-7 border border-border">
                   <AvatarFallback className="text-[10px] font-semibold bg-bg-elevated text-primary">
-                    {user?.email?.charAt(0).toUpperCase() || "U"}
+                    {user?.displayName && user.displayName.trim() !== ""
+                      ? user.displayName.charAt(0).toUpperCase()
+                      : user?.email?.charAt(0).toUpperCase() || "U"}
                   </AvatarFallback>
                 </Avatar>
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48 bg-bg-card border-border text-text-main">
               <div className="p-2 border-b border-border">
-                <p className="text-[11px] truncate font-medium text-text-main">{user?.email}</p>
+                <p className="text-[11px] truncate font-medium text-text-main">
+                  {user?.displayName && user.displayName.trim() !== ""
+                    ? user.displayName
+                    : user?.email}
+                </p>
               </div>
               <div className="p-1">
                 <DropdownMenuItem onClick={() => setLocation("/dashboard?view=profile")} className="cursor-pointer hover:bg-bg-elevated px-2 py-1.5 text-xs font-medium">

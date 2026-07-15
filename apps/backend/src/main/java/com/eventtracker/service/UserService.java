@@ -22,7 +22,7 @@ public class UserService {
     private final UserProfileRepository userProfileRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public User createUser(String email, String password) {
+    public User createUser(String email, String password, String displayName) {
         String normalizedEmail = normalizeEmail(email);
         
         if (userRepository.existsByEmailIgnoreCase(normalizedEmail)) {
@@ -34,6 +34,7 @@ public class UserService {
         User user = new User();
         user.setEmail(normalizedEmail);
         user.setPassword(encodedPassword);
+        user.setDisplayName(displayName);
         user.setRole("USER");
 
         user = userRepository.save(user);
@@ -44,6 +45,17 @@ public class UserService {
         userProfileRepository.save(profile);
 
         return user;
+    }
+
+    public User createUser(String email, String password) {
+        return createUser(email, password, null);
+    }
+
+    public User updateDisplayName(Long userId, String displayName) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        user.setDisplayName(displayName);
+        return userRepository.save(user);
     }
 
     private String normalizeEmail(String email) {
@@ -65,6 +77,7 @@ public class UserService {
         UserDTO dto = new UserDTO();
         dto.setId(user.getId());
         dto.setEmail(user.getEmail());
+        dto.setDisplayName(user.getDisplayName());
         dto.setCreatedAt(user.getCreatedAt());
         dto.setUpdatedAt(user.getUpdatedAt());
         return dto;

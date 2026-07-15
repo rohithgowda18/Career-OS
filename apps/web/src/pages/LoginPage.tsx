@@ -15,6 +15,7 @@ export default function LoginPage() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [displayName, setDisplayName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
   const queryClient = useQueryClient();
@@ -50,6 +51,39 @@ export default function LoginPage() {
 
   const isLoading = loginMutation.isPending || registerMutation.isPending;
 
+  const handleOAuthLogin = (provider: "google" | "github") => {
+    const url = `${BACKEND_URL}/oauth2/authorization/${provider}`;
+    const width = 500;
+    const height = 650;
+    const left = window.screen.width / 2 - width / 2;
+    const top = window.screen.height / 2 - height / 2;
+    
+    const popup = window.open(
+      url,
+      "OAuthLogin",
+      `width=${width},height=${height},left=${left},top=${top},status=no,resizable=yes,scrollbars=yes`
+    );
+
+    if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+      console.warn("[Debug OAuth] Popup blocked or unsupported, falling back to direct redirect.");
+      window.location.href = url;
+      return;
+    }
+
+    const handleMessage = async (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+      if (event.data?.type === "OAUTH_SUCCESS" && event.data.token) {
+        window.removeEventListener("message", handleMessage);
+        setToken(event.data.token);
+        toast.success("OAuth Authentication Successful");
+        await queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
+        setLocation(redirectPath);
+      }
+    };
+
+    window.addEventListener("message", handleMessage);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (isLoading) return;
@@ -58,6 +92,7 @@ export default function LoginPage() {
       registerMutation.mutate({
         email: email.trim().toLowerCase(),
         password,
+        displayName: displayName.trim(),
       });
     } else {
       loginMutation.mutate({ email: email.trim().toLowerCase(), password });
@@ -90,6 +125,24 @@ export default function LoginPage() {
 
         <div className="bg-bg-card border border-border rounded-xl p-6 md:p-8 shadow-xs">
           <form onSubmit={handleSubmit} className="space-y-4">
+            {isSignUp && (
+              <div className="space-y-1.5">
+                <Label htmlFor="displayName" className="text-[11px] font-semibold text-text-muted flex items-center gap-2">
+                  Full Name
+                </Label>
+                <Input 
+                  id="displayName" 
+                  type="text" 
+                  name="displayName"
+                  placeholder="John Doe"
+                  value={displayName} 
+                  onChange={e => setDisplayName(e.target.value)} 
+                  required 
+                  className="bg-bg-elevated border-border h-10 text-xs font-semibold focus:border-primary/65" 
+                />
+              </div>
+            )}
+
             <div className="space-y-1.5">
               <Label htmlFor="email" className="text-[11px] font-semibold text-text-muted flex items-center gap-2">
                 <Mail className="w-3.5 h-3.5 text-text-dim" /> Email Address
@@ -145,26 +198,34 @@ export default function LoginPage() {
               {isLoading && <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />}
               {isSignUp ? "Sign Up" : "Continue"}
             </Button>
+
+            {isLoading && (
+              <p className="text-[10px] text-text-dim text-center mt-2.5 animate-pulse font-medium">
+                Starting backend... This may take up to 60 seconds on the first request.
+              </p>
+            )}
           </form>
 
           {/* Social OAuth block */}
           <div className="mt-6 pt-5 border-t border-border flex flex-col items-center gap-4">
             <div className="text-[10px] uppercase font-bold tracking-wider text-text-dim">Or continue with</div>
             <div className="grid grid-cols-2 gap-3 w-full">
-              <a 
-                href={`${BACKEND_URL}/oauth2/authorization/google`}
-                className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-bg-elevated border border-border hover:bg-bg-elevated/80 transition-colors text-[11px] font-semibold text-text-main"
+              <button 
+                type="button"
+                onClick={() => handleOAuthLogin("google")}
+                className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-bg-elevated border border-border hover:bg-bg-elevated/80 transition-colors text-[11px] font-semibold text-text-main cursor-pointer"
               >
                 <img src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" alt="Google" className="w-4 h-4" />
                 <span>Google</span>
-              </a>
-              <a 
-                href={`${BACKEND_URL}/oauth2/authorization/github`}
-                className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-bg-elevated border border-border hover:bg-bg-elevated/80 transition-colors text-[11px] font-semibold text-text-main"
+              </button>
+              <button 
+                type="button"
+                onClick={() => handleOAuthLogin("github")}
+                className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-bg-elevated border border-border hover:bg-bg-elevated/80 transition-colors text-[11px] font-semibold text-text-main cursor-pointer"
               >
                 <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="GitHub" className="w-4 h-4 invert" />
                 <span>GitHub</span>
-              </a>
+              </button>
             </div>
             
             <button

@@ -59,8 +59,24 @@ function Router() {
       }
     >
       <Switch>
-        <Route path="/" component={LandingPage} />
-        <Route path="/login" component={LoginPage} />
+        <Route path="/">
+          {isAuthenticated ? (
+            <div className="min-h-screen flex items-center justify-center bg-bg-main">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+          ) : (
+            <LandingPage />
+          )}
+        </Route>
+        <Route path="/login">
+          {isAuthenticated ? (
+            <div className="min-h-screen flex items-center justify-center bg-bg-main">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+          ) : (
+            <LoginPage />
+          )}
+        </Route>
         <Route path="/oauth-success" component={OAuthSuccessPage} />
         <Route path="/dashboard" component={Home} />
         <Route path="/placements" component={PlacementsPage} />

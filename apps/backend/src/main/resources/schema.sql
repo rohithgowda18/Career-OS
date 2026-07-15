@@ -87,3 +87,6 @@ CREATE TABLE IF NOT EXISTS skills (
 CREATE INDEX IF NOT EXISTS idx_skills_user_id ON skills(user_id);
 CREATE UNIQUE INDEX IF NOT EXISTS unique_user_skill ON skills (user_id, name);
 
+ALTER TABLE users
+ADD COLUMN IF NOT EXISTS display_name VARCHAR(255);
+

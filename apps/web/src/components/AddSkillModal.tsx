@@ -18,8 +18,8 @@ import {
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { skillsApi } from "@/lib/api/skillsApi";
 import { toast } from "sonner";
-import { Loader2, Plus, ArrowLeft, Check, Search } from "lucide-react";
-import { SKILL_CATALOG, CatalogSkill } from "@/lib/constants/skillCatalog";
+import { Loader2, Plus, ArrowLeft, Check, Search, ChevronDown, ChevronRight, Sparkles } from "lucide-react";
+import { SKILL_CATALOG, CatalogSkill, RECOMMENDATION_MAP } from "@/lib/constants/skillCatalog";
 
 interface AddSkillModalProps {
   open: boolean;
@@ -28,14 +28,50 @@ interface AddSkillModalProps {
 }
 
 const CATEGORY_LABELS: Record<string, string> = {
-  PROGRAMMING_LANGUAGE: "Programming Languages",
-  FRAMEWORK: "Frameworks",
-  DATABASE: "Databases",
-  TOOL: "Tools",
+  BACKEND: "Backend",
+  FRONTEND: "Frontend",
+  DATABASE: "Database",
+  DEVOPS: "DevOps",
   CLOUD: "Cloud",
   COMPUTER_SCIENCE: "Computer Science",
+  AI_ML: "AI / Machine Learning",
+  MOBILE: "Mobile",
+  TESTING: "Testing",
   OTHER: "Others",
 };
+
+const POPULAR_SKILLS = ["Java", "Spring Boot", "React", "PostgreSQL", "Git", "Docker", "REST APIs", "JWT", "Linux"];
+
+const CAREER_TRACKS = [
+  {
+    name: "Backend Developer",
+    skills: ["Java", "Spring Boot", "Hibernate", "PostgreSQL", "REST APIs", "JWT", "Git", "Maven", "Linux", "Postman"]
+  },
+  {
+    name: "Frontend Developer",
+    skills: ["HTML", "CSS", "JavaScript", "TypeScript", "React", "TailwindCSS", "Vite", "VS Code", "Git", "Postman"]
+  },
+  {
+    name: "Full Stack",
+    skills: ["React", "Node.js", "Express", "MongoDB", "Java", "Spring Boot", "PostgreSQL", "TypeScript", "Git", "Docker"]
+  },
+  {
+    name: "AI/ML",
+    skills: ["Python", "Algorithms", "Data Structures", "Machine Learning", "Artificial Intelligence", "PyTorch", "R"]
+  },
+  {
+    name: "DevOps",
+    skills: ["Docker", "Kubernetes", "Jenkins", "Git", "Linux", "AWS", "Terraform", "CI/CD"]
+  },
+  {
+    name: "Mobile Developer",
+    skills: ["Kotlin", "Swift", "Flutter", "React Native", "Git"]
+  },
+  {
+    name: "Cyber Security",
+    skills: ["Cryptography", "Computer Networks", "Operating Systems", "Linux", "JWT", "OAuth2"]
+  }
+];
 
 export default function AddSkillModal({ open, onOpenChange, existingSkills = [] }: AddSkillModalProps) {
   const queryClient = useQueryClient();
@@ -45,10 +81,15 @@ export default function AddSkillModal({ open, onOpenChange, existingSkills = [] 
   const [showCustomForm, setShowCustomForm] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
 
+  // Accordion state
+  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({
+    BACKEND: true, // Backend open by default
+  });
+
   // Custom Form state
   const [customForm, setCustomForm] = useState({
     name: "",
-    category: "PROGRAMMING_LANGUAGE",
+    category: "BACKEND",
     level: "INTERMEDIATE",
   });
 
@@ -69,14 +110,31 @@ export default function AddSkillModal({ open, onOpenChange, existingSkills = [] 
     });
 
     filtered.forEach(s => {
-      if (!groups[s.category]) {
-        groups[s.category] = [];
+      if (groups[s.category]) {
+        groups[s.category].push(s);
       }
-      groups[s.category].push(s);
     });
 
     return groups;
   }, [searchQuery]);
+
+  // Handle smart suggestions based on selected skills
+  const suggestions = useMemo(() => {
+    const selectedNames = selectedSkills.map(s => s.name);
+    const suggestedList: CatalogSkill[] = [];
+
+    selectedNames.forEach(name => {
+      const candidates = RECOMMENDATION_MAP[name] || [];
+      candidates.forEach(cname => {
+        const found = SKILL_CATALOG.find(s => s.name === cname);
+        if (found && !selectedNames.includes(cname) && !existingNamesSet.has(cname.toLowerCase()) && !suggestedList.some(item => item.name === cname)) {
+          suggestedList.push(found);
+        }
+      });
+    });
+
+    return suggestedList;
+  }, [selectedSkills, existingNamesSet]);
 
   const toggleSkillSelection = (skill: CatalogSkill) => {
     const isSelected = selectedSkills.some(s => s.name === skill.name);
@@ -85,6 +143,18 @@ export default function AddSkillModal({ open, onOpenChange, existingSkills = [] 
     } else {
       setSelectedSkills([...selectedSkills, skill]);
     }
+  };
+
+  const applyTrackPreset = (skillsList: string[]) => {
+    const toSelect: CatalogSkill[] = [];
+    skillsList.forEach(name => {
+      const catalogItem = SKILL_CATALOG.find(s => s.name.toLowerCase() === name.toLowerCase());
+      if (catalogItem && !existingNamesSet.has(name.toLowerCase())) {
+        toSelect.push(catalogItem);
+      }
+    });
+    setSelectedSkills(toSelect);
+    toast.success(`Pre-selected ${toSelect.length} track skills`);
   };
 
   const handleBatchAdd = async () => {
@@ -137,7 +207,7 @@ export default function AddSkillModal({ open, onOpenChange, existingSkills = [] 
       });
       toast.success("Custom skill added successfully");
       queryClient.invalidateQueries({ queryKey: ["skills"] });
-      setCustomForm({ name: "", category: "PROGRAMMING_LANGUAGE", level: "INTERMEDIATE" });
+      setCustomForm({ name: "", category: "BACKEND", level: "INTERMEDIATE" });
       setShowCustomForm(false);
       onOpenChange(false);
     } catch (err: any) {
@@ -147,9 +217,13 @@ export default function AddSkillModal({ open, onOpenChange, existingSkills = [] 
     }
   };
 
+  const toggleCategory = (cat: string) => {
+    setExpandedCategories(prev => ({ ...prev, [cat]: !prev[cat] }));
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl bg-bg-card border-border text-text-main p-0 overflow-hidden rounded-xl flex flex-col max-h-[90vh]">
+      <DialogContent className="max-w-2xl bg-bg-card border-border text-text-main p-0 overflow-hidden rounded-xl flex flex-col max-h-[90vh]">
         <DialogHeader className="p-5 border-b border-border/60 flex flex-row items-center justify-between">
           <div className="flex items-center gap-2">
             {showCustomForm && (
@@ -163,7 +237,7 @@ export default function AddSkillModal({ open, onOpenChange, existingSkills = [] 
               </Button>
             )}
             <DialogTitle className="text-sm font-semibold">
-              {showCustomForm ? "Add Custom Skill" : "Add Skills from Catalog"}
+              {showCustomForm ? "Add Custom Skill" : "Add Skills to Career OS"}
             </DialogTitle>
           </div>
           {!showCustomForm && (
@@ -257,53 +331,162 @@ export default function AddSkillModal({ open, onOpenChange, existingSkills = [] 
               <Input
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Search catalog skills (e.g. spring, docker)..."
+                placeholder="Search catalog skills (e.g. spring, react, docker)..."
                 className="pl-10 bg-bg-main border-border text-text-main h-10 text-xs font-semibold focus:border-primary/65"
               />
             </div>
 
-            {/* Scrollable list of categories and skills */}
-            <div className="flex-1 overflow-y-auto p-5 space-y-5">
-              {Object.entries(groupedSkills).map(([cat, skills]) => {
-                if (skills.length === 0) return null;
-                return (
-                  <div key={cat} className="space-y-2">
-                    <h4 className="text-[10px] font-bold text-text-dim uppercase tracking-wider">
-                      {CATEGORY_LABELS[cat]}
-                    </h4>
-                    <div className="flex flex-wrap gap-1.5">
-                      {skills.map(s => {
-                        const isAdded = existingNamesSet.has(s.name.toLowerCase().trim());
-                        const isSelected = selectedSkills.some(item => item.name === s.name);
-
-                        return (
-                          <button
-                            key={s.name}
-                            type="button"
-                            disabled={isAdded}
-                            onClick={() => toggleSkillSelection(s)}
-                            className={`flex items-center gap-1 px-3 py-1.5 text-xs font-semibold border rounded-lg transition-all cursor-pointer ${
-                              isAdded
-                                ? "bg-bg-elevated/20 border-border/40 text-text-dim/60 cursor-not-allowed"
-                                : isSelected
-                                ? "bg-primary/10 border-primary text-primary"
-                                : "bg-bg-main border-border text-text-muted hover:border-text-muted/40 hover:text-text-main"
-                            }`}
-                          >
-                            {isSelected && <Check className="w-3 h-3 shrink-0" />}
-                            <span>{s.name}</span>
-                            {isAdded && (
-                              <span className="ml-1 text-[8px] font-bold uppercase tracking-wider text-text-dim bg-bg-elevated px-1.5 py-0.5 rounded-full shrink-0">
-                                Added
-                              </span>
-                            )}
-                          </button>
-                        );
-                      })}
-                    </div>
+            {/* Scrollable Main Area */}
+            <div className="flex-1 overflow-y-auto p-5 space-y-6">
+              
+              {/* 1. Quick Start Tracks */}
+              {searchQuery === "" && (
+                <div className="space-y-2">
+                  <h4 className="text-[10px] font-bold text-text-dim uppercase tracking-wider">Choose a Track (Quick Start)</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {CAREER_TRACKS.map(track => (
+                      <button
+                        key={track.name}
+                        type="button"
+                        onClick={() => applyTrackPreset(track.skills)}
+                        className="px-3 py-1.5 text-[11px] font-bold border border-primary/20 bg-primary/5 hover:bg-primary/10 text-primary rounded-lg transition-colors cursor-pointer text-left"
+                      >
+                        <div>{track.name}</div>
+                        <div className="text-[9px] text-primary/75 font-semibold mt-0.5">{track.skills.length} Skills</div>
+                      </button>
+                    ))}
                   </div>
-                );
-              })}
+                </div>
+              )}
+
+              {/* 2. Popular Skills */}
+              {searchQuery === "" && (
+                <div className="space-y-2">
+                  <h4 className="text-[10px] font-bold text-text-dim uppercase tracking-wider flex items-center gap-1">
+                    <span>⭐ Popular Skills</span>
+                  </h4>
+                  <div className="flex flex-wrap gap-1.5">
+                    {POPULAR_SKILLS.map(name => {
+                      const catalogItem = SKILL_CATALOG.find(s => s.name === name);
+                      if (!catalogItem) return null;
+                      const isAdded = existingNamesSet.has(name.toLowerCase());
+                      const isSelected = selectedSkills.some(s => s.name === name);
+                      return (
+                        <button
+                          key={name}
+                          type="button"
+                          disabled={isAdded}
+                          onClick={() => toggleSkillSelection(catalogItem)}
+                          className={`flex items-center gap-1 px-3 py-1.5 text-xs font-semibold border rounded-lg transition-all cursor-pointer ${
+                            isAdded
+                              ? "bg-green-500/10 border-green-500/25 text-green-500/80 cursor-not-allowed"
+                              : isSelected
+                              ? "bg-primary/10 border-primary text-primary"
+                              : "bg-bg-main border-border text-text-muted hover:border-text-muted/40 hover:text-text-main"
+                          }`}
+                        >
+                          {isSelected && <Check className="w-3 h-3 shrink-0" />}
+                          <span>{name}</span>
+                          {isAdded && (
+                            <span className="ml-1 text-[8px] font-bold uppercase tracking-wider text-green-500 bg-green-500/10 px-1.5 py-0.5 rounded-full shrink-0">
+                              ✓ Added
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* 3. Smart Suggestions */}
+              {suggestions.length > 0 && searchQuery === "" && (
+                <div className="space-y-2 p-3 bg-primary/5 border border-primary/10 rounded-xl animate-in fade-in duration-200">
+                  <h4 className="text-[10px] font-bold text-primary flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>Recommended for You</span>
+                  </h4>
+                  <div className="flex flex-wrap gap-1.5">
+                    {suggestions.map(s => (
+                      <button
+                        key={s.name}
+                        type="button"
+                        onClick={() => toggleSkillSelection(s)}
+                        className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold border border-primary/20 bg-bg-card hover:bg-primary/10 text-text-main rounded-lg transition-colors cursor-pointer"
+                      >
+                        <Plus className="w-3 h-3 text-primary" />
+                        <span>{s.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 4. Collapsible Domain Categories */}
+              <div className="space-y-3">
+                <h4 className="text-[10px] font-bold text-text-dim uppercase tracking-wider">
+                  {searchQuery !== "" ? "Search Results" : "All Skills (Browse)"}
+                </h4>
+                
+                {Object.entries(groupedSkills).map(([cat, skills]) => {
+                  if (skills.length === 0) return null;
+                  const isExpanded = expandedCategories[cat] || searchQuery !== "";
+                  const count = skills.length;
+
+                  return (
+                    <div key={cat} className="border border-border/50 rounded-xl overflow-hidden bg-bg-main/30">
+                      <button
+                        type="button"
+                        onClick={() => toggleCategory(cat)}
+                        className="w-full flex items-center justify-between p-3.5 bg-bg-card/75 border-b border-border/30 hover:bg-bg-elevated/40 transition-colors text-left cursor-pointer"
+                      >
+                        <div className="flex items-center gap-1.5">
+                          {isExpanded ? <ChevronDown className="w-4 h-4 text-text-dim" /> : <ChevronRight className="w-4 h-4 text-text-dim" />}
+                          <span className="text-xs font-bold text-text-main">
+                            {CATEGORY_LABELS[cat]}
+                          </span>
+                        </div>
+                        <span className="text-[10px] font-extrabold text-text-dim bg-bg-elevated px-2 py-0.5 rounded-full">
+                          {count}
+                        </span>
+                      </button>
+
+                      {isExpanded && (
+                        <div className="p-4 flex flex-wrap gap-1.5 bg-bg-card/25 transition-all">
+                          {skills.map(s => {
+                            const isAdded = existingNamesSet.has(s.name.toLowerCase().trim());
+                            const isSelected = selectedSkills.some(item => item.name === s.name);
+
+                            return (
+                              <button
+                                key={s.name}
+                                type="button"
+                                disabled={isAdded}
+                                onClick={() => toggleSkillSelection(s)}
+                                className={`flex items-center gap-1 px-3 py-1.5 text-xs font-semibold border rounded-lg transition-all cursor-pointer ${
+                                  isAdded
+                                    ? "bg-green-500/10 border-green-500/25 text-green-500/80 cursor-not-allowed"
+                                    : isSelected
+                                    ? "bg-primary/10 border-primary text-primary"
+                                    : "bg-bg-main border-border text-text-muted hover:border-text-muted/40 hover:text-text-main"
+                                }`}
+                              >
+                                {isSelected && <Check className="w-3 h-3 shrink-0" />}
+                                <span>{s.name}</span>
+                                {isAdded && (
+                                  <span className="ml-1 text-[8px] font-bold uppercase tracking-wider text-green-500 bg-green-500/10 px-1.5 py-0.5 rounded-full shrink-0">
+                                    ✓ Added
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
 
             {/* Footer containing level selection and batch save actions */}
@@ -345,7 +528,7 @@ export default function AddSkillModal({ open, onOpenChange, existingSkills = [] 
                   className="bg-primary hover:bg-primary-hover text-white text-xs font-semibold h-9 cursor-pointer"
                 >
                   {isAdding && <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />}
-                  Add Selected Skills ({selectedSkills.length})
+                  Save {selectedSkills.length > 0 ? `${selectedSkills.length} Skill(s)` : "Skills"}
                 </Button>
               </div>
             </div>

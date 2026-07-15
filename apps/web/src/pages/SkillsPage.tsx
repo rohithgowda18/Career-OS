@@ -36,11 +36,11 @@ export default function SkillsPage() {
 
   const stats = {
     total: skills.length,
-    languages: skills.filter((s: any) => s.category === "PROGRAMMING_LANGUAGE").length,
-    frameworks: skills.filter((s: any) => s.category === "FRAMEWORK").length,
+    backend: skills.filter((s: any) => s.category === "BACKEND").length,
+    frontend: skills.filter((s: any) => s.category === "FRONTEND").length,
     databases: skills.filter((s: any) => s.category === "DATABASE").length,
-    tools: skills.filter((s: any) => s.category === "TOOL").length,
-    concepts: skills.filter((s: any) => s.category === "CONCEPT").length,
+    devops: skills.filter((s: any) => s.category === "DEVOPS").length,
+    cs: skills.filter((s: any) => s.category === "COMPUTER_SCIENCE").length,
   };
 
   return (
@@ -67,11 +67,11 @@ export default function SkillsPage() {
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           {[
             { label: "Total Skills", value: stats.total, icon: <Award className="w-4 h-4 text-primary" /> },
-            { label: "Programming", value: stats.languages, icon: <Code className="w-4 h-4 text-success" /> },
-            { label: "Frameworks", value: stats.frameworks, icon: <Layers className="w-4 h-4 text-info" /> },
+            { label: "Backend", value: stats.backend, icon: <Code className="w-4 h-4 text-success" /> },
+            { label: "Frontend", value: stats.frontend, icon: <Layers className="w-4 h-4 text-info" /> },
             { label: "Databases", value: stats.databases, icon: <Database className="w-4 h-4 text-warning" /> },
-            { label: "Tools", value: stats.tools, icon: <Wrench className="w-4 h-4 text-text-muted" /> },
-            { label: "Concepts", value: stats.concepts, icon: <BookOpen className="w-4 h-4 text-accent" /> },
+            { label: "DevOps", value: stats.devops, icon: <Wrench className="w-4 h-4 text-text-muted" /> },
+            { label: "CS Fundamentals", value: stats.cs, icon: <BookOpen className="w-4 h-4 text-accent" /> },
           ].map(item => (
             <div key={item.label} className="bg-bg-card border border-border rounded-xl p-4 flex flex-col justify-between shadow-xs">
               <div className="flex items-center justify-between mb-2">

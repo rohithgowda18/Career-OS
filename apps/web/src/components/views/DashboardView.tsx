@@ -35,6 +35,7 @@ export default function DashboardView() {
 
   // Username display
   const userName = useMemo(() => {
+    if (user?.displayName && user.displayName.trim() !== "") return user.displayName;
     if (!user?.email) return "Builder";
     const prefix = user.email.split("@")[0];
     return prefix.charAt(0).toUpperCase() + prefix.slice(1);

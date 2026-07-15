@@ -15,12 +15,19 @@ export default function OAuthSuccessPage() {
     const token = params.get("token");
 
     if (token) {
-      setToken(token);
-      toast.success("OAuth Authentication Successful");
-      // Invalidate queries to refresh user state
-      queryClient.invalidateQueries({ queryKey: ["auth", "me"] }).then(() => {
-        setLocation("/dashboard");
-      });
+      if (window.opener) {
+        console.log("[Debug OAuth] Detected parent window, posting OAUTH_SUCCESS message and closing popup.");
+        window.opener.postMessage({ type: "OAUTH_SUCCESS", token }, window.location.origin);
+        window.close();
+      } else {
+        console.log("[Debug OAuth] No parent window found, redirecting directly to /dashboard.");
+        setToken(token);
+        toast.success("OAuth Authentication Successful");
+        // Invalidate queries to refresh user state
+        queryClient.invalidateQueries({ queryKey: ["auth", "me"] }).then(() => {
+          setLocation("/dashboard");
+        });
+      }
     } else {
       toast.error("Authentication failed: No token received");
       setLocation("/login");

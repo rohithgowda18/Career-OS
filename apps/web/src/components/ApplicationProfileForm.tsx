@@ -7,6 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { userApi } from "@/lib/api/userApi";
+import { authApi } from "@/lib/api/authApi";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { 
   Loader2, 
@@ -24,6 +26,9 @@ import {
 export default function ApplicationProfileForm() {
   const { currentTheme, setTheme } = useTheme();
   const queryClient = useQueryClient();
+  const { user, refresh } = useAuth();
+  const [displayName, setDisplayName] = useState("");
+
   const { data: profile, isLoading } = useQuery({
     queryKey: ["user", "profile"],
     queryFn: userApi.getProfile,
@@ -55,6 +60,12 @@ export default function ApplicationProfileForm() {
     }
   }, [profile]);
 
+  useEffect(() => {
+    if (user) {
+      setDisplayName(user.displayName || "");
+    }
+  }, [user]);
+
   const updateMutation = useMutation({
     mutationFn: userApi.updateProfile,
     onSuccess: () => {
@@ -65,9 +76,16 @@ export default function ApplicationProfileForm() {
   });
 
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     updateMutation.mutate(formData);
+    
+    try {
+      await authApi.updateDisplayName(displayName);
+      refresh();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to update display name");
+    }
   };
 
   if (isLoading) {
@@ -90,7 +108,9 @@ export default function ApplicationProfileForm() {
                 <User className="w-10 h-10 text-primary" />
               </div>
             </div>
-            <h2 className="text-sm font-semibold text-text-main tracking-tight">Account Settings</h2>
+            <h2 className="text-sm font-semibold text-text-main tracking-tight">
+              {user?.displayName && user.displayName.trim() !== "" ? user.displayName : user?.email?.split('@')[0]}
+            </h2>
             <p className="text-[10px] text-text-dim uppercase tracking-wider mt-1">{profile?.email}</p>
           </div>
 
@@ -115,7 +135,17 @@ export default function ApplicationProfileForm() {
               <h3 className="text-xs font-semibold uppercase tracking-wider text-text-dim border-b border-border/40 pb-2 flex items-center gap-2">
                 <User className="w-3.5 h-3.5" /> Personal Information
               </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="displayName" className="text-[11px] font-semibold text-text-muted">Display Name</Label>
+                  <Input
+                    id="displayName"
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    placeholder="John Doe"
+                    className="bg-bg-elevated border-border text-text-main h-10 text-xs font-semibold focus:border-primary/65"
+                  />
+                </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="email" className="text-[11px] font-semibold text-text-muted">Email Address</Label>
                   <Input

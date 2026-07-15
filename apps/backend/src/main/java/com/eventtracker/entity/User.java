@@ -38,6 +38,9 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private String role = "USER";
 
+    @Column(name = "display_name")
+    private String displayName;
+
     @JsonIgnore
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude

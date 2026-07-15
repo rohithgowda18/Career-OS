@@ -41,7 +41,8 @@ public class AuthController {
         try {
             User user = userService.createUser(
                     request.getEmail(),
-                    request.getPassword()
+                    request.getPassword(),
+                    request.getDisplayName()
             );
 
             String token = tokenProvider.generateToken(user.getId(), user.getEmail());
@@ -58,6 +59,24 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(errorBody(HttpStatus.INTERNAL_SERVER_ERROR, "Registration failed"));
         }
+    }
+
+    @PutMapping("/me/display-name")
+    @Operation(operationId = "updateDisplayName", summary = "Update display name of the current user")
+    public ResponseEntity<?> updateDisplayName(@RequestBody Map<String, String> body) {
+        String displayName = body.get("displayName");
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.isAuthenticated()) {
+            Object principal = authentication.getPrincipal();
+            if (principal instanceof User) {
+                User user = (User) principal;
+                User updatedUser = userService.updateDisplayName(user.getId(), displayName);
+                // Also update display name on current security context principal if they are cached
+                user.setDisplayName(displayName);
+                return ResponseEntity.ok(userService.convertToDTO(updatedUser));
+            }
+        }
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
     }
 
     @PostMapping("/login")

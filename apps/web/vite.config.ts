@@ -16,7 +16,7 @@ export default defineConfig({
     VitePWA({
       registerType: "autoUpdate",
       devOptions: {
-        enabled: true,
+        enabled: false,
         type: "module",
       },
       workbox: {
@@ -25,7 +25,7 @@ export default defineConfig({
       manifest: {
         name: "Career OS",
         short_name: "Career OS",
-        description: "Track and manage your event applications and placements with ease",
+        description: "Your personal career management workspace for applications, placements, skills and interview preparation.",
         theme_color: "#0f172a",
         background_color: "#020617",
         display: "standalone",

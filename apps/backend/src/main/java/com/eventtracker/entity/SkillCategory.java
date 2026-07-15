@@ -1,12 +1,14 @@
 package com.eventtracker.entity;
 
 public enum SkillCategory {
-    PROGRAMMING_LANGUAGE,
-    FRAMEWORK,
+    BACKEND,
+    FRONTEND,
     DATABASE,
-    TOOL,
+    DEVOPS,
     CLOUD,
     COMPUTER_SCIENCE,
-    CONCEPT,
+    AI_ML,
+    MOBILE,
+    TESTING,
     OTHER
 }

@@ -36,8 +36,16 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
         }
 
         final String finalEmail = email;
+        String name = oauthUser.getAttribute("name");
+
         User user = userService.findByEmail(finalEmail)
-                .orElseGet(() -> userService.createUser(finalEmail, "oauth-user"));
+                .map(u -> {
+                    if ((u.getDisplayName() == null || u.getDisplayName().isBlank()) && name != null) {
+                        return userService.updateDisplayName(u.getId(), name);
+                    }
+                    return u;
+                })
+                .orElseGet(() -> userService.createUser(finalEmail, "oauth-user", name));
 
         String token = jwtTokenProvider.generateToken(user.getId(), user.getEmail());
 

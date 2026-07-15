@@ -8,6 +8,7 @@ export type LoginPayload = {
 export type RegisterPayload = {
   email: string;
   password: string;
+  displayName?: string;
 };
 
 export const authApi = {
@@ -24,6 +25,10 @@ export const authApi = {
     if (res.data.token) {
       localStorage.setItem('token', res.data.token);
     }
+    return res.data;
+  },
+  updateDisplayName: async (displayName: string) => {
+    const res = await restClient.put('/api/auth/me/display-name', { displayName });
     return res.data;
   },
 };
