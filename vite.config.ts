@@ -17,9 +17,9 @@ const plugins = [
   VitePWA({
     registerType: "autoUpdate",
     manifest: {
-      name: "Event Application Tracker",
-      short_name: "Event Tracker",
-      description: "Track and manage your event applications with ease",
+      name: "Career OS",
+      short_name: "Career OS",
+      description: "Your personal career management workspace for applications, placements, skills and interview preparation.",
       theme_color: "#000000",
       background_color: "#ffffff",
       display: "standalone",
@@ -69,22 +69,9 @@ const plugins = [
     },
     workbox: {
       globPatterns: ["**/*.{js,css,html,ico,png,svg,webp,woff,woff2,ttf,eot}"],
-      runtimeCaching: [
-        {
-          urlPattern: /^https:\/\/api\./i,
-          handler: "NetworkFirst",
-          options: {
-            cacheName: "api-cache",
-            expiration: {
-              maxEntries: 50,
-              maxAgeSeconds: 300, // 5 minutes
-            },
-          },
-        },
-      ],
     },
     devOptions: {
-      enabled: true,
+      enabled: false,
       navigateFallback: "index.html",
       suppressWarnings: true,
     },
