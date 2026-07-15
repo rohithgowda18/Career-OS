@@ -1,9 +1,10 @@
-import React, { Suspense } from "react";
+import React, { Suspense, useEffect } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { Route, Switch } from "wouter";
+import { Route, Switch, useLocation } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { AuthProvider, useAuth } from "./hooks/useAuth";
 import { Loader2 } from "lucide-react";
 
 // Lazy load route pages to improve load performance
@@ -16,6 +17,39 @@ const AddEventPage = React.lazy(() => import("./pages/AddEventPage"));
 const NotFound = React.lazy(() => import("./pages/NotFound"));
 
 function Router() {
+  const { isAuthenticated, loading } = useAuth();
+  const [location, setLocation] = useLocation();
+
+  useEffect(() => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    console.log(`[Debug Auth] Router Route Guard - path: "${location}", token in localStorage: ${token ? "YES" : "NO"}, auth loading: ${loading}, isAuthenticated: ${isAuthenticated}`);
+    
+    if (loading) {
+      console.log("[Debug Auth] Route Guard - Auth is initializing, holding navigation decisions.");
+      return;
+    }
+
+    if (isAuthenticated) {
+      if (location === "/" || location === "/login") {
+        console.log(`[Debug Auth] Route Guard - Authenticated user at "${location}". Redirecting directly to "/dashboard".`);
+        setLocation("/dashboard");
+      }
+    } else {
+      if (location === "/dashboard" || location === "/placements" || location === "/add") {
+        console.log(`[Debug Auth] Route Guard - Unauthenticated user trying to access protected "${location}". Redirecting to "/login".`);
+        setLocation("/login");
+      }
+    }
+  }, [location, isAuthenticated, loading, setLocation]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-bg-main">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
     <Suspense
       fallback={
@@ -42,10 +76,12 @@ function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="glass">
-        <TooltipProvider>
-          <Toaster />
-          <Router />
-        </TooltipProvider>
+        <AuthProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Router />
+          </TooltipProvider>
+        </AuthProvider>
       </ThemeProvider>
     </ErrorBoundary>
   );

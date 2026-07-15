@@ -73,3 +73,17 @@ UPDATE placements SET status = 'APPLIED' WHERE status = 'SAVED';
 ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS email_alerts BOOLEAN DEFAULT TRUE NOT NULL;
 ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS weekly_digest BOOLEAN DEFAULT FALSE NOT NULL;
 
+-- SKILLS (New feature)
+CREATE TABLE IF NOT EXISTS skills (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    category VARCHAR(50) NOT NULL,
+    level VARCHAR(50) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_skills_user_id ON skills(user_id);
+CREATE UNIQUE INDEX IF NOT EXISTS unique_user_skill ON skills (user_id, name);
+

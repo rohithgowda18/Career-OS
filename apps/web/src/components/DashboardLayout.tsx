@@ -22,7 +22,8 @@ import {
   Command,
   Plus,
   Palette,
-  RefreshCw
+  RefreshCw,
+  Award
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -42,7 +43,7 @@ import AddApplicationModal from "@/components/AddApplicationModal";
 import AddPlacementModal from "@/components/AddPlacementModal";
 
 interface DashboardLayoutProps {
-  activeTab: "dashboard" | "kanban" | "placements" | "calendar" | "analytics" | "profile";
+  activeTab: "dashboard" | "kanban" | "placements" | "skills" | "calendar" | "analytics" | "profile";
   children: React.ReactNode;
 }
 
@@ -297,6 +298,7 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
     { id: "dashboard", label: "Home", icon: LayoutDashboard, path: "/dashboard?view=dashboard" },
     { id: "kanban", label: "Applications", icon: Layers, path: "/dashboard?view=kanban" },
     { id: "placements", label: "Placements", icon: Briefcase, path: "/placements" },
+    { id: "skills", label: "My Skills", icon: Award, path: "/dashboard?view=skills" },
     { id: "calendar", label: "Calendar", icon: CalendarIcon, path: "/dashboard?view=calendar" },
     { id: "profile", label: "Profile", icon: UserCircle, path: "/dashboard?view=profile" },
   ] as const;
@@ -328,6 +330,7 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
     { label: "Go to Home", action: () => setLocation("/dashboard?view=dashboard") },
     { label: "Go to Applications", action: () => setLocation("/dashboard?view=kanban") },
     { label: "Go to Placements", action: () => setLocation("/placements") },
+    { label: "Go to My Skills", action: () => setLocation("/dashboard?view=skills") },
     { label: "Go to Calendar", action: () => setLocation("/dashboard?view=calendar") },
     { label: "Go to Profile Settings", action: () => setLocation("/dashboard?view=profile") },
   ];

@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Terminal, Loader2, ArrowLeft, Key, Mail, Eye, EyeOff } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { authApi } from "@/lib/api/authApi";
+import { useAuth } from "@/hooks/useAuth";
 import { BACKEND_URL } from "@/lib/restClient";
 import { toast } from "sonner";
 
@@ -17,6 +18,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
 
   const queryClient = useQueryClient();
+  const { setToken } = useAuth();
   const searchParams = new URLSearchParams(window.location.search);
   const redirectPath = searchParams.get("redirect") || "/dashboard";
 
@@ -24,7 +26,7 @@ export default function LoginPage() {
     mutationFn: authApi.login,
     onSuccess: async (data: any) => {
       if (data.token) {
-        localStorage.setItem("token", data.token);
+        setToken(data.token);
       }
       toast.success("Signed in successfully");
       await queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
@@ -35,12 +37,12 @@ export default function LoginPage() {
 
   const registerMutation = useMutation({
     mutationFn: authApi.register,
-    onSuccess: (data: any) => {
+    onSuccess: async (data: any) => {
       if (data.token) {
-        localStorage.setItem("token", data.token);
+        setToken(data.token);
       }
       toast.success("Account created successfully");
-      queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
+      await queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
       setLocation(redirectPath);
     },
     onError: (error: any) => toast.error(error.message || "Registration failed"),

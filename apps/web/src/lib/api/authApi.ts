@@ -1,4 +1,4 @@
-import restClient, { saveTokenToIndexedDB } from '../restClient';
+import restClient from '../restClient';
 
 export type LoginPayload = {
   email: string;
@@ -16,9 +16,6 @@ export const authApi = {
     const res = await restClient.post('/api/auth/login', data);
     if (res.data.token) {
       localStorage.setItem('token', res.data.token);
-      const secureFlag = typeof window !== 'undefined' && window.location.protocol === 'https:' ? '; secure' : '';
-      document.cookie = `token=${res.data.token}; max-age=1296000; path=/; samesite=lax${secureFlag}`;
-      await saveTokenToIndexedDB(res.data.token);
     }
     return res.data;
   },
@@ -26,9 +23,6 @@ export const authApi = {
     const res = await restClient.post('/api/auth/register', data);
     if (res.data.token) {
       localStorage.setItem('token', res.data.token);
-      const secureFlag = typeof window !== 'undefined' && window.location.protocol === 'https:' ? '; secure' : '';
-      document.cookie = `token=${res.data.token}; max-age=1296000; path=/; samesite=lax${secureFlag}`;
-      await saveTokenToIndexedDB(res.data.token);
     }
     return res.data;
   },
