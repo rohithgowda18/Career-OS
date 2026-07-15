@@ -20,13 +20,9 @@ export default function OAuthSuccessPage() {
         window.opener.postMessage({ type: "OAUTH_SUCCESS", token }, window.location.origin);
         window.close();
       } else {
-        console.log("[Debug OAuth] No parent window found, redirecting directly to /dashboard.");
-        setToken(token);
-        toast.success("OAuth Authentication Successful");
-        // Invalidate queries to refresh user state
-        queryClient.invalidateQueries({ queryKey: ["auth", "me"] }).then(() => {
-          setLocation("/dashboard");
-        });
+        console.error("[Debug OAuth] No parent window found. Popup communication failed.");
+        toast.error("OAuth authentication failed: parent window could not be reached.");
+        setLocation("/login?oauth_error=no_parent");
       }
     } else {
       toast.error("Authentication failed: No token received");

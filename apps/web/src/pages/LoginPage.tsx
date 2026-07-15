@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { authApi } from "@/lib/api/authApi";
 import { useAuth } from "@/hooks/useAuth";
 import { BACKEND_URL } from "@/lib/restClient";
 import { toast } from "sonner";
+import axios from "axios";
 
 export default function LoginPage() {
   const [, setLocation] = useLocation();
@@ -17,14 +18,55 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [isWakingBackend, setIsWakingBackend] = useState(false);
 
   const queryClient = useQueryClient();
   const { setToken } = useAuth();
   const searchParams = new URLSearchParams(window.location.search);
   const redirectPath = searchParams.get("redirect") || "/dashboard";
+  const oauthError = searchParams.get("oauth_error");
+
+  useEffect(() => {
+    if (oauthError === "no_parent") {
+      toast.error("Social login failed because the popup window could not connect back to the application. Please try again manually.");
+    }
+  }, [oauthError]);
+
+  const handleAuthWithRetry = async (authFn: () => Promise<any>) => {
+    try {
+      return await authFn();
+    } catch (error: any) {
+      const isNetworkError = error.code === 'ERR_NETWORK' || error.message?.includes('Unable to reach the API') || (axios.isAxiosError(error) && !error.response);
+      if (isNetworkError) {
+        console.log("[Debug Auth] Network error encountered. Checking backend health to wake it up...");
+        setIsWakingBackend(true);
+        toast.info("Starting backend, please wait...");
+        
+        let retries = 0;
+        const maxRetries = 12; // 12 * 5 = 60 seconds
+        while (retries < maxRetries) {
+          try {
+            await axios.get(`${BACKEND_URL}/actuator/health`, { timeout: 8000 });
+            console.log("[Debug Auth] Backend is now awake and healthy!");
+            break;
+          } catch (pingErr) {
+            console.log(`[Debug Auth] Ping backend attempt ${retries + 1} failed, waiting...`);
+            retries++;
+            await new Promise(resolve => setTimeout(resolve, 5000));
+          }
+        }
+        setIsWakingBackend(false);
+        // Retry the original request once
+        return await authFn();
+      }
+      throw error;
+    }
+  };
 
   const loginMutation = useMutation({
-    mutationFn: authApi.login,
+    mutationFn: async (payload: any) => {
+      return handleAuthWithRetry(() => authApi.login(payload));
+    },
     onSuccess: async (data: any) => {
       if (data.token) {
         setToken(data.token);
@@ -33,11 +75,16 @@ export default function LoginPage() {
       await queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
       setLocation(redirectPath);
     },
-    onError: (error: any) => toast.error(error.message || "Invalid email or password"),
+    onError: (error: any) => {
+      setIsWakingBackend(false);
+      toast.error(error.message || "Invalid email or password");
+    },
   });
 
   const registerMutation = useMutation({
-    mutationFn: authApi.register,
+    mutationFn: async (payload: any) => {
+      return handleAuthWithRetry(() => authApi.register(payload));
+    },
     onSuccess: async (data: any) => {
       if (data.token) {
         setToken(data.token);
@@ -46,10 +93,13 @@ export default function LoginPage() {
       await queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
       setLocation(redirectPath);
     },
-    onError: (error: any) => toast.error(error.message || "Registration failed"),
+    onError: (error: any) => {
+      setIsWakingBackend(false);
+      toast.error(error.message || "Registration failed");
+    },
   });
 
-  const isLoading = loginMutation.isPending || registerMutation.isPending;
+  const isLoading = loginMutation.isPending || registerMutation.isPending || isWakingBackend;
 
   const handleOAuthLogin = (provider: "google" | "github") => {
     const url = `${BACKEND_URL}/oauth2/authorization/${provider}`;
@@ -65,8 +115,8 @@ export default function LoginPage() {
     );
 
     if (!popup || popup.closed || typeof popup.closed === 'undefined') {
-      console.warn("[Debug OAuth] Popup blocked or unsupported, falling back to direct redirect.");
-      window.location.href = url;
+      console.warn("[Debug OAuth] Popup blocked or unsupported.");
+      toast.error("OAuth popup was blocked by the browser. Please allow popups for this site and try again.");
       return;
     }
 
@@ -201,7 +251,9 @@ export default function LoginPage() {
 
             {isLoading && (
               <p className="text-[10px] text-text-dim text-center mt-2.5 animate-pulse font-medium">
-                Starting backend... This may take up to 60 seconds on the first request.
+                {isWakingBackend 
+                  ? "Starting backend, please wait..." 
+                  : "Starting backend... This may take up to 60 seconds on the first request."}
               </p>
             )}
           </form>

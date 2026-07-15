@@ -48,6 +48,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [token, meQuery.isSuccess, meQuery.isError, meQuery.status]);
 
+
   const setToken = useCallback((newToken: string | null) => {
     console.log("[Debug Auth] setToken called - new token present:", newToken ? "YES" : "NO");
     if (newToken) {

@@ -33,7 +33,7 @@ export const skillsApi = {
     };
   },
   create: async (data: SkillData) => (await restClient.post('/api/skills', data)).data,
-  update: async ({ id, ...data }: { id: string | number; name: string; category: string; level: string }) => 
+  update: async (id: string | number, data: { name: string; category: string; level: string }) => 
     (await restClient.put(`/api/skills/${id}`, data)).data,
   delete: async (id: string | number) => (await restClient.delete(`/api/skills/${id}`)).data,
 };

@@ -22,34 +22,6 @@ export default defineConfig({
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,webmanifest}"],
       },
-      manifest: {
-        name: "Career OS",
-        short_name: "Career OS",
-        description: "Your personal career management workspace for applications, placements, skills and interview preparation.",
-        theme_color: "#0f172a",
-        background_color: "#020617",
-        display: "standalone",
-        scope: "/",
-        start_url: "/",
-        icons: [
-          {
-            src: "icon-192.png",
-            sizes: "192x192",
-            type: "image/png"
-          },
-          {
-            src: "icon-512.png",
-            sizes: "512x512",
-            type: "image/png"
-          },
-          {
-            src: "icon-maskable.png",
-            sizes: "512x512",
-            type: "image/png",
-            purpose: "maskable"
-          }
-        ]
-      },
     }),
   ],
   resolve: {
