@@ -23,7 +23,6 @@ public class PlacementDTO {
     private String stipend;
     private String ctc;
 
-    @org.hibernate.validator.constraints.URL(message = "Invalid application link URL")
     private String applicationLink;
 
     private LocalDateTime assessmentDate;

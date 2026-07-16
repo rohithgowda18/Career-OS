@@ -99,7 +99,7 @@ All endpoints (except login, register, and health checks) require the header `Au
 | **POST** | `/api/placements` | Create a placement entry | User JWT |
 | **PUT** | `/api/placements/{id}` | Update a placement entry | User JWT |
 | **POST** | `/api/placements/extract` | Extract placement data from text using Gemini | User JWT |
-| **POST** | `/api/import/csv` | Batch import data from a CSV file | User JWT |
+| **POST** | `/api/import/text` | Classify and import unstructured content using Gemini AI | User JWT |
 | **GET** | `/api/analytics/dashboard` | Fetch compiled analytics and Conversion Yields | User JWT |
 | **GET** | `/actuator/health` | Service status checks (used for cold-start wakeups) | Public |
 | **GET** | `/actuator/**` | System metrics & debugging logs | Admin Only |

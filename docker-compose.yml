@@ -7,7 +7,7 @@ services:
     environment:
       POSTGRES_DB: event_tracker_db
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-Rohk_1265}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     ports:
       - "5432:5432"
     volumes:
@@ -32,17 +32,17 @@ services:
       - SPRING_PROFILES_ACTIVE=prod
       - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/event_tracker_db
       - SPRING_DATASOURCE_USERNAME=postgres
-      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD:-Rohk_1265}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5173}
-      - JWT_SECRET=${JWT_SECRET:-this-is-a-very-long-secret-key-that-is-at-least-64-characters-long-to-satisfy-hs512-requirements}
-      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-874558354883-q9e083e1qd4gaeeib4cctam54bv8dqq1.apps.googleusercontent.com}
-      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-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}
-      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID:-Ov23liSfLmQLQxNUCdjY}
-      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET:-5f409e362b80754faac7d38066292136a58f6778}
+      - JWT_SECRET=${JWT_SECRET}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID}
+      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET}
       - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-http://localhost:5173}
-      - MAIL_USERNAME=${MAIL_USERNAME:-rohithgowdak18@gmail.com}
-      - MAIL_PASSWORD=${MAIL_PASSWORD:-yhhsawasomljpvqw}
-      - GEMINI_API_KEY=${GEMINI_API_KEY:-AQ.Ab8RN6IriS7S7jYvrYeFFX6wn9MbEL1033gsN6S5nV9E5DxuFw}
+      - MAIL_USERNAME=${MAIL_USERNAME}
+      - MAIL_PASSWORD=${MAIL_PASSWORD}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
       - GEMINI_API_MODEL=${GEMINI_API_MODEL:-gemini-2.5-flash}
 
 volumes:

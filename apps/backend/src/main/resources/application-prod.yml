@@ -14,4 +14,4 @@ spring:
     show-sql: false
 
 app:
-  frontend-url: ${FRONTEND_URL:https://eventpulse-phi.vercel.app}
+  frontend-url: ${FRONTEND_URL:https://career-os.rohith.app}

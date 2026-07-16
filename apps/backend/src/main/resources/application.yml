@@ -56,14 +56,14 @@ server:
 
 app:
   jwt:
-    secret: ${APP_JWT_SECRET:${JWT_SECRET:this-is-a-very-long-secret-key-that-is-at-least-64-characters-long-to-satisfy-hs512-requirements}}
+    secret: ${APP_JWT_SECRET:${JWT_SECRET}}
     expiration: 1296000000
 
   cors:
-    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:${CORS_ALLOWED_ORIGINS:http://localhost:5173}}
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:${CORS_ALLOWED_ORIGINS:http://localhost:5173,https://career-os.rohith.app}}
 
   oauth2:
-    redirect-url: ${OAUTH2_REDIRECT_URL:${FRONTEND_URL:http://localhost:5173}/oauth-success}
+    redirect-url: ${OAUTH2_REDIRECT_URL:${FRONTEND_URL:https://career-os.rohith.app}/oauth-success}
 
 
 
