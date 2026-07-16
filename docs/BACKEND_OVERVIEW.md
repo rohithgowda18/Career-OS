@@ -1,6 +1,6 @@
 # Backend Services & APIs Guide
 
-This document describes the Spring Boot architecture, service layers, and configuration details for the OMP backend.
+This document describes the Spring Boot architecture, service layers, and configuration details for the Career OS backend.
 
 ---
 
@@ -15,16 +15,17 @@ This document describes the Spring Boot architecture, service layers, and config
 ---
 
 ## 📂 2. Directory and Package Structure
-The backend codebase lives under `apps/backend/src/main/java/com/eventtracker/`:
+The backend codebase lives under `apps/backend/src/main/java/com/eventtracker//`:
 ```
 com.eventtracker/
 ├── controller/         # REST API Handlers exposing endpoints
 │   ├── ApplicationController.java   # Applications CRUD & text ingestion
-│   ├── AuthController.java          # Login, Registration, & Session retrieval
+│   ├── AuthController.java          # Login, Registration, & Session retrieval (w/ Display Name updates)
 │   ├── PlacementController.java     # Placements CRUD & AI extraction endpoints
+│   ├── SkillController.java         # Skills CRUD endpoints
 │   ├── ImportController.java        # Process raw CSV data imports
 ├── dto/                # Data Transfer Objects sanitizing API payloads
-├── entity/             # Hibernate JPA database definitions
+├── entity/             # Hibernate JPA database definitions (User, Profile, Skill, Placement)
 ├── repository/         # Data access interfaces mapping SQL actions
 ├── security/           # Spring Security, filters, & Jwt providers
 │   ├── JwtAuthenticationFilter.java  # Request authorization filter
@@ -35,6 +36,7 @@ com.eventtracker/
 │   ├── AnalyticsService.java          # Aggregate conversion metrics & acceptance yields
 │   ├── ApplicationService.java        # Core application CRUD logic
 │   ├── PlacementService.java          # Core placement tracking logics
+│   ├── SkillService.java              # Skills category and level adjustments
 │   ├── GeminiExtractionService.java   # Generative AI extraction service
 │   ├── ImportService.java             # Parsing & batching user CSV imports
 ├── util/               # Shared utilities
@@ -45,13 +47,13 @@ com.eventtracker/
 ---
 
 ## 🏗️ 3. Decoupled Request Workflow
-OMP strictly uses the N-Tier layered design pattern. An incoming request moves through the following layers:
+Career OS strictly uses the N-Tier layered design pattern. An incoming request moves through the following layers:
 ```
 [Client Request] ──> [Controller] ──> [DTO] ──> [Service] ──> [Repository] ──> [Database]
 ```
 1.  **Controller Layer**: Validates HTTP constraints. For example, text inputs to the AI extraction endpoints are capped at a maximum of 10,000 characters to prevent request exhaustion.
 2.  **DTO (Data Transfer Object)**: Maps request bodies to specific, clean Java inputs. Prevents accidental database updates by isolating raw JPA entity objects.
-3.  **Service Layer**: Executes validations and rules. Example: uses `UrlUtils.java` to clean and standardize user-submitted links (e.g., stripping query parameters, prefixing protocols) before saving.
+3.  **Service Layer**: Executes validations and business rules.
 4.  **Repository Layer**: Translates actions into queries mapping the database.
 5.  **Entity**: Restores or persists Java models directly as relational data.
 
@@ -81,17 +83,23 @@ All endpoints (except login, register, and health checks) require the header `Au
 
 | Method | Endpoint | Description | Auth Scope |
 | :--- | :--- | :--- | :--- |
-| **POST** | `/api/auth/register` | Create a new user account | Public |
+| **POST** | `/api/auth/register` | Create a new user account (saving displayName) | Public |
 | **POST** | `/api/auth/login` | Login and receive a 15-day JWT token | Public |
+| **PUT** | `/api/auth/me/display-name` | Update display name properties | User JWT |
 | **GET** | `/api/auth/me` | Fetch active user information | User JWT |
 | **GET** | `/api/applications` | List and search tracking applications | User JWT |
 | **POST** | `/api/applications` | Create a tracking application record | User JWT |
 | **PUT** | `/api/applications/{id}` | Update an application's details | User JWT |
 | **DELETE** | `/api/applications/{id}` | Delete an application | User JWT |
+| **GET** | `/api/skills` | List user professional skills | User JWT |
+| **POST** | `/api/skills` | Create a new skill record | User JWT |
+| **PUT** | `/api/skills/{id}` | Update skill level configurations | User JWT |
+| **DELETE** | `/api/skills/{id}` | Remove a skill entry | User JWT |
+| **GET** | `/api/placements` | List placement entries | User JWT |
 | **POST** | `/api/placements` | Create a placement entry | User JWT |
 | **PUT** | `/api/placements/{id}` | Update a placement entry | User JWT |
 | **POST** | `/api/placements/extract` | Extract placement data from text using Gemini | User JWT |
 | **POST** | `/api/import/csv` | Batch import data from a CSV file | User JWT |
 | **GET** | `/api/analytics/dashboard` | Fetch compiled analytics and Conversion Yields | User JWT |
-| **GET** | `/actuator/health` | Service status checks | Public |
+| **GET** | `/actuator/health` | Service status checks (used for cold-start wakeups) | Public |
 | **GET** | `/actuator/**` | System metrics & debugging logs | Admin Only |
