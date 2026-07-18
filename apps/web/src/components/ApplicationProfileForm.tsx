@@ -10,7 +10,6 @@ import { userApi } from "@/lib/api/userApi";
 import { authApi } from "@/lib/api/authApi";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import ResumesView from "./views/ResumesView";
 import { 
   Loader2, 
   User, 
@@ -344,11 +343,6 @@ export default function ApplicationProfileForm() {
             </div>
 
           </form>
-
-          {/* Resumes Vault Section */}
-          <div className="bg-bg-card border border-border rounded-xl p-6 md:p-8 mt-6">
-            <ResumesView />
-          </div>
         </div>
       </div>
     </div>

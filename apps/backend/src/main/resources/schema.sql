@@ -90,18 +90,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS unique_user_skill ON skills (user_id, name);
 ALTER TABLE users
 ADD COLUMN IF NOT EXISTS display_name VARCHAR(255);
 
--- RESUMES (New feature)
-CREATE TABLE IF NOT EXISTS resumes (
-    id BIGSERIAL PRIMARY KEY,
-    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    name VARCHAR(255) NOT NULL,
-    file_path VARCHAR(512) NOT NULL,
-    file_name VARCHAR(255) NOT NULL,
-    file_size BIGINT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
-);
-
-CREATE INDEX IF NOT EXISTS idx_resumes_user_id ON resumes(user_id);
+DROP TABLE IF EXISTS resumes CASCADE;
 
 -- ROUTINE TASKS (New feature)
 CREATE TABLE IF NOT EXISTS routine_tasks (
