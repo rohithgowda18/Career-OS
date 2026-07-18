@@ -7,6 +7,7 @@ const CalendarView = React.lazy(() => import("@/components/views/CalendarView"))
 const AnalyticsDashboard = React.lazy(() => import("@/components/AnalyticsDashboard"));
 const ApplicationProfileForm = React.lazy(() => import("@/components/ApplicationProfileForm"));
 const SkillsPage = React.lazy(() => import("./SkillsPage"));
+const RoutineView = React.lazy(() => import("@/components/views/RoutineView"));
 import DashboardLayout from "@/components/DashboardLayout";
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
@@ -71,6 +72,7 @@ export default function Home() {
     | "calendar"
     | "analytics"
     | "skills"
+    | "routine"
     | "profile";
 
   return (
@@ -85,6 +87,7 @@ export default function Home() {
         {currentView === "calendar" && <CalendarView />}
         {currentView === "analytics" && <AnalyticsDashboard />}
         {currentView === "skills" && <SkillsPage />}
+        {currentView === "routine" && <RoutineView />}
         {currentView === "profile" && <ApplicationProfileForm />}
       </Suspense>
     </DashboardLayout>

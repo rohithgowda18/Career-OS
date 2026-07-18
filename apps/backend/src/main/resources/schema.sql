@@ -90,3 +90,41 @@ CREATE UNIQUE INDEX IF NOT EXISTS unique_user_skill ON skills (user_id, name);
 ALTER TABLE users
 ADD COLUMN IF NOT EXISTS display_name VARCHAR(255);
 
+-- RESUMES (New feature)
+CREATE TABLE IF NOT EXISTS resumes (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    file_path VARCHAR(512) NOT NULL,
+    file_name VARCHAR(255) NOT NULL,
+    file_size BIGINT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_resumes_user_id ON resumes(user_id);
+
+-- ROUTINE TASKS (New feature)
+CREATE TABLE IF NOT EXISTS routine_tasks (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    title VARCHAR(255) NOT NULL,
+    display_order INT NOT NULL DEFAULT 0,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_routine_tasks_user_id ON routine_tasks(user_id);
+
+CREATE TABLE IF NOT EXISTS routine_completion (
+    id BIGSERIAL PRIMARY KEY,
+    routine_task_id BIGINT NOT NULL REFERENCES routine_tasks(id) ON DELETE CASCADE,
+    completion_date DATE NOT NULL,
+    completed BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_routine_completion UNIQUE (routine_task_id, completion_date)
+);
+
+CREATE INDEX IF NOT EXISTS idx_routine_completion_task_date ON routine_completion(routine_task_id, completion_date);
+
+

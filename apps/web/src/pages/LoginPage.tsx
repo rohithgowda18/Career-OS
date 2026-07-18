@@ -30,6 +30,8 @@ export default function LoginPage() {
     if (oauthError === "no_parent") {
       toast.error("Social login failed because the popup window could not connect back to the application. Please try again manually.");
     }
+    // Silent background check to warm up the backend
+    axios.get(`${BACKEND_URL}/actuator/health`).catch(() => {});
   }, [oauthError]);
 
   const handleAuthWithRetry = async (authFn: () => Promise<any>) => {
@@ -252,8 +254,8 @@ export default function LoginPage() {
             {isLoading && (
               <p className="text-[10px] text-text-dim text-center mt-2.5 animate-pulse font-medium">
                 {isWakingBackend 
-                  ? "Starting backend, please wait..." 
-                  : "Starting backend... This may take up to 60 seconds on the first request."}
+                  ? "Preparing Career OS... Starting the server... The first visit may take up to 30 seconds." 
+                  : "Loading..."}
               </p>
             )}
           </form>

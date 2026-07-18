@@ -23,7 +23,8 @@ import {
   Plus,
   Palette,
   RefreshCw,
-  Award
+  Award,
+  ListTodo
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -43,7 +44,7 @@ import AddApplicationModal from "@/components/AddApplicationModal";
 import AddPlacementModal from "@/components/AddPlacementModal";
 
 interface DashboardLayoutProps {
-  activeTab: "dashboard" | "kanban" | "placements" | "skills" | "calendar" | "analytics" | "profile";
+  activeTab: "dashboard" | "kanban" | "placements" | "skills" | "routine" | "calendar" | "analytics" | "profile";
   children: React.ReactNode;
 }
 
@@ -299,6 +300,7 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
     { id: "kanban", label: "Applications", icon: Layers, path: "/dashboard?view=kanban" },
     { id: "placements", label: "Placements", icon: Briefcase, path: "/placements" },
     { id: "skills", label: "My Skills", icon: Award, path: "/dashboard?view=skills" },
+    { id: "routine", label: "Daily Routine", icon: ListTodo, path: "/dashboard?view=routine" },
     { id: "calendar", label: "Calendar", icon: CalendarIcon, path: "/dashboard?view=calendar" },
     { id: "profile", label: "Profile", icon: UserCircle, path: "/dashboard?view=profile" },
   ] as const;
@@ -576,9 +578,9 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex items-center outline-none">
-                <Avatar className="h-7 w-7 border border-border">
-                  <AvatarFallback className="text-[10px] font-semibold bg-bg-elevated text-primary">
+              <button className="p-0.5 rounded-lg border border-border bg-bg-elevated/40 cursor-pointer flex items-center justify-center outline-none hover:border-border/80">
+                <Avatar className="h-6 w-6 border-none">
+                  <AvatarFallback className="text-[9px] font-bold bg-bg-elevated text-primary">
                     {user?.displayName && user.displayName.trim() !== ""
                       ? user.displayName.charAt(0).toUpperCase()
                       : user?.email?.charAt(0).toUpperCase() || "U"}
@@ -733,7 +735,7 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
 
       {/* Mobile Bottom Navigation */}
       <nav className={cn("md:hidden fixed bottom-4 left-4 right-4 z-50 backdrop-blur-lg border border-border/80 rounded-2xl shadow-xl px-2", themeTokens.navbarBg)}>
-        <div className="grid grid-cols-5 h-16">
+        <div className="grid grid-cols-7 h-16">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;

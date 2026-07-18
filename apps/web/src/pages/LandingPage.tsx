@@ -14,6 +14,8 @@ import { usePWAInstall } from "@/hooks/usePWAInstall";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import axios from "axios";
+import { BACKEND_URL } from "@/lib/restClient";
 
 export default function LandingPage() {
   const [, setLocation] = useLocation();
@@ -38,6 +40,10 @@ export default function LandingPage() {
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", handleScroll);
+    
+    // Background warm-up
+    axios.get(`${BACKEND_URL}/actuator/health`).catch(() => {});
+    
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 

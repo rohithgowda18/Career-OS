@@ -1,9 +1,10 @@
 import { useState, useMemo, Suspense, lazy } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { analyticsApi } from "@/lib/api/analyticsApi";
 import { applicationsApi } from "@/lib/api/applicationsApi";
 import { placementsApi } from "@/lib/api/placementsApi";
+import { routineApi } from "@/lib/api/routineApi";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import AddApplicationModal from "@/components/AddApplicationModal";
@@ -20,18 +21,53 @@ import {
   CheckCircle2,
   Inbox,
   Clock,
-  Compass
+  Compass,
+  Square,
+  CheckSquare,
+  ListTodo
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, isToday, isWithinInterval, addDays } from "date-fns";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { toast } from "sonner";
 import EmptyState from "@/components/ui/EmptyState";
 
 export default function DashboardView() {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [showAddAppModal, setShowAddAppModal] = useState(false);
   const [showAddPlacementModal, setShowAddPlacementModal] = useState(false);
   const [showInsightsModal, setShowInsightsModal] = useState(false);
+
+  // Fetch daily routines
+  const routinesQuery = useQuery({
+    queryKey: ["routines"],
+    queryFn: routineApi.list,
+    enabled: !!user,
+  });
+
+  // Fetch routine reports for weekly summary
+  const reportsQuery = useQuery({
+    queryKey: ["routines", "reports"],
+    queryFn: routineApi.reports,
+    enabled: !!user,
+  });
+
+  const routines = routinesQuery.data || [];
+  const completedTasksCount = routines.filter((t) => t.completed).length;
+  const totalTasksCount = routines.length;
+  const completionPercentage = totalTasksCount > 0 ? Math.round((completedTasksCount / totalTasksCount) * 100) : 0;
+
+  const toggleTaskMutation = useMutation({
+    mutationFn: routineApi.toggle,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["routines"] });
+      queryClient.invalidateQueries({ queryKey: ["routines", "reports"] });
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to toggle task");
+    }
+  });
 
   // Username display
   const userName = useMemo(() => {
@@ -55,80 +91,28 @@ export default function DashboardView() {
     queryFn: () => analyticsApi.dashboard(),
   });
 
-  // Fetch placements list (to extract placement interview deadlines and status distributions)
-  const placementsQuery = useQuery({
-    queryKey: ["placements", { page: 0, size: 1000, sort: "id,desc" }],
-    queryFn: () => placementsApi.list({ page: 0, size: 1000, sort: "id,desc" }),
-  });
-
-  // Fetch applications list (to identify pending response lists)
-  const applicationsQuery = useQuery({
-    queryKey: ["applications", { page: 0, size: 1000, sort: "deadline,asc" }],
-    queryFn: () => applicationsApi.list({ page: 0, size: 1000, sort: "deadline,asc" }),
-  });
-
-  const isLoading = dashboardQuery.isLoading || placementsQuery.isLoading || applicationsQuery.isLoading;
+  const isLoading = dashboardQuery.isLoading;
 
   const dashboardData = dashboardQuery.data || {
     totalApplications: 0,
-    upcomingDeadlines: 0,
-    statusDistribution: {},
-    immediateDeadlines: [],
+    deadlinesToday: [],
+    deadlinesTodayCount: 0,
+    interviewsThisWeek: 0,
+    awaitingResponses: 0,
+    offersAwaitingDecision: 0,
+    upcomingDeadlines: [],
+    upcomingDeadlinesCount: 0,
+    awaitingFeedback: [],
+    pipelineDistribution: {},
     recentActivity: [],
+    placementAssessmentsToday: [],
+    placementInterviewsToday: [],
   };
-
-  const placements = placementsQuery.data?.content || [];
-  const applications = applicationsQuery.data?.content || [];
-
-  // 1. Calculations for dynamic home-view summaries
-  const workspaceMetrics = useMemo(() => {
-    const today = new Date();
-    const endOfWeek = addDays(today, 7);
-
-    // Filter event deadlines due today
-    const appDeadlinesToday = applications.filter((app: any) => app.deadline && isToday(new Date(app.deadline)));
-    const placementAssessmentsToday = placements.filter((p: any) => p.assessmentDate && isToday(new Date(p.assessmentDate)));
-    const placementInterviewsToday = placements.filter((p: any) => p.interviewDate && isToday(new Date(p.interviewDate)));
-    const totalPrioritiesCount = appDeadlinesToday.length + placementAssessmentsToday.length + placementInterviewsToday.length;
-
-    // Filter interviews scheduled this week
-    const appInterviewsThisWeek = applications.filter((app: any) => {
-      if (app.status !== "UnderReview" && app.status !== "Interview") return false;
-      return app.deadline && isWithinInterval(new Date(app.deadline), { start: today, end: endOfWeek });
-    });
-    const placementInterviewsThisWeek = placements.filter((p: any) => {
-      return (
-        (p.status === "INTERVIEW_SCHEDULED" || p.interviewDate) &&
-        p.interviewDate &&
-        isWithinInterval(new Date(p.interviewDate), { start: today, end: endOfWeek })
-      );
-    });
-    const totalInterviewsThisWeek = appInterviewsThisWeek.length + placementInterviewsThisWeek.length;
-
-    // Count applications awaiting response (Applied or UnderReview state)
-    const appsAwaitingResponse = applications.filter((app: any) => app.status === "Applied" || app.status === "UnderReview");
-
-    // Count offers awaiting decision (OFFER_RECEIVED placements or Accepted applications)
-    const placementOffers = placements.filter((p: any) => p.status === "OFFER_RECEIVED");
-    const appOffers = applications.filter((app: any) => app.status === "Accepted");
-    const totalOffersCount = placementOffers.length + appOffers.length;
-
-    return {
-      prioritiesCount: totalPrioritiesCount,
-      interviewsCount: totalInterviewsThisWeek,
-      awaitingResponseCount: appsAwaitingResponse.length,
-      offersCount: totalOffersCount,
-      appsAwaiting: appsAwaitingResponse.slice(0, 4), // top 4 awaiting response
-      appDeadlinesToday,
-      placementAssessmentsToday,
-      placementInterviewsToday,
-    };
-  }, [applications, placements]);
 
   // Combine priorities for today
   const todaysPrioritiesList = useMemo(() => {
     const items: any[] = [];
-    workspaceMetrics.appDeadlinesToday.forEach((app: any) => {
+    (dashboardData.deadlinesToday || []).forEach((app: any) => {
       items.push({
         id: `priority-app-${app.id}`,
         title: `Deadline: ${app.eventName}`,
@@ -136,7 +120,7 @@ export default function DashboardView() {
         type: "deadline",
       });
     });
-    workspaceMetrics.placementAssessmentsToday.forEach((p: any) => {
+    (dashboardData.placementAssessmentsToday || []).forEach((p: any) => {
       items.push({
         id: `priority-place-as-${p.id}`,
         title: `Assessment: ${p.companyName}`,
@@ -144,7 +128,7 @@ export default function DashboardView() {
         type: "assessment",
       });
     });
-    workspaceMetrics.placementInterviewsToday.forEach((p: any) => {
+    (dashboardData.placementInterviewsToday || []).forEach((p: any) => {
       items.push({
         id: `priority-place-it-${p.id}`,
         title: `Interview: ${p.companyName}`,
@@ -153,49 +137,22 @@ export default function DashboardView() {
       });
     });
     return items;
-  }, [workspaceMetrics]);
+  }, [dashboardData]);
 
   // Combine upcoming deadlines (next 7 days, excluding today)
   const upcomingDeadlinesList = useMemo(() => {
-    const today = new Date();
-    const nextWeek = addDays(today, 8);
     const items: any[] = [];
-
-    applications.forEach((app: any) => {
-      if (app.deadline && !isToday(new Date(app.deadline)) && isWithinInterval(new Date(app.deadline), { start: today, end: nextWeek })) {
-        items.push({
-          id: `upcoming-app-${app.id}`,
-          name: app.eventName,
-          label: app.eventType,
-          date: new Date(app.deadline),
-          status: app.status,
-        });
-      }
+    (dashboardData.upcomingDeadlines || []).forEach((app: any) => {
+      items.push({
+        id: `upcoming-app-${app.id}`,
+        name: app.eventName,
+        label: app.eventType,
+        date: new Date(app.deadline),
+        status: app.status,
+      });
     });
-
-    placements.forEach((p: any) => {
-      if (p.assessmentDate && !isToday(new Date(p.assessmentDate)) && isWithinInterval(new Date(p.assessmentDate), { start: today, end: nextWeek })) {
-        items.push({
-          id: `upcoming-place-as-${p.id}`,
-          name: `${p.companyName} (Assessment)`,
-          label: p.role,
-          date: new Date(p.assessmentDate),
-          status: p.status,
-        });
-      }
-      if (p.interviewDate && !isToday(new Date(p.interviewDate)) && isWithinInterval(new Date(p.interviewDate), { start: today, end: nextWeek })) {
-        items.push({
-          id: `upcoming-place-it-${p.id}`,
-          name: `${p.companyName} (Interview)`,
-          label: p.role,
-          date: new Date(p.interviewDate),
-          status: p.status,
-        });
-      }
-    });
-
-    return items.sort((a, b) => a.date.getTime() - b.date.getTime()).slice(0, 5);
-  }, [applications, placements]);
+    return items;
+  }, [dashboardData]);
 
   if (isLoading) {
     return (
@@ -281,16 +238,16 @@ export default function DashboardView() {
                 <span className="text-xs text-text-muted font-medium">Deadlines Today</span>
                 <span className={cn(
                   "text-xs px-2 py-0.5 rounded-full font-bold",
-                  workspaceMetrics.appDeadlinesToday.length > 0 ? "bg-danger/10 text-danger border border-danger/20" : "bg-bg-elevated text-text-dim"
+                  dashboardData.deadlinesTodayCount > 0 ? "bg-danger/10 text-danger border border-danger/20" : "bg-bg-elevated text-text-dim"
                 )}>
-                  {workspaceMetrics.appDeadlinesToday.length}
+                  {dashboardData.deadlinesTodayCount}
                 </span>
               </div>
               <p className="text-sm font-semibold text-text-main">
-                {workspaceMetrics.appDeadlinesToday.length > 0 ? `${workspaceMetrics.appDeadlinesToday.length} application${workspaceMetrics.appDeadlinesToday.length > 1 ? 's' : ''} closing` : "No deadlines today"}
+                {dashboardData.deadlinesTodayCount > 0 ? `${dashboardData.deadlinesTodayCount} application${dashboardData.deadlinesTodayCount > 1 ? 's' : ''} closing` : "No deadlines today"}
               </p>
               <p className="text-[11px] text-text-dim line-clamp-1">
-                {workspaceMetrics.appDeadlinesToday.length > 0 ? workspaceMetrics.appDeadlinesToday.map((a: any) => a.eventName).join(", ") : "You're all caught up."}
+                {dashboardData.deadlinesTodayCount > 0 ? dashboardData.deadlinesToday.map((a: any) => a.eventName).join(", ") : "You're all caught up."}
               </p>
             </div>
             <Button
@@ -309,16 +266,16 @@ export default function DashboardView() {
                 <span className="text-xs text-text-muted font-medium">Interviews This Week</span>
                 <span className={cn(
                   "text-xs px-2 py-0.5 rounded-full font-bold",
-                  workspaceMetrics.interviewsCount > 0 ? "bg-primary/10 text-primary border border-primary/20" : "bg-bg-elevated text-text-dim"
+                  dashboardData.interviewsThisWeek > 0 ? "bg-primary/10 text-primary border border-primary/20" : "bg-bg-elevated text-text-dim"
                 )}>
-                  {workspaceMetrics.interviewsCount}
+                  {dashboardData.interviewsThisWeek}
                 </span>
               </div>
               <p className="text-sm font-semibold text-text-main">
-                {workspaceMetrics.interviewsCount > 0 ? `${workspaceMetrics.interviewsCount} meeting${workspaceMetrics.interviewsCount > 1 ? 's' : ''} scheduled` : "No interviews this week"}
+                {dashboardData.interviewsThisWeek > 0 ? `${dashboardData.interviewsThisWeek} meeting${dashboardData.interviewsThisWeek > 1 ? 's' : ''} scheduled` : "No interviews this week"}
               </p>
               <p className="text-[11px] text-text-dim line-clamp-1">
-                {workspaceMetrics.interviewsCount > 0 ? "Prepare and practice your pitches." : "Keep applying to get meetings."}
+                {dashboardData.interviewsThisWeek > 0 ? "Prepare and practice your pitches." : "Keep applying to get meetings."}
               </p>
             </div>
             <Button
@@ -337,16 +294,16 @@ export default function DashboardView() {
                 <span className="text-xs text-text-muted font-medium">Awaiting Responses</span>
                 <span className={cn(
                   "text-xs px-2 py-0.5 rounded-full font-bold",
-                  workspaceMetrics.awaitingResponseCount > 0 ? "bg-warning/10 text-warning border border-warning/20" : "bg-bg-elevated text-text-dim"
+                  dashboardData.awaitingResponses > 0 ? "bg-warning/10 text-warning border border-warning/20" : "bg-bg-elevated text-text-dim"
                 )}>
-                  {workspaceMetrics.awaitingResponseCount}
+                  {dashboardData.awaitingResponses}
                 </span>
               </div>
               <p className="text-sm font-semibold text-text-main">
-                {workspaceMetrics.awaitingResponseCount > 0 ? `${workspaceMetrics.awaitingResponseCount} application${workspaceMetrics.awaitingResponseCount > 1 ? 's' : ''} pending` : "No pending applications"}
+                {dashboardData.awaitingResponses > 0 ? `${dashboardData.awaitingResponses} application${dashboardData.awaitingResponses > 1 ? 's' : ''} pending` : "No pending applications"}
               </p>
               <p className="text-[11px] text-text-dim line-clamp-1">
-                {workspaceMetrics.awaitingResponseCount > 0 ? "Consider sending a follow-up email." : "Submit applications to build funnel."}
+                {dashboardData.awaitingResponses > 0 ? "Consider sending a follow-up email." : "Submit applications to build funnel."}
               </p>
             </div>
             <Button
@@ -365,16 +322,16 @@ export default function DashboardView() {
                 <span className="text-xs text-text-muted font-medium">Offers Awaiting Decision</span>
                 <span className={cn(
                   "text-xs px-2 py-0.5 rounded-full font-bold",
-                  workspaceMetrics.offersCount > 0 ? "bg-success/10 text-success border border-success/20 animate-pulse" : "bg-bg-elevated text-text-dim"
+                  dashboardData.offersAwaitingDecision > 0 ? "bg-success/10 text-success border border-success/20 animate-pulse" : "bg-bg-elevated text-text-dim"
                 )}>
-                  {workspaceMetrics.offersCount}
+                  {dashboardData.offersAwaitingDecision}
                 </span>
               </div>
               <p className="text-sm font-semibold text-text-main">
-                {workspaceMetrics.offersCount > 0 ? `${workspaceMetrics.offersCount} active offer${workspaceMetrics.offersCount > 1 ? 's' : ''} received!` : "No offers yet"}
+                {dashboardData.offersAwaitingDecision > 0 ? `${dashboardData.offersAwaitingDecision} active offer${dashboardData.offersAwaitingDecision > 1 ? 's' : ''} received!` : "No offers yet"}
               </p>
               <p className="text-[11px] text-text-dim line-clamp-1">
-                {workspaceMetrics.offersCount > 0 ? "Congratulations! Review terms carefully." : "The breakthrough is coming soon."}
+                {dashboardData.offersAwaitingDecision > 0 ? "Congratulations! Review terms carefully." : "The breakthrough is coming soon."}
               </p>
             </div>
             <Button
@@ -456,16 +413,16 @@ export default function DashboardView() {
           {/* Section 4: Applications Awaiting Response */}
           <section className="bg-bg-card border border-border rounded-xl p-5 space-y-4">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-text-dim flex items-center gap-2">
-              <Inbox className="w-3.5 h-3.5 text-primary" /> Awaiting Feedback
+              <Inbox className="w-3.5 h-3.5 text-primary" /> Awaiting Responses
             </h3>
 
-            {workspaceMetrics.appsAwaiting.length === 0 ? (
+            {dashboardData.awaitingFeedback.length === 0 ? (
               <div className="py-6 text-center text-xs text-text-dim">
-                No applications currently awaiting feedback
+                No applications currently awaiting responses
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {workspaceMetrics.appsAwaiting.map((app: any) => (
+                {dashboardData.awaitingFeedback.map((app: any) => (
                   <div
                     key={app.id}
                     className="p-3 rounded-lg bg-bg-main border border-border/80 hover:border-border transition-all flex flex-col justify-between"
@@ -491,6 +448,107 @@ export default function DashboardView() {
 
         {/* Right Hand Sidebar (Context and Actions) */}
         <div className="space-y-6">
+          {/* Today's Routine Widget */}
+          <section className="bg-bg-card border border-border rounded-xl p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-text-dim flex items-center gap-1.5">
+                <ListTodo className="w-3.5 h-3.5 text-primary" /> Today's Routine
+              </h3>
+              <button
+                onClick={() => window.history.pushState(null, "", "/dashboard?view=routine")}
+                className="text-[10px] font-bold text-primary hover:text-primary-hover flex items-center gap-0.5 cursor-pointer"
+              >
+                Manage
+              </button>
+            </div>
+
+            {/* Today's Progress Bar */}
+            {totalTasksCount > 0 && (
+              <div className="space-y-1.5 bg-bg-main/30 border border-border/50 rounded-lg p-2.5">
+                <div className="flex justify-between text-[10px] font-bold text-text-muted">
+                  <span>Today's Progress</span>
+                  <span className="text-text-main">{completedTasksCount} / {totalTasksCount} Completed ({completionPercentage}%)</span>
+                </div>
+                <div className="w-full h-1 bg-bg-main border border-border rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-primary rounded-full transition-all duration-300"
+                    style={{ width: `${completionPercentage}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {routines.length === 0 ? (
+              <div className="py-5 text-center border border-dashed border-border/60 rounded-lg bg-bg-main/20 flex flex-col items-center justify-center">
+                <p className="text-[11px] text-text-dim font-medium">No routine tasks defined.</p>
+                <button
+                  onClick={() => window.history.pushState(null, "", "/dashboard?view=routine")}
+                  className="text-[10px] font-bold text-primary hover:underline mt-1 cursor-pointer"
+                >
+                  Create your daily routine
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-[180px] overflow-y-auto pr-1">
+                {routines.map((task) => (
+                  <div
+                    key={task.id}
+                    className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-bg-main/50 border border-border/40 hover:border-border/80 transition-all text-xs"
+                  >
+                    <button
+                      onClick={() => toggleTaskMutation.mutate(task.id)}
+                      className="text-text-muted hover:text-primary transition-all shrink-0 cursor-pointer"
+                      title={task.completed ? "Mark incomplete" : "Mark completed"}
+                    >
+                      {task.completed ? (
+                        <CheckSquare className="w-3.5 h-3.5 text-primary" />
+                      ) : (
+                        <Square className="w-3.5 h-3.5" />
+                      )}
+                    </button>
+                    <span
+                      className={`font-medium truncate flex-1 ${
+                        task.completed ? "line-through text-text-dim" : "text-text-main"
+                      }`}
+                    >
+                      {task.title}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Compact Weekly Progress Summary */}
+            {totalTasksCount > 0 && reportsQuery.data && (
+              <div className="border-t border-border/40 pt-3 space-y-2">
+                <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-wider text-text-dim">
+                  <span>Weekly Progress</span>
+                  <span className="text-[9px] text-primary lowercase font-semibold">streak: {reportsQuery.data.currentStreak} days</span>
+                </div>
+                <div className="grid grid-cols-7 gap-1">
+                  {["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"].map((day) => {
+                    const dayLabelsMap: Record<string, string> = {
+                      MONDAY: "M", TUESDAY: "T", WEDNESDAY: "W", THURSDAY: "T", FRIDAY: "F", SATURDAY: "S", SUNDAY: "S"
+                    };
+                    const pct = reportsQuery.data.weeklyCompletion?.[day] ?? 0;
+                    return (
+                      <div key={day} className="flex flex-col items-center gap-1">
+                        <div className="w-full h-8 bg-bg-main border border-border/60 rounded flex flex-col justify-end overflow-hidden">
+                          <div
+                            className="w-full bg-primary rounded-t transition-all duration-300"
+                            style={{ height: `${pct}%` }}
+                            title={`${pct}%`}
+                          />
+                        </div>
+                        <span className="text-[8px] font-bold text-text-dim">{dayLabelsMap[day]}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </section>
+
           {/* Quick Actions Panel */}
           <section className="bg-bg-card border border-border rounded-xl p-5 space-y-3.5">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-text-dim">Quick Actions</h3>
@@ -532,7 +590,7 @@ export default function DashboardView() {
                     <p className="font-semibold text-text-main truncate">{act.eventName}</p>
                     <div className="flex items-center justify-between text-[10px] text-text-dim">
                       <span>Updated to {act.status === "UnderReview" ? "In Review" : act.status}</span>
-                      <span>{format(new Date(act.createdAt || act.updatedAt || new Date()), "MMM dd")}</span>
+                      <span>{format(new Date(act.updatedAt || act.createdAt || new Date()), "MMM dd")}</span>
                     </div>
                   </div>
                 ))}
@@ -547,8 +605,8 @@ export default function DashboardView() {
             </h3>
             
             <div className="space-y-2.5">
-              {["Applied", "UnderReview", "Accepted", "Rejected"].map((statusName) => {
-                const count = dashboardData.statusDistribution[statusName] || 0;
+              {["Interested", "Applied", "UnderReview", "Accepted", "Rejected"].map((statusName) => {
+                const count = dashboardData.pipelineDistribution[statusName] || 0;
                 const total = dashboardData.totalApplications || 1;
                 const percentage = Math.round((count / total) * 100);
                 

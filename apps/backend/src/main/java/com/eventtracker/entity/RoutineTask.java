@@ -11,13 +11,11 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "applications", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"user_id", "event_url"})
-})
+@Table(name = "routine_tasks")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Application {
+public class RoutineTask {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -27,28 +25,11 @@ public class Application {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(name = "event_name", nullable = false)
-    private String eventName;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "event_type", nullable = false)
-    private EventType eventType;
-
-    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private ApplicationStatus status;
+    private String title;
 
-    @Column(name = "deadline")
-    private LocalDateTime deadline;
-
-    @Column(columnDefinition = "TEXT")
-    private String notes;
-
-    @Column(name = "event_url")
-    private String url;
-
-    @Column(name = "location")
-    private String location;
+    @Column(name = "display_order", nullable = false)
+    private int displayOrder = 0;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -57,13 +38,4 @@ public class Application {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
-
-
-    public enum EventType {
-        Hackathon, Workshop, Conference, Internship, Other
-    }
-
-    public enum ApplicationStatus {
-        Interested, Applied, UnderReview, Accepted, Rejected
-    }
 }

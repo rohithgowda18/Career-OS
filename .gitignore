@@ -23,6 +23,7 @@ apps/web/dev-dist/
 .env.test.local
 .env.production.local
 render.env
+tests/
 
 # IDE and editor files
 .vscode/

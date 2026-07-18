@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import com.eventtracker.dto.ApplicationDTO;
+import com.eventtracker.dto.PlacementDTO;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -77,52 +78,127 @@ public class AnalyticsService {
 
     public Map<String, Object> getDashboardData(Long userId) {
         List<Application> allApps = applicationRepository.findByUserId(userId);
-        long total = allApps.size();
+        List<Placement> allPlacements = placementRepository.findByUserId(userId);
+        long totalApps = allApps.size();
 
-        // Status distribution across ALL applications
-        Map<String, Long> statusDistribution = allApps.stream()
-                .collect(Collectors.groupingBy(
-                        a -> a.getStatus().name(),
-                        Collectors.counting()
-                ));
-
-        // Upcoming deadlines within 7 days (sorted by deadline ascending)
         LocalDateTime now = LocalDateTime.now();
-        LocalDateTime sevenDaysFromNow = now.plusDays(7);
+        LocalDateTime todayStart = now.toLocalDate().atStartOfDay();
+        LocalDateTime todayEnd = now.toLocalDate().atTime(23, 59, 59, 999999999);
+        LocalDateTime tomorrowStart = todayEnd.plusNanos(1);
+        LocalDateTime sevenDaysFromNowEnd = todayEnd.plusDays(7);
+
+        // Deadlines Today (Applications)
+        List<ApplicationDTO> deadlinesToday = allApps.stream()
+                .filter(app -> app.getDeadline() != null && !app.getDeadline().isBefore(todayStart) && !app.getDeadline().isAfter(todayEnd))
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+
+        // Interviews This Week (Placements in next 7 days starting today)
+        long interviewsThisWeek = allPlacements.stream()
+                .filter(p -> p.getStatus() == PlacementStatus.INTERVIEW_SCHEDULED && p.getInterviewDate() != null && !p.getInterviewDate().isBefore(todayStart) && !p.getInterviewDate().isAfter(sevenDaysFromNowEnd))
+                .count();
+
+        // Awaiting Responses (Placements with active pending statuses)
+        long awaitingResponses = allPlacements.stream()
+                .filter(p -> p.getStatus() == PlacementStatus.APPLIED 
+                        || p.getStatus() == PlacementStatus.ASSESSMENT_SCHEDULED 
+                        || p.getStatus() == PlacementStatus.ASSESSMENT_COMPLETED 
+                        || p.getStatus() == PlacementStatus.INTERVIEW_SCHEDULED 
+                        || p.getStatus() == PlacementStatus.INTERVIEW_COMPLETED)
+                .count();
+
+        // Offers Awaiting Decision (Placements with status OFFER_RECEIVED)
+        long offersAwaitingDecision = allPlacements.stream()
+                .filter(p -> p.getStatus() == PlacementStatus.OFFER_RECEIVED)
+                .count();
+
+        // Upcoming Deadlines (Applications, next 7 days excluding today)
         List<ApplicationDTO> upcomingDeadlines = allApps.stream()
-                .filter(app -> app.getDeadline() != null)
-                .filter(app -> {
-                    LocalDateTime deadline = app.getDeadline();
-                    return deadline.isAfter(now) && deadline.isBefore(sevenDaysFromNow);
-                })
+                .filter(app -> app.getDeadline() != null && !app.getDeadline().isBefore(tomorrowStart) && !app.getDeadline().isAfter(sevenDaysFromNowEnd))
                 .sorted((a, b) -> a.getDeadline().compareTo(b.getDeadline()))
                 .limit(5)
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
 
         long upcomingDeadlinesCount = allApps.stream()
-                .filter(app -> app.getDeadline() != null)
-                .filter(app -> {
-                    LocalDateTime deadline = app.getDeadline();
-                    return deadline.isAfter(now) && deadline.isBefore(sevenDaysFromNow);
-                })
+                .filter(app -> app.getDeadline() != null && !app.getDeadline().isBefore(tomorrowStart) && !app.getDeadline().isAfter(sevenDaysFromNowEnd))
                 .count();
 
-        // Recent activity (5 most recently created)
+        // Awaiting Feedback (Applications, top 4 pending: Applied or UnderReview)
+        List<ApplicationDTO> awaitingFeedback = allApps.stream()
+                .filter(app -> app.getStatus() == Application.ApplicationStatus.Applied || app.getStatus() == Application.ApplicationStatus.UnderReview)
+                .sorted((a, b) -> {
+                    if (a.getDeadline() == null && b.getDeadline() == null) return 0;
+                    if (a.getDeadline() == null) return 1;
+                    if (b.getDeadline() == null) return -1;
+                    return a.getDeadline().compareTo(b.getDeadline());
+                })
+                .limit(4)
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+
+        // Pipeline Distribution (All 5 Application statuses)
+        Map<String, Long> pipelineDistribution = new HashMap<>();
+        for (Application.ApplicationStatus status : Application.ApplicationStatus.values()) {
+            pipelineDistribution.put(status.name(), 0L);
+        }
+        allApps.forEach(app -> {
+            String statusName = app.getStatus().name();
+            pipelineDistribution.put(statusName, pipelineDistribution.get(statusName) + 1);
+        });
+
+        // Recent Activity (Applications, 5 most recently updated, sorted by updatedAt descending)
         List<ApplicationDTO> recentActivity = allApps.stream()
-                .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
+                .sorted((a, b) -> b.getUpdatedAt().compareTo(a.getUpdatedAt()))
                 .limit(5)
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
 
+        // Today's priorities details (for Placements)
+        List<PlacementDTO> placementAssessmentsToday = allPlacements.stream()
+                .filter(p -> p.getAssessmentDate() != null && !p.getAssessmentDate().isBefore(todayStart) && !p.getAssessmentDate().isAfter(todayEnd))
+                .map(this::convertPlacementToDTO)
+                .collect(Collectors.toList());
+
+        List<PlacementDTO> placementInterviewsToday = allPlacements.stream()
+                .filter(p -> p.getInterviewDate() != null && !p.getInterviewDate().isBefore(todayStart) && !p.getInterviewDate().isAfter(todayEnd))
+                .map(this::convertPlacementToDTO)
+                .collect(Collectors.toList());
+
         // Build response
         Map<String, Object> dashboard = new HashMap<>();
-        dashboard.put("totalApplications", total);
-        dashboard.put("upcomingDeadlines", upcomingDeadlinesCount);
-        dashboard.put("statusDistribution", statusDistribution);
-        dashboard.put("immediateDeadlines", upcomingDeadlines);
+        dashboard.put("totalApplications", totalApps);
+        dashboard.put("deadlinesToday", deadlinesToday);
+        dashboard.put("deadlinesTodayCount", deadlinesToday.size());
+        dashboard.put("interviewsThisWeek", interviewsThisWeek);
+        dashboard.put("awaitingResponses", awaitingResponses);
+        dashboard.put("offersAwaitingDecision", offersAwaitingDecision);
+        dashboard.put("upcomingDeadlines", upcomingDeadlines);
+        dashboard.put("upcomingDeadlinesCount", upcomingDeadlinesCount);
+        dashboard.put("awaitingFeedback", awaitingFeedback);
+        dashboard.put("pipelineDistribution", pipelineDistribution);
         dashboard.put("recentActivity", recentActivity);
+        dashboard.put("placementAssessmentsToday", placementAssessmentsToday);
+        dashboard.put("placementInterviewsToday", placementInterviewsToday);
         return dashboard;
+    }
+
+    private PlacementDTO convertPlacementToDTO(Placement p) {
+        PlacementDTO dto = new PlacementDTO();
+        dto.setId(p.getId());
+        dto.setUserId(p.getUser().getId());
+        dto.setCompanyName(p.getCompanyName());
+        dto.setRole(p.getRole());
+        dto.setLocation(p.getLocation());
+        dto.setStipend(p.getStipend());
+        dto.setCtc(p.getCtc());
+        dto.setApplicationLink(p.getApplicationLink());
+        dto.setAssessmentDate(p.getAssessmentDate());
+        dto.setInterviewDate(p.getInterviewDate());
+        dto.setStatus(p.getStatus().name());
+        dto.setCreatedAt(p.getCreatedAt());
+        dto.setUpdatedAt(p.getUpdatedAt());
+        return dto;
     }
 
     private ApplicationDTO convertToDTO(Application app) {
@@ -153,8 +229,8 @@ public class AnalyticsService {
         long offerReceived = placements.stream().filter(p -> p.getStatus() == PlacementStatus.OFFER_RECEIVED).count();
         long rejected = placements.stream().filter(p -> p.getStatus() == PlacementStatus.REJECTED).count();
 
-        // Applications Submitted = total - saved
-        long submitted = total - saved;
+        // Applications Submitted = total
+        long submitted = total;
 
         // Assessments reached/scheduled = assessmentScheduled + assessmentCompleted + interviewScheduled + interviewCompleted + offerReceived
         long assessments = assessmentScheduled + assessmentCompleted + interviewScheduled + interviewCompleted + offerReceived;
@@ -164,11 +240,10 @@ public class AnalyticsService {
 
         double assessmentConversion = submitted > 0 ? (double) assessments / submitted * 100 : 0;
         double interviewConversion = assessments > 0 ? (double) interviews / assessments * 100 : 0;
-        double offerConversion = applied > 0 ? (double) offerReceived / applied * 100 : 0;
+        double offerConversion = total > 0 ? (double) offerReceived / total * 100 : 0;
 
         Map<String, Object> stats = new HashMap<>();
         stats.put("totalPlacements", total);
-        stats.put("saved", saved);
         stats.put("applied", applied);
         stats.put("assessmentScheduled", assessmentScheduled);
         stats.put("assessmentCompleted", assessmentCompleted);
@@ -202,7 +277,6 @@ public class AnalyticsService {
 
         Map<String, Object> summary = new HashMap<>();
         summary.put("totalPlacements", total);
-        summary.put("saved", 0L);
         summary.put("applied", applied);
         summary.put("assessmentScheduled", assessmentScheduled);
         summary.put("assessmentCompleted", assessmentCompleted);
@@ -236,7 +310,7 @@ public class AnalyticsService {
 
         double assessmentConversion = total > 0 ? (double) assessments / total * 100 : 0;
         double interviewConversion = assessments > 0 ? (double) interviews / assessments * 100 : 0;
-        double offerConversion = applied > 0 ? (double) offerReceived / applied * 100 : 0;
+        double offerConversion = total > 0 ? (double) offerReceived / total * 100 : 0;
 
         Map<String, Object> conversion = new HashMap<>();
         conversion.put("assessmentConversion", Math.round(assessmentConversion));
