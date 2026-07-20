@@ -6,6 +6,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
 import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 // Lazy load route pages to improve load performance
 const LandingPage = React.lazy(() => import("./pages/LandingPage"));
@@ -17,7 +18,16 @@ const AddEventPage = React.lazy(() => import("./pages/AddEventPage"));
 const NotFound = React.lazy(() => import("./pages/NotFound"));
 
 function Router() {
-  const { isAuthenticated, loading, isBackendReady, readinessMessage } = useAuth();
+  const { 
+    isAuthenticated, 
+    loading, 
+    isBackendReady, 
+    readinessMessage, 
+    isWakingTimeout, 
+    retryReadiness, 
+    isAuthTransientError, 
+    retryAuth 
+  } = useAuth();
   const [location, setLocation] = useLocation();
 
   useEffect(() => {
@@ -44,25 +54,59 @@ function Router() {
 
   if (loading) {
     const hasToken = typeof window !== "undefined" && !!localStorage.getItem("token");
-    if (hasToken && !isBackendReady) {
-      return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-bg-main px-4">
-          <div className="max-w-md w-full text-center space-y-6 p-8 rounded-2xl bg-bg-elevated border border-border/40 shadow-xl backdrop-blur-md">
-            <div className="flex justify-center">
-              <div className="relative">
-                <Loader2 className="w-12 h-12 animate-spin text-primary" />
-                <div className="absolute inset-0 w-12 h-12 rounded-full border-2 border-primary/20 animate-ping" />
+    
+    if (hasToken) {
+      if (!isBackendReady) {
+        return (
+          <div className="min-h-screen flex flex-col items-center justify-center bg-bg-main px-4">
+            <div className="max-w-md w-full text-center space-y-6 p-8 rounded-2xl bg-bg-elevated border border-border/40 shadow-xl backdrop-blur-md">
+              {!isWakingTimeout && (
+                <div className="flex justify-center">
+                  <div className="relative">
+                    <Loader2 className="w-12 h-12 animate-spin text-primary" />
+                    <div className="absolute inset-0 w-12 h-12 rounded-full border-2 border-primary/20 animate-ping" />
+                  </div>
+                </div>
+              )}
+              <div className="space-y-2">
+                <h2 className="text-lg font-medium text-text-main tracking-tight">Career OS</h2>
+                <p className="text-sm text-text-muted transition-all duration-300">
+                  {readinessMessage}
+                </p>
               </div>
-            </div>
-            <div className="space-y-2">
-              <h2 className="text-lg font-medium text-text-main tracking-tight">Career OS</h2>
-              <p className="text-sm text-text-muted transition-all duration-300">
-                {readinessMessage}
-              </p>
+              {isWakingTimeout && (
+                <Button 
+                  onClick={retryReadiness}
+                  className="w-full mt-4 bg-primary text-primary-foreground hover:bg-primary/95"
+                >
+                  Retry Connection
+                </Button>
+              )}
             </div>
           </div>
-        </div>
-      );
+        );
+      }
+
+      if (isAuthTransientError) {
+        return (
+          <div className="min-h-screen flex flex-col items-center justify-center bg-bg-main px-4">
+            <div className="max-w-md w-full text-center space-y-6 p-8 rounded-2xl bg-bg-elevated border border-border/40 shadow-xl backdrop-blur-md">
+              <div className="space-y-2">
+                <h2 className="text-lg font-medium text-text-main tracking-tight">Connection Issue</h2>
+                <p className="text-sm text-text-muted">
+                  The server is reachable, but we could not verify your session due to a network connection issue.
+                </p>
+              </div>
+              <Button 
+                onClick={retryAuth}
+                className="w-full bg-primary text-primary-foreground hover:bg-primary/95"
+              >
+                Retry Connection
+              </Button>
+            </div>
+          </div>
+        );
+      }
     }
 
     return (

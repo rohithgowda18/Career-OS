@@ -15,6 +15,10 @@ interface AuthContextType {
   setToken: (token: string | null) => void;
   isBackendReady: boolean;
   readinessMessage: string;
+  isWakingTimeout: boolean;
+  retryReadiness: () => void;
+  isAuthTransientError: boolean;
+  retryAuth: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -34,16 +38,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isBackendReady, setIsBackendReady] = useState(false);
   const [readinessMessage, setReadinessMessage] = useState("Preparing your workspace...");
   const [isInitializing, setIsInitializing] = useState(true);
+  const [isWakingTimeout, setIsWakingTimeout] = useState(false);
+  const [pollTrigger, setPollTrigger] = useState(0);
 
-  // Centralized background backend readiness checking with exponential backoff polling
+  const retryReadiness = useCallback(() => {
+    console.log("[Debug Auth] Resetting readiness polling loop...");
+    setIsWakingTimeout(false);
+    setReadinessMessage("Preparing your workspace...");
+    setPollTrigger(prev => prev + 1);
+  }, []);
+
+  // Centralized background backend readiness checking with exponential backoff polling and strict lifecycle aborts
   useEffect(() => {
     let active = true;
     let timeoutId: any;
     const startTime = Date.now();
+    const abortController = new AbortController();
 
     const checkReadiness = async (delay = 2000) => {
       try {
-        await axios.get(`${BACKEND_URL}/actuator/health`, { timeout: 8000 });
+        await axios.get(`${BACKEND_URL}/actuator/health`, { 
+          timeout: 8000,
+          signal: abortController.signal
+        });
         if (active) {
           console.log("[Debug Auth] Backend is ready and healthy.");
           if (typeof window !== "undefined") {
@@ -53,7 +70,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } catch (err) {
         if (!active) return;
+        if (axios.isCancel(err)) {
+          console.log("[Debug Auth] Readiness check fetch request cancelled via cleanup.");
+          return;
+        }
+
         const elapsed = Date.now() - startTime;
+        if (elapsed > 60000) {
+          console.log("[Debug Auth] Backend readiness check timed out after 60s.");
+          setIsWakingTimeout(true);
+          setReadinessMessage("The server is taking longer than expected to wake up. Please check your connection and try again.");
+          return;
+        }
+
         if (elapsed > 10000) {
           setReadinessMessage("Server is waking up. This may take a moment on the first load...");
         }
@@ -68,8 +97,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       active = false;
       clearTimeout(timeoutId);
+      abortController.abort();
     };
-  }, []);
+  }, [pollTrigger]);
 
   const meQuery = useQuery({
     queryKey: ['auth', 'me'],
@@ -79,16 +109,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     refetchOnWindowFocus: false,
   });
 
+  const isAuthTransientError = useMemo(() => {
+    if (!meQuery.isError) return false;
+    const status = (meQuery.error as any)?.response?.status;
+    return !status || status >= 500;
+  }, [meQuery.isError, meQuery.error]);
+
+  const retryAuth = useCallback(() => {
+    console.log("[Debug Auth] Retrying user profile authentication...");
+    meQuery.refetch();
+  }, [meQuery]);
+
   useEffect(() => {
-    console.log(`[Debug Auth] AuthProvider useEffect initialization check - token: ${token ? "YES" : "NO"}, backendReady: ${isBackendReady}, queryState: ${meQuery.status}`);
+    console.log(`[Debug Auth] AuthProvider useEffect initialization check - token: ${token ? "YES" : "NO"}, backendReady: ${isBackendReady}, queryState: ${meQuery.status}, transientError: ${isAuthTransientError}`);
     if (!token) {
       console.log("[Debug Auth] No token state present. Setting isInitializing to false.");
       setIsInitializing(false);
-    } else if (isBackendReady && (meQuery.isSuccess || meQuery.isError)) {
-      console.log(`[Debug Auth] meQuery finished. Success: ${meQuery.isSuccess}, Error: ${meQuery.isError}. Setting isInitializing to false.`);
-      setIsInitializing(false);
+    } else if (isBackendReady) {
+      if (meQuery.isSuccess) {
+        console.log("[Debug Auth] meQuery finished successfully. Setting isInitializing to false.");
+        setIsInitializing(false);
+      } else if (meQuery.isError) {
+        if (isAuthTransientError) {
+          console.log("[Debug Auth] meQuery finished with a transient error. Keeping loading state for manual retry.");
+        } else {
+          console.log("[Debug Auth] meQuery finished with a permanent authentication error (401/403). Clearing session.");
+          localStorage.removeItem("token");
+          setTokenState(null);
+          setIsInitializing(false);
+        }
+      }
     }
-  }, [token, isBackendReady, meQuery.isSuccess, meQuery.isError]);
+  }, [token, isBackendReady, meQuery.isSuccess, meQuery.isError, isAuthTransientError]);
 
   const setToken = useCallback((newToken: string | null) => {
     console.log("[Debug Auth] setToken called - new token present:", newToken ? "YES" : "NO");
@@ -118,7 +170,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setToken,
     isBackendReady,
     readinessMessage,
-  }), [meQuery.data, isInitializing, meQuery.error, logout, setToken, isBackendReady, readinessMessage]);
+    isWakingTimeout,
+    retryReadiness,
+    isAuthTransientError,
+    retryAuth,
+  }), [
+    meQuery.data,
+    isInitializing,
+    meQuery.error,
+    logout,
+    setToken,
+    isBackendReady,
+    readinessMessage,
+    isWakingTimeout,
+    retryReadiness,
+    isAuthTransientError,
+    retryAuth
+  ]);
 
   return React.createElement(AuthContext.Provider, { value }, children);
 }
