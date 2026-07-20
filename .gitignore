@@ -205,3 +205,6 @@ buildNumber.properties
 # Spring Boot Artifacts
 *.jar
 *.war
+
+# Project-specific ignored files
+backend_code.txt

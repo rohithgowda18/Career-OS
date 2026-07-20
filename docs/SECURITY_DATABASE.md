@@ -10,7 +10,7 @@ Our security configuration is managed by Spring Security and JJWT.
 
 ### A. Stateless Filter Chain Configuration (`SecurityConfig.java`)
 We disable traditional server-side state components and configure a completely stateless filter chain:
-* **Session Creation Policy:** `SessionCreationPolicy.STATELESS`. The server does not maintain HTTP session records or cookies. Every incoming request is treated as independent and must contain valid cryptographic authorization details.
+* **Session Creation Policy:** `SessionCreationPolicy.IF_REQUIRED`. While all API routes are treated as stateless and authenticated via JWT on every request, the policy is set to `IF_REQUIRED` to allow Spring Security to maintain temporary HTTP sessions during OAuth2 login flow redirects (e.g. storing authorization request state).
 * **HTTP Basic / Form Login:** Disabled. All credentials verification goes through a RESTful JSON POST route on `AuthController.java` or through OAuth callbacks.
 * **CSRF (Cross-Site Request Forgery) Mitigation:** Disabled. Because the JWT token is not automatically sent by the browser in cookie headers (it must be manually injected via the client request interceptor's `Authorization: Bearer` header), the application is protected against CSRF by design.
 * **CORS (Cross-Origin Resource Sharing):** Restricts incoming requests to explicit whitelisted origins. In development, this maps to `http://localhost:5173`. In production, this matches your verified frontend hosting domain. Pre-flight `OPTIONS` requests are handled dynamically to check permissions.
