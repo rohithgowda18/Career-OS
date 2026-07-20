@@ -242,13 +242,17 @@ export default function LoginPage() {
               className="w-full bg-primary hover:bg-primary-hover text-white font-semibold h-10 mt-4 rounded-lg text-xs"
             >
               {isLoading && <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />}
-              {isSignUp ? "Sign Up" : "Continue"}
+              {isWakingBackend 
+                ? "Waiting for Server..." 
+                : (isLoading 
+                    ? (isSignUp ? "Signing Up..." : "Signing In...")
+                    : (isSignUp ? "Sign Up" : "Continue"))}
             </Button>
 
             {isLoading && (
               <p className="text-[10px] text-text-dim text-center mt-2.5 animate-pulse font-medium">
                 {isWakingBackend 
-                  ? "Preparing Career OS... Starting the server... The first visit may take up to 30 seconds." 
+                  ? "Starting Career OS... Signing you in when ready..." 
                   : "Loading..."}
               </p>
             )}

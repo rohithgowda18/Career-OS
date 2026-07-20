@@ -76,8 +76,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         const elapsed = Date.now() - startTime;
-        if (elapsed > 60000) {
-          console.log("[Debug Auth] Backend readiness check timed out after 60s.");
+        if (elapsed > 100000) {
+          console.log("[Debug Auth] Backend readiness check timed out after 100s.");
           setIsWakingTimeout(true);
           setReadinessMessage("The server is taking longer than expected to wake up. Please check your connection and try again.");
           return;
