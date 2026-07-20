@@ -17,7 +17,7 @@ const AddEventPage = React.lazy(() => import("./pages/AddEventPage"));
 const NotFound = React.lazy(() => import("./pages/NotFound"));
 
 function Router() {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, isBackendReady, readinessMessage } = useAuth();
   const [location, setLocation] = useLocation();
 
   useEffect(() => {
@@ -43,6 +43,28 @@ function Router() {
   }, [location, isAuthenticated, loading, setLocation]);
 
   if (loading) {
+    const hasToken = typeof window !== "undefined" && !!localStorage.getItem("token");
+    if (hasToken && !isBackendReady) {
+      return (
+        <div className="min-h-screen flex flex-col items-center justify-center bg-bg-main px-4">
+          <div className="max-w-md w-full text-center space-y-6 p-8 rounded-2xl bg-bg-elevated border border-border/40 shadow-xl backdrop-blur-md">
+            <div className="flex justify-center">
+              <div className="relative">
+                <Loader2 className="w-12 h-12 animate-spin text-primary" />
+                <div className="absolute inset-0 w-12 h-12 rounded-full border-2 border-primary/20 animate-ping" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-lg font-medium text-text-main tracking-tight">Career OS</h2>
+              <p className="text-sm text-text-muted transition-all duration-300">
+                {readinessMessage}
+              </p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="min-h-screen flex items-center justify-center bg-bg-main">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />

@@ -41,9 +41,6 @@ export default function LandingPage() {
     const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", handleScroll);
     
-    // Background warm-up
-    axios.get(`${BACKEND_URL}/actuator/health`).catch(() => {});
-    
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 

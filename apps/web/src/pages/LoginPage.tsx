@@ -21,7 +21,7 @@ export default function LoginPage() {
   const [isWakingBackend, setIsWakingBackend] = useState(false);
 
   const queryClient = useQueryClient();
-  const { setToken } = useAuth();
+  const { setToken, isBackendReady } = useAuth();
   const searchParams = new URLSearchParams(window.location.search);
   const redirectPath = searchParams.get("redirect") || "/dashboard";
   const oauthError = searchParams.get("oauth_error");
@@ -30,37 +30,31 @@ export default function LoginPage() {
     if (oauthError === "no_parent") {
       toast.error("Social login failed because the popup window could not connect back to the application. Please try again manually.");
     }
-    // Silent background check to warm up the backend
-    axios.get(`${BACKEND_URL}/actuator/health`).catch(() => {});
   }, [oauthError]);
 
   const handleAuthWithRetry = async (authFn: () => Promise<any>) => {
+    if (!isBackendReady) {
+      console.log("[Debug Auth] Backend is not ready yet. Awaiting readiness...");
+      setIsWakingBackend(true);
+      toast.info("Server is waking up, please wait a moment...");
+      
+      // Wait until isBackendReady becomes true (polled by AuthProvider)
+      while (true) {
+        if (typeof window !== "undefined" && (window as any).__backendReadyFlag) {
+          break;
+        }
+        // Fallback to checking react state
+        if (isBackendReady) {
+          break;
+        }
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+      setIsWakingBackend(false);
+    }
+
     try {
       return await authFn();
     } catch (error: any) {
-      const isNetworkError = error.code === 'ERR_NETWORK' || error.message?.includes('Unable to reach the API') || (axios.isAxiosError(error) && !error.response);
-      if (isNetworkError) {
-        console.log("[Debug Auth] Network error encountered. Checking backend health to wake it up...");
-        setIsWakingBackend(true);
-        toast.info("Starting backend, please wait...");
-        
-        let retries = 0;
-        const maxRetries = 12; // 12 * 5 = 60 seconds
-        while (retries < maxRetries) {
-          try {
-            await axios.get(`${BACKEND_URL}/actuator/health`, { timeout: 8000 });
-            console.log("[Debug Auth] Backend is now awake and healthy!");
-            break;
-          } catch (pingErr) {
-            console.log(`[Debug Auth] Ping backend attempt ${retries + 1} failed, waiting...`);
-            retries++;
-            await new Promise(resolve => setTimeout(resolve, 5000));
-          }
-        }
-        setIsWakingBackend(false);
-        // Retry the original request once
-        return await authFn();
-      }
       throw error;
     }
   };
