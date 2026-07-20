@@ -44,25 +44,30 @@ export default function AnalyticsDashboard() {
   const [analyticType, setAnalyticType] = useState<"events" | "placements">("events");
 
   // Events Queries
-  const acceptanceRatesQuery = useQuery({ queryKey: ['analytics', 'rates'], queryFn: analyticsApi.acceptanceRates, enabled: analyticType === "events" });
-  const statusDistributionQuery = useQuery({ queryKey: ['analytics', 'distribution'], queryFn: analyticsApi.statusDistribution, enabled: analyticType === "events" });
-  const summaryQuery = useQuery({ queryKey: ['analytics', 'summary'], queryFn: analyticsApi.summary, enabled: analyticType === "events" });
+  const applicationsAnalyticsQuery = useQuery({
+    queryKey: ['analytics', 'applications'],
+    queryFn: analyticsApi.getApplicationsAnalytics,
+    enabled: analyticType === "events",
+    staleTime: 5 * 60 * 1000,
+  });
 
   // Placements Queries
   const placementAnalyticsQuery = useQuery({
     queryKey: ['analytics', 'placements'],
     queryFn: placementsApi.getAnalytics,
     enabled: analyticType === "placements",
+    staleTime: 5 * 60 * 1000,
   });
 
   const placementTrendsQuery = useQuery({
     queryKey: ['analytics', 'placements', 'trends'],
     queryFn: placementsApi.getTrends,
     enabled: analyticType === "placements",
+    staleTime: 5 * 60 * 1000,
   });
 
   const isLoading = analyticType === "events"
-    ? (acceptanceRatesQuery.isLoading || statusDistributionQuery.isLoading || summaryQuery.isLoading)
+    ? applicationsAnalyticsQuery.isLoading
     : (placementAnalyticsQuery.isLoading || placementTrendsQuery.isLoading);
 
   if (isLoading) {
@@ -74,11 +79,13 @@ export default function AnalyticsDashboard() {
   }
 
   // Event Analytics Data Mapping
-  const acceptanceRates = acceptanceRatesQuery.data || {};
-  const statusDistribution = statusDistributionQuery.data || {};
-  const summary = summaryQuery.data || { totalApplications: 0, accepted: 0, rejected: 0, underReview: 0, overallAcceptanceRate: 0 };
+  const {
+    summary = { totalApplications: 0, accepted: 0, rejected: 0, underReview: 0, overallAcceptanceRate: 0 },
+    statusDistribution = {},
+    conversionRates = {},
+  } = applicationsAnalyticsQuery.data || {};
 
-  const acceptanceRateChartData = Object.entries(acceptanceRates).map(([type, data]: any) => ({
+  const acceptanceRateChartData = Object.entries(conversionRates).map(([type, data]: any) => ({
     type, rate: data.rate, total: data.total, accepted: data.accepted,
   }));
 

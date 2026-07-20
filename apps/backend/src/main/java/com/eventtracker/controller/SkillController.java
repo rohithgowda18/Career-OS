@@ -6,6 +6,8 @@ import com.eventtracker.dto.UpdateSkillRequest;
 import com.eventtracker.entity.Skill;
 import com.eventtracker.entity.User;
 import com.eventtracker.service.SkillService;
+import com.eventtracker.service.UserService;
+import com.eventtracker.security.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -25,20 +27,25 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class SkillController {
     private final SkillService skillService;
+    private final UserService userService;
 
-    private User getCurrentUser() {
+    private Long getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.getPrincipal() instanceof User) {
-            return (User) authentication.getPrincipal();
+        if (authentication != null) {
+            Object principal = authentication.getPrincipal();
+            if (principal instanceof UserPrincipal) {
+                return ((UserPrincipal) principal).getId();
+            } else if (principal instanceof User) {
+                return ((User) principal).getId();
+            }
         }
         throw new RuntimeException("User not authenticated");
     }
 
-    @PostMapping
-    @Operation(operationId = "createSkill", summary = "Create a new user skill")
     public ResponseEntity<?> create(@Valid @RequestBody CreateSkillRequest request) {
         try {
-            User user = getCurrentUser();
+            Long userId = getCurrentUserId();
+            User user = userService.findById(userId).orElseThrow(() -> new IllegalArgumentException("User not found"));
             Skill skill = skillService.createSkill(user, request);
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(skillService.convertToDTO(skill));
@@ -54,8 +61,8 @@ public class SkillController {
             @RequestParam(required = false) String search,
             Pageable pageable) {
         try {
-            User user = getCurrentUser();
-            return ResponseEntity.ok(skillService.getUserSkills(user.getId(), search, pageable));
+            Long userId = getCurrentUserId();
+            return ResponseEntity.ok(skillService.getUserSkills(userId, search, pageable));
         } catch (Exception e) {
             log.error("Error listing skills", e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
@@ -66,8 +73,8 @@ public class SkillController {
     @Operation(operationId = "getSkill", summary = "Get a skill by ID")
     public ResponseEntity<?> get(@PathVariable Long id) {
         try {
-            User user = getCurrentUser();
-            Optional<Skill> skill = skillService.getSkillById(id, user.getId());
+            Long userId = getCurrentUserId();
+            Optional<Skill> skill = skillService.getSkillById(id, userId);
             if (skill.isEmpty()) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Skill not found");
             }
@@ -82,8 +89,8 @@ public class SkillController {
     @Operation(operationId = "updateSkill", summary = "Update an existing skill")
     public ResponseEntity<?> update(@PathVariable Long id, @Valid @RequestBody UpdateSkillRequest request) {
         try {
-            User user = getCurrentUser();
-            Skill skill = skillService.updateSkill(id, user.getId(), request);
+            Long userId = getCurrentUserId();
+            Skill skill = skillService.updateSkill(id, userId, request);
             return ResponseEntity.ok(skillService.convertToDTO(skill));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
@@ -97,8 +104,8 @@ public class SkillController {
     @Operation(operationId = "deleteSkill", summary = "Delete a skill")
     public ResponseEntity<?> delete(@PathVariable Long id) {
         try {
-            User user = getCurrentUser();
-            skillService.deleteSkill(id, user.getId());
+            Long userId = getCurrentUserId();
+            skillService.deleteSkill(id, userId);
             return ResponseEntity.ok("Skill deleted successfully");
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());

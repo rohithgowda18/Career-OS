@@ -50,6 +50,7 @@ export default function ApplicationCard({ application, inlineOnly = false }: App
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["applications"] });
       queryClient.invalidateQueries({ queryKey: ["analytics", "dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["analytics", "applications"] });
       toast.success("Status updated successfully");
     },
     onError: () => toast.error("Failed to update status"),
@@ -60,6 +61,7 @@ export default function ApplicationCard({ application, inlineOnly = false }: App
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["applications"] });
       queryClient.invalidateQueries({ queryKey: ["analytics", "dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["analytics", "applications"] });
       toast.success("Application deleted successfully");
     },
     onError: () => toast.error("Failed to delete application"),

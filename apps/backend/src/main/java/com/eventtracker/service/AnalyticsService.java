@@ -26,42 +26,14 @@ public class AnalyticsService {
     private final PlacementRepository placementRepository;
 
 
-    public Map<String, Object> getStatusDistribution(Long userId) {
-        List<Application> apps = applicationRepository.findByUserId(userId);
-        return apps.stream()
-                .collect(Collectors.groupingBy(a -> a.getStatus().name(), Collectors.counting()))
-                .entrySet().stream()
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-    }
-
-    public Map<String, Object> getAcceptanceRates(Long userId) {
-        List<Application> apps = applicationRepository.findByUserId(userId);
-        Map<String, List<Application>> byType = apps.stream()
-                .collect(Collectors.groupingBy(a -> a.getEventType().name()));
-
-        Map<String, Object> rates = new HashMap<>();
-        byType.forEach((type, list) -> {
-            long total = list.size();
-            long accepted = list.stream().filter(a -> a.getStatus().name().equals("Accepted")).count();
-            double rate = total > 0 ? (double) accepted / total * 100 : 0;
-            
-            Map<String, Object> stats = new HashMap<>();
-            stats.put("total", total);
-            stats.put("accepted", accepted);
-            stats.put("rate", Math.round(rate));
-            rates.put(type, stats);
-        });
-        return rates;
-    }
-
-    public Map<String, Object> getSummary(Long userId) {
+    public Map<String, Object> getApplicationAnalytics(Long userId) {
         List<Application> apps = applicationRepository.findByUserId(userId);
         long total = apps.size();
-        long accepted = apps.stream().filter(a -> a.getStatus().name().equals("Accepted")).count();
-        long underReview = apps.stream().filter(a -> a.getStatus().name().equals("UnderReview")).count();
-        long applied = apps.stream().filter(a -> a.getStatus().name().equals("Applied")).count();
-        long interested = apps.stream().filter(a -> a.getStatus().name().equals("Interested")).count();
-        long rejected = apps.stream().filter(a -> a.getStatus().name().equals("Rejected")).count();
+        long accepted = apps.stream().filter(a -> a.getStatus() == Application.ApplicationStatus.Accepted).count();
+        long underReview = apps.stream().filter(a -> a.getStatus() == Application.ApplicationStatus.UnderReview).count();
+        long applied = apps.stream().filter(a -> a.getStatus() == Application.ApplicationStatus.Applied).count();
+        long interested = apps.stream().filter(a -> a.getStatus() == Application.ApplicationStatus.Interested).count();
+        long rejected = apps.stream().filter(a -> a.getStatus() == Application.ApplicationStatus.Rejected).count();
 
         double acceptanceRate = total > 0 ? (double) accepted / total * 100 : 0;
 
@@ -73,7 +45,33 @@ public class AnalyticsService {
         summary.put("interested", interested);
         summary.put("rejected", rejected);
         summary.put("overallAcceptanceRate", Math.round(acceptanceRate));
-        return summary;
+
+        // status distribution map
+        Map<String, Long> statusDistribution = apps.stream()
+                .collect(Collectors.groupingBy(a -> a.getStatus().name(), Collectors.counting()));
+
+        // conversion rates / acceptance rates by event type
+        Map<String, List<Application>> byType = apps.stream()
+                .collect(Collectors.groupingBy(a -> a.getEventType().name()));
+
+        Map<String, Object> rates = new HashMap<>();
+        byType.forEach((type, list) -> {
+            long typeTotal = list.size();
+            long typeAccepted = list.stream().filter(a -> a.getStatus() == Application.ApplicationStatus.Accepted).count();
+            double rate = typeTotal > 0 ? (double) typeAccepted / typeTotal * 100 : 0;
+            
+            Map<String, Object> stats = new HashMap<>();
+            stats.put("total", typeTotal);
+            stats.put("accepted", typeAccepted);
+            stats.put("rate", Math.round(rate));
+            rates.put(type, stats);
+        });
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("summary", summary);
+        result.put("statusDistribution", statusDistribution);
+        result.put("conversionRates", rates);
+        return result;
     }
 
     public Map<String, Object> getDashboardData(Long userId) {
@@ -264,60 +262,6 @@ public class AnalyticsService {
         return stats;
     }
 
-    public Map<String, Object> getPlacementSummary(Long userId) {
-        List<Placement> placements = placementRepository.findByUserId(userId);
-        long total = placements.size();
-        long applied = placements.stream().filter(p -> p.getStatus() == PlacementStatus.APPLIED).count();
-        long assessmentScheduled = placements.stream().filter(p -> p.getStatus() == PlacementStatus.ASSESSMENT_SCHEDULED).count();
-        long assessmentCompleted = placements.stream().filter(p -> p.getStatus() == PlacementStatus.ASSESSMENT_COMPLETED).count();
-        long interviewScheduled = placements.stream().filter(p -> p.getStatus() == PlacementStatus.INTERVIEW_SCHEDULED).count();
-        long interviewCompleted = placements.stream().filter(p -> p.getStatus() == PlacementStatus.INTERVIEW_COMPLETED).count();
-        long offerReceived = placements.stream().filter(p -> p.getStatus() == PlacementStatus.OFFER_RECEIVED).count();
-        long rejected = placements.stream().filter(p -> p.getStatus() == PlacementStatus.REJECTED).count();
-
-        Map<String, Object> summary = new HashMap<>();
-        summary.put("totalPlacements", total);
-        summary.put("applied", applied);
-        summary.put("assessmentScheduled", assessmentScheduled);
-        summary.put("assessmentCompleted", assessmentCompleted);
-        summary.put("interviewScheduled", interviewScheduled);
-        summary.put("interviewCompleted", interviewCompleted);
-        summary.put("offerReceived", offerReceived);
-        summary.put("rejected", rejected);
-        summary.put("submitted", total);
-        return summary;
-    }
-
-    public Map<String, Long> getPlacementStatusDistribution(Long userId) {
-        List<Placement> placements = placementRepository.findByUserId(userId);
-        return placements.stream()
-                .collect(Collectors.groupingBy(p -> p.getStatus().name(), Collectors.counting()));
-    }
-
-    public Map<String, Object> getPlacementConversionRates(Long userId) {
-        List<Placement> placements = placementRepository.findByUserId(userId);
-        long total = placements.size();
-
-        long applied = placements.stream().filter(p -> p.getStatus() == PlacementStatus.APPLIED).count();
-        long assessmentScheduled = placements.stream().filter(p -> p.getStatus() == PlacementStatus.ASSESSMENT_SCHEDULED).count();
-        long assessmentCompleted = placements.stream().filter(p -> p.getStatus() == PlacementStatus.ASSESSMENT_COMPLETED).count();
-        long interviewScheduled = placements.stream().filter(p -> p.getStatus() == PlacementStatus.INTERVIEW_SCHEDULED).count();
-        long interviewCompleted = placements.stream().filter(p -> p.getStatus() == PlacementStatus.INTERVIEW_COMPLETED).count();
-        long offerReceived = placements.stream().filter(p -> p.getStatus() == PlacementStatus.OFFER_RECEIVED).count();
-
-        long assessments = assessmentScheduled + assessmentCompleted + interviewScheduled + interviewCompleted + offerReceived;
-        long interviews = interviewScheduled + interviewCompleted + offerReceived;
-
-        double assessmentConversion = total > 0 ? (double) assessments / total * 100 : 0;
-        double interviewConversion = assessments > 0 ? (double) interviews / assessments * 100 : 0;
-        double offerConversion = total > 0 ? (double) offerReceived / total * 100 : 0;
-
-        Map<String, Object> conversion = new HashMap<>();
-        conversion.put("assessmentConversion", Math.round(assessmentConversion));
-        conversion.put("interviewConversion", Math.round(interviewConversion));
-        conversion.put("offerConversion", Math.round(offerConversion));
-        return conversion;
-    }
 
     public List<Map<String, Object>> getPlacementTrends(Long userId) {
         List<Placement> placements = placementRepository.findByUserId(userId);

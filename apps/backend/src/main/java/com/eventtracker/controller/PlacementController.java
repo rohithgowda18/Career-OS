@@ -5,6 +5,8 @@ import com.eventtracker.entity.Placement;
 import com.eventtracker.entity.User;
 import com.eventtracker.service.PlacementService;
 import com.eventtracker.service.GeminiExtractionService;
+import com.eventtracker.service.UserService;
+import com.eventtracker.security.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +30,7 @@ public class PlacementController {
     
     private final PlacementService placementService;
     private final GeminiExtractionService geminiExtractionService;
+    private final UserService userService;
 
     @PostMapping("/extract")
     @Operation(operationId = "extractPlacement", summary = "Extract placement details using AI")
@@ -49,29 +52,33 @@ public class PlacementController {
         }
     }
 
-    private User getCurrentUser() {
+    private Long getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.getPrincipal() instanceof User) {
-            return (User) authentication.getPrincipal();
+        if (authentication != null) {
+            Object principal = authentication.getPrincipal();
+            if (principal instanceof UserPrincipal) {
+                return ((UserPrincipal) principal).getId();
+            } else if (principal instanceof User) {
+                return ((User) principal).getId();
+            }
         }
         throw new RuntimeException("User not authenticated");
     }
 
     @GetMapping
-    @Operation(operationId = "listPlacements", summary = "List placements with optional status filtering and full-text search")
+    @Operation(operationId = "listPlacements", summary = "List placements with optional status filtering")
     public ResponseEntity<?> list(
             @RequestParam(required = false) String status,
-            @RequestParam(required = false) String search,
             Pageable pageable) {
-        User user = getCurrentUser();
-        return ResponseEntity.ok(placementService.getUserPlacements(user.getId(), status, search, pageable));
+        Long userId = getCurrentUserId();
+        return ResponseEntity.ok(placementService.getUserPlacements(userId, status, pageable));
     }
 
     @GetMapping("/{id}")
     @Operation(operationId = "getPlacement", summary = "Get a placement by ID")
     public ResponseEntity<?> get(@PathVariable Long id) {
-        User user = getCurrentUser();
-        Optional<Placement> placement = placementService.findById(id, user.getId());
+        Long userId = getCurrentUserId();
+        Optional<Placement> placement = placementService.findById(id, userId);
         if (placement.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Placement not found");
         }
@@ -82,7 +89,8 @@ public class PlacementController {
     @Operation(operationId = "createPlacement", summary = "Create a new placement record")
     public ResponseEntity<?> create(@Valid @RequestBody PlacementDTO request) {
         try {
-            User user = getCurrentUser();
+            Long userId = getCurrentUserId();
+            User user = userService.findById(userId).orElseThrow(() -> new IllegalArgumentException("User not found"));
             Placement placement = placementService.createPlacement(user, request);
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(placementService.convertToDTO(placement));
@@ -96,8 +104,8 @@ public class PlacementController {
     @Operation(operationId = "updatePlacement", summary = "Update an existing placement record")
     public ResponseEntity<?> update(@PathVariable Long id, @Valid @RequestBody PlacementDTO request) {
         try {
-            User user = getCurrentUser();
-            Placement placement = placementService.updatePlacement(id, user.getId(), request);
+            Long userId = getCurrentUserId();
+            Placement placement = placementService.updatePlacement(id, userId, request);
             return ResponseEntity.ok(placementService.convertToDTO(placement));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
@@ -111,8 +119,8 @@ public class PlacementController {
     @Operation(operationId = "deletePlacement", summary = "Delete a placement record")
     public ResponseEntity<?> delete(@PathVariable Long id) {
         try {
-            User user = getCurrentUser();
-            placementService.deletePlacement(id, user.getId());
+            Long userId = getCurrentUserId();
+            placementService.deletePlacement(id, userId);
             return ResponseEntity.ok("Placement deleted successfully");
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());

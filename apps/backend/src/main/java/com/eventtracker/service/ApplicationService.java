@@ -7,15 +7,14 @@ import com.eventtracker.exception.DuplicateEventException;
 import com.eventtracker.repository.ApplicationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.eventtracker.util.UrlUtils;
 
-import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -64,28 +63,41 @@ public class ApplicationService {
         return Application.ApplicationStatus.Interested;
     }
 
-
     public Optional<Application> findById(Long id, Long userId) {
         return applicationRepository.findByIdAndUserId(id, userId);
     }
 
-    public Page<ApplicationDTO> getUserApplications(Long userId, String status, String search, Pageable pageable) {
+    @Transactional(readOnly = true)
+    public Page<ApplicationDTO> getUserApplications(Long userId, String status, String eventType, Pageable pageable) {
+        // Guarantee a stable secondary sort by 'id' ASC
+        Sort sort = pageable.getSort();
+        if (sort.isSorted()) {
+            if (sort.getOrderFor("id") == null) {
+                sort = sort.and(Sort.by(Sort.Direction.ASC, "id"));
+            }
+        } else {
+            sort = Sort.by(Sort.Direction.ASC, "deadline")
+                    .and(Sort.by(Sort.Direction.ASC, "id"));
+        }
+        
+        Pageable sortedPageable = PageRequest.of(
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                sort
+        );
+
         Application.ApplicationStatus appStatus = null;
         if (status != null && !status.trim().isEmpty() && !status.equalsIgnoreCase("ALL")) {
             appStatus = parseStatus(status);
         }
-        String searchPattern = (search != null && !search.trim().isEmpty()) ? search.trim() : null;
 
-        return applicationRepository.findFiltered(userId, appStatus, searchPattern, pageable)
+        Application.EventType appEventType = null;
+        if (eventType != null && !eventType.trim().isEmpty() && !eventType.equalsIgnoreCase("ALL")) {
+            appEventType = parseEventType(eventType);
+        }
+
+        return applicationRepository.findFiltered(userId, appStatus, appEventType, sortedPageable)
                 .map(this::convertToDTO);
-    }
-
-    public List<ApplicationDTO> getUserApplicationsByStatus(Long userId, String status) {
-        Application.ApplicationStatus appStatus = parseStatus(status);
-        return applicationRepository.findByUserIdAndStatusOrderByDeadlineAsc(userId, appStatus)
-                .stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
     }
 
     public Application updateApplication(Long id, Long userId, ApplicationDTO dto) {
@@ -108,7 +120,16 @@ public class ApplicationService {
             app.setNotes(dto.getNotes());
         }
         if (dto.getUrl() != null) {
-            app.setUrl(dto.getUrl());
+            String normalizedUrl = UrlUtils.normalizeUrl(dto.getUrl());
+            if (normalizedUrl != null && !normalizedUrl.equals(app.getUrl())) {
+                applicationRepository.findByUserIdAndUrl(userId, normalizedUrl)
+                    .ifPresent(existingApp -> {
+                        if (!existingApp.getId().equals(app.getId())) {
+                            throw new DuplicateEventException("Event already saved in your tracker with this URL");
+                        }
+                    });
+            }
+            app.setUrl(normalizedUrl);
         }
         if (dto.getLocation() != null) {
             app.setLocation(dto.getLocation());
@@ -136,34 +157,5 @@ public class ApplicationService {
         dto.setCreatedAt(app.getCreatedAt());
         dto.setUpdatedAt(app.getUpdatedAt());
         return dto;
-    }
-
-    public Application convertFromDTO(ApplicationDTO dto) {
-        Application app = new Application();
-        app.setEventName(dto.getEventName());
-        app.setEventType(parseEventType(dto.getEventType()));
-        app.setStatus(parseStatus(dto.getStatus()));
-        app.setDeadline(dto.getDeadline());
-        app.setNotes(dto.getNotes());
-        app.setUrl(dto.getUrl());
-        app.setLocation(dto.getLocation());
-        return app;
-    }
-
-    public List<ApplicationDTO> getUserApplicationsByEventType(Long userId, String eventType) {
-        Application.EventType type = parseEventType(eventType);
-        return applicationRepository.findByUserIdAndEventTypeOrderByDeadlineAsc(userId, type)
-                .stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
-    }
-
-    public long countUserApplications(Long userId) {
-        return applicationRepository.countByUserId(userId);
-    }
-
-    public long countUserApplicationsByStatus(Long userId, String status) {
-        Application.ApplicationStatus appStatus = parseStatus(status);
-        return applicationRepository.countByUserIdAndStatus(userId, appStatus);
     }
 }

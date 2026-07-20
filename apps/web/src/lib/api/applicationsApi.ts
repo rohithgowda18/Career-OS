@@ -3,20 +3,19 @@ import restClient from '../restClient';
 export interface ApplicationListParams {
   page?: number;
   size?: number;
-  sort?: string; // e.g., "deadline,asc" or "createdAt,desc"
+  sort?: string;
   status?: string;
-  search?: string;
+  eventType?: string;
 }
 
 export const applicationsApi = {
   list: async (params?: ApplicationListParams) => {
-    // Use Spring Boot Pageable defaults: page=0, size=20, sort=deadline,asc
     const queryParams = {
       page: params?.page ?? 0,
       size: params?.size ?? 20,
-      sort: params?.sort ?? 'deadline,asc', // Default sort by deadline ascending
+      sort: params?.sort ?? 'deadline,asc',
       status: params?.status,
-      search: params?.search,
+      eventType: params?.eventType,
     };
     const response = (await restClient.get('/api/applications', { params: queryParams })).data;
     

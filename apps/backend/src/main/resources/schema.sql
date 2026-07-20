@@ -8,7 +8,6 @@ CREATE TABLE IF NOT EXISTS users (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 
 -- USER PROFILES (Autofill data)
 CREATE TABLE IF NOT EXISTS user_profiles (
@@ -39,7 +38,6 @@ CREATE TABLE IF NOT EXISTS applications (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_applications_user_id ON applications(user_id);
 CREATE INDEX IF NOT EXISTS idx_applications_status ON applications(status);
 
 -- Ensure user cannot save the same event URL twice (Idempotent)
@@ -62,7 +60,6 @@ CREATE TABLE IF NOT EXISTS placements (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_placements_user_id ON placements(user_id);
 CREATE INDEX IF NOT EXISTS idx_placements_status ON placements(status);
 DROP INDEX IF EXISTS unique_user_company_role;
 CREATE UNIQUE INDEX IF NOT EXISTS unique_user_company_role_link ON placements (user_id, company_name, role, application_link);
@@ -84,7 +81,6 @@ CREATE TABLE IF NOT EXISTS skills (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_skills_user_id ON skills(user_id);
 CREATE UNIQUE INDEX IF NOT EXISTS unique_user_skill ON skills (user_id, name);
 
 ALTER TABLE users
@@ -114,6 +110,6 @@ CREATE TABLE IF NOT EXISTS routine_completion (
     CONSTRAINT uq_routine_completion UNIQUE (routine_task_id, completion_date)
 );
 
-CREATE INDEX IF NOT EXISTS idx_routine_completion_task_date ON routine_completion(routine_task_id, completion_date);
+
 
 

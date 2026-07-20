@@ -1,6 +1,7 @@
 package com.eventtracker.controller;
 
 import com.eventtracker.entity.User;
+import com.eventtracker.security.UserPrincipal;
 import com.eventtracker.service.AnalyticsService;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
@@ -21,46 +22,18 @@ public class AnalyticsController {
 
     private final AnalyticsService analyticsService;
 
-    @GetMapping("/applications/summary")
-    @Operation(operationId = "getApplicationSummary", summary = "Get event applications summary metrics")
-    public ResponseEntity<Map<String, Object>> getApplicationSummary() {
+    @GetMapping("/applications")
+    @Operation(operationId = "getApplicationAnalytics", summary = "Get combined event applications analytics")
+    public ResponseEntity<Map<String, Object>> getApplicationAnalytics() {
         Long userId = getCurrentUserId();
-        return ResponseEntity.ok(analyticsService.getSummary(userId));
+        return ResponseEntity.ok(analyticsService.getApplicationAnalytics(userId));
     }
 
-    @GetMapping("/applications/status-distribution")
-    @Operation(operationId = "getApplicationStatusDistribution", summary = "Get event applications status distribution data")
-    public ResponseEntity<Map<String, Object>> getApplicationStatusDistribution() {
+    @GetMapping("/placements")
+    @Operation(operationId = "getPlacementAnalytics", summary = "Get combined placement applications analytics")
+    public ResponseEntity<Map<String, Object>> getPlacementAnalytics() {
         Long userId = getCurrentUserId();
-        return ResponseEntity.ok(analyticsService.getStatusDistribution(userId));
-    }
-
-    @GetMapping("/applications/conversion-rates")
-    @Operation(operationId = "getApplicationConversionRates", summary = "Get event applications acceptance rates data")
-    public ResponseEntity<Map<String, Object>> getApplicationConversionRates() {
-        Long userId = getCurrentUserId();
-        return ResponseEntity.ok(analyticsService.getAcceptanceRates(userId));
-    }
-
-    @GetMapping("/placements/summary")
-    @Operation(operationId = "getPlacementSummary", summary = "Get placement applications summary metrics")
-    public ResponseEntity<Map<String, Object>> getPlacementSummary() {
-        Long userId = getCurrentUserId();
-        return ResponseEntity.ok(analyticsService.getPlacementSummary(userId));
-    }
-
-    @GetMapping("/placements/status-distribution")
-    @Operation(operationId = "getPlacementStatusDistribution", summary = "Get placement applications status distribution data")
-    public ResponseEntity<Map<String, Long>> getPlacementStatusDistribution() {
-        Long userId = getCurrentUserId();
-        return ResponseEntity.ok(analyticsService.getPlacementStatusDistribution(userId));
-    }
-
-    @GetMapping("/placements/conversion-rates")
-    @Operation(operationId = "getPlacementConversionRates", summary = "Get placement stage conversion rates data")
-    public ResponseEntity<Map<String, Object>> getPlacementConversionRates() {
-        Long userId = getCurrentUserId();
-        return ResponseEntity.ok(analyticsService.getPlacementConversionRates(userId));
+        return ResponseEntity.ok(analyticsService.getPlacementAnalytics(userId));
     }
 
     @GetMapping("/placements/trends")
@@ -79,7 +52,14 @@ public class AnalyticsController {
 
     private Long getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        User user = (User) authentication.getPrincipal();
-        return user.getId();
+        if (authentication != null) {
+            Object principal = authentication.getPrincipal();
+            if (principal instanceof UserPrincipal) {
+                return ((UserPrincipal) principal).getId();
+            } else if (principal instanceof User) {
+                return ((User) principal).getId();
+            }
+        }
+        throw new RuntimeException("User not authenticated");
     }
 }

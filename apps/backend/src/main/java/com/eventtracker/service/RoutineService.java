@@ -105,29 +105,21 @@ public class RoutineService {
         LocalDate today = LocalDate.now();
         LocalDate startOfWeek = today.with(java.time.temporal.TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
 
-        // Get completions for the current week
-        List<RoutineCompletion> weekCompletions = routineCompletionRepository
-                .findByRoutineTaskIdInAndCompletionDateBetween(ids, startOfWeek, startOfWeek.plusDays(6));
-
-        Map<LocalDate, Long> weekCompletionsMap = weekCompletions.stream()
+        // Fetch all completions once to calculate both weekly reports and streaks
+        List<RoutineCompletion> allCompletions = routineCompletionRepository.findByRoutineTaskIdIn(ids);
+        Map<LocalDate, Long> completionsByDate = allCompletions.stream()
                 .filter(RoutineCompletion::isCompleted)
                 .collect(Collectors.groupingBy(RoutineCompletion::getCompletionDate, Collectors.counting()));
 
         double totalWeeklyPercentage = 0.0;
         for (int i = 0; i < 7; i++) {
             LocalDate date = startOfWeek.plusDays(i);
-            long completedCount = weekCompletionsMap.getOrDefault(date, 0L);
+            long completedCount = completionsByDate.getOrDefault(date, 0L);
             double percentage = Math.round(((double) completedCount / totalCount) * 100.0);
             report.getWeeklyCompletion().put(date.getDayOfWeek().toString(), percentage);
             totalWeeklyPercentage += percentage;
         }
         report.setWeeklyAverage(Math.round(totalWeeklyPercentage / 7.0));
-
-        // Fetch all completions to calculate streaks
-        List<RoutineCompletion> allCompletions = routineCompletionRepository.findByRoutineTaskIdIn(ids);
-        Map<LocalDate, Long> completionsByDate = allCompletions.stream()
-                .filter(RoutineCompletion::isCompleted)
-                .collect(Collectors.groupingBy(RoutineCompletion::getCompletionDate, Collectors.counting()));
 
         // Streak Calculation
         Set<LocalDate> completedDays = completionsByDate.entrySet().stream()

@@ -20,8 +20,6 @@ import {
   ArrowRight,
   CheckCircle2,
   Inbox,
-  Clock,
-  Compass,
   Square,
   CheckSquare,
   ListTodo
@@ -103,41 +101,8 @@ export default function DashboardView() {
     upcomingDeadlines: [],
     upcomingDeadlinesCount: 0,
     awaitingFeedback: [],
-    pipelineDistribution: {},
     recentActivity: [],
-    placementAssessmentsToday: [],
-    placementInterviewsToday: [],
   };
-
-  // Combine priorities for today
-  const todaysPrioritiesList = useMemo(() => {
-    const items: any[] = [];
-    (dashboardData.deadlinesToday || []).forEach((app: any) => {
-      items.push({
-        id: `priority-app-${app.id}`,
-        title: `Deadline: ${app.eventName}`,
-        subtitle: `${app.eventType} application closing date`,
-        type: "deadline",
-      });
-    });
-    (dashboardData.placementAssessmentsToday || []).forEach((p: any) => {
-      items.push({
-        id: `priority-place-as-${p.id}`,
-        title: `Assessment: ${p.companyName}`,
-        subtitle: `${p.role} recruitment test`,
-        type: "assessment",
-      });
-    });
-    (dashboardData.placementInterviewsToday || []).forEach((p: any) => {
-      items.push({
-        id: `priority-place-it-${p.id}`,
-        title: `Interview: ${p.companyName}`,
-        subtitle: `Discussion for ${p.role} position`,
-        type: "interview",
-      });
-    });
-    return items;
-  }, [dashboardData]);
 
   // Combine upcoming deadlines (next 7 days, excluding today)
   const upcomingDeadlinesList = useMemo(() => {
@@ -168,8 +133,8 @@ export default function DashboardView() {
         </div>
 
         {/* Focus Cards Skeleton */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map((i) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[1, 2, 3].map((i) => (
             <div key={i} className="bg-bg-card border border-border rounded-xl p-4 space-y-4 animate-pulse">
               <div className="flex justify-between items-start">
                 <Skeleton className="h-4 w-28" />
@@ -185,21 +150,6 @@ export default function DashboardView() {
         {/* Main Columns Skeleton */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
-            {/* Priorities Skeleton */}
-            <div className="bg-bg-card border border-border rounded-xl p-5 space-y-4">
-              <Skeleton className="h-4 w-36" />
-              <div className="space-y-2">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="flex justify-between items-center p-3.5 border border-border/60 rounded-lg">
-                    <div className="space-y-1.5">
-                      <Skeleton className="h-4 w-48" />
-                      <Skeleton className="h-3.5 w-32" />
-                    </div>
-                    <Skeleton className="h-6 w-20" />
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
 
           <div className="space-y-6">
@@ -230,7 +180,7 @@ export default function DashboardView() {
       {/* Today's Focus Action Cards Grid */}
       <div className="space-y-3">
         <h3 className="text-xs font-semibold uppercase tracking-wider text-text-dim">Today's Focus</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Card 1: Deadlines Today */}
           <div className="group relative bg-bg-card border border-border rounded-xl p-4 flex flex-col justify-between hover:border-primary/40 transition-all">
             <div className="space-y-2">
@@ -287,34 +237,6 @@ export default function DashboardView() {
             </Button>
           </div>
 
-          {/* Card 3: Awaiting Responses */}
-          <div className="group relative bg-bg-card border border-border rounded-xl p-4 flex flex-col justify-between hover:border-primary/40 transition-all">
-            <div className="space-y-2">
-              <div className="flex justify-between items-start">
-                <span className="text-xs text-text-muted font-medium">Awaiting Responses</span>
-                <span className={cn(
-                  "text-xs px-2 py-0.5 rounded-full font-bold",
-                  dashboardData.awaitingResponses > 0 ? "bg-warning/10 text-warning border border-warning/20" : "bg-bg-elevated text-text-dim"
-                )}>
-                  {dashboardData.awaitingResponses}
-                </span>
-              </div>
-              <p className="text-sm font-semibold text-text-main">
-                {dashboardData.awaitingResponses > 0 ? `${dashboardData.awaitingResponses} application${dashboardData.awaitingResponses > 1 ? 's' : ''} pending` : "No pending applications"}
-              </p>
-              <p className="text-[11px] text-text-dim line-clamp-1">
-                {dashboardData.awaitingResponses > 0 ? "Consider sending a follow-up email." : "Submit applications to build funnel."}
-              </p>
-            </div>
-            <Button
-              onClick={() => window.history.pushState(null, "", "/dashboard?view=kanban")}
-              className="w-full mt-4 justify-between text-[11px] font-semibold h-8 border border-border bg-bg-elevated hover:bg-bg-elevated/80 text-text-main cursor-pointer"
-            >
-              <span>Follow Up</span>
-              <ArrowRight className="w-3 h-3 text-text-dim group-hover:translate-x-0.5 transition-transform" />
-            </Button>
-          </div>
-
           {/* Card 4: Offers Awaiting Decision */}
           <div className="group relative bg-bg-card border border-border rounded-xl p-4 flex flex-col justify-between hover:border-primary/40 transition-all">
             <div className="space-y-2">
@@ -350,37 +272,7 @@ export default function DashboardView() {
         {/* Left Hand: Workflow Tasks */}
         <div className="lg:col-span-2 space-y-6">
           
-          {/* Section 1: Today's Priorities */}
-          <section className="bg-bg-card border border-border rounded-xl p-5 space-y-4">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-text-dim flex items-center gap-2">
-              <Clock className="w-3.5 h-3.5 text-primary" /> Today's Priorities
-            </h3>
-            
-            {todaysPrioritiesList.length === 0 ? (
-              <div className="py-8 flex flex-col items-center justify-center text-center border border-dashed border-border/60 rounded-lg bg-bg-main/20">
-                <CheckCircle2 className="w-6 h-6 text-success/70 mb-2" />
-                <p className="text-xs font-medium text-text-muted">All clear for today</p>
-                <p className="text-[11px] text-text-dim mt-0.5">No tasks or deadlines scheduled.</p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {todaysPrioritiesList.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center justify-between p-3.5 rounded-lg bg-bg-main border border-border/80 hover:border-border transition-all"
-                  >
-                    <div>
-                      <p className="text-xs font-semibold text-text-main">{item.title}</p>
-                      <p className="text-[11px] text-text-dim mt-0.5">{item.subtitle}</p>
-                    </div>
-                    <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-danger/10 border border-danger/25 text-danger">
-                      Due Today
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
+
 
           {/* Section 2: Upcoming Deadlines */}
           <section className="bg-bg-card border border-border rounded-xl p-5 space-y-4">
@@ -598,38 +490,7 @@ export default function DashboardView() {
             )}
           </section>
 
-          {/* Funnel Progress Indicator */}
-          <section className="bg-bg-card border border-border rounded-xl p-5 space-y-3.5">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-text-dim flex items-center gap-1.5">
-              <Compass className="w-3.5 h-3.5 text-primary" /> Pipeline Distribution
-            </h3>
-            
-            <div className="space-y-2.5">
-              {["Interested", "Applied", "UnderReview", "Accepted", "Rejected"].map((statusName) => {
-                const count = dashboardData.pipelineDistribution[statusName] || 0;
-                const total = dashboardData.totalApplications || 1;
-                const percentage = Math.round((count / total) * 100);
-                
-                return (
-                  <div key={statusName} className="space-y-1">
-                    <div className="flex justify-between text-[11px] font-medium text-text-muted">
-                      <span>{statusName === "UnderReview" ? "In Review" : statusName}</span>
-                      <span className="text-text-main">{count}</span>
-                    </div>
-                    <div className="w-full h-1 bg-bg-main border border-border rounded-full overflow-hidden">
-                      <div
-                        className={cn(
-                          "h-full rounded-full transition-all duration-500",
-                          statusName === "Accepted" ? "bg-success" : statusName === "Rejected" ? "bg-danger" : "bg-primary"
-                        )}
-                        style={{ width: `${percentage}%` }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
+
         </div>
       </div>
 

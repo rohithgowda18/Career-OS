@@ -17,6 +17,7 @@ export default function PlacementsPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [page, setPage] = useState(0);
   const PAGE_SIZE = 10;
+  const [status, setStatus] = useState<string>("ALL");
 
   const analyticsQuery = useQuery({
     queryKey: ["analytics", "placements"],
@@ -69,31 +70,55 @@ export default function PlacementsPage() {
             <Loader2 className="w-5 h-5 animate-spin text-primary" />
           </div>
         ) : (
-          <div className="flex flex-wrap items-center gap-y-2 gap-x-6 text-xs text-text-muted border-b border-border/40 pb-4">
-            <span className="flex items-center gap-1.5">
-              Total Opportunities: <strong className="text-text-main font-semibold">{stats.total}</strong>
-            </span>
-            <span className="text-text-dim/40">•</span>
-            <span className="flex items-center gap-1.5">
-              Applied: <strong className="text-text-main font-semibold">{stats.applied}</strong>
-            </span>
-            <span className="text-text-dim/40">•</span>
-            <span className="flex items-center gap-1.5">
-              Assessments: <strong className="text-text-main font-semibold">{stats.assessments}</strong>
-            </span>
-            <span className="text-text-dim/40">•</span>
-            <span className="flex items-center gap-1.5">
-              Interviews: <strong className="text-text-main font-semibold">{stats.interviews}</strong>
-            </span>
-            <span className="text-text-dim/40">•</span>
-            <span className="flex items-center gap-1.5">
-              Offers: <strong className="text-success font-semibold">{stats.offers} 🎉</strong>
-            </span>
+          <div className="flex flex-wrap items-center justify-between gap-y-2 gap-x-6 text-xs text-text-muted border-b border-border/40 pb-4">
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+              <span className="flex items-center gap-1.5">
+                Total Opportunities: <strong className="text-text-main font-semibold">{stats.total}</strong>
+              </span>
+              <span className="text-text-dim/40">•</span>
+              <span className="flex items-center gap-1.5">
+                Applied: <strong className="text-text-main font-semibold">{stats.applied}</strong>
+              </span>
+              <span className="text-text-dim/40">•</span>
+              <span className="flex items-center gap-1.5">
+                Assessments: <strong className="text-text-main font-semibold">{stats.assessments}</strong>
+              </span>
+              <span className="text-text-dim/40">•</span>
+              <span className="flex items-center gap-1.5">
+                Interviews: <strong className="text-text-main font-semibold">{stats.interviews}</strong>
+              </span>
+              <span className="text-text-dim/40">•</span>
+              <span className="flex items-center gap-1.5">
+                Offers: <strong className="text-success font-semibold">{stats.offers} 🎉</strong>
+              </span>
+            </div>
+
+            {/* Status select filter placed inline with KPIs */}
+            <div className="flex items-center gap-2.5">
+              <span className="text-[11px] font-semibold text-text-muted">Status:</span>
+              <select
+                value={status}
+                onChange={(e) => {
+                  setStatus(e.target.value);
+                  setPage(0);
+                }}
+                className="text-[11px] bg-bg-elevated border border-border rounded-lg px-2 py-0.5 text-text-main focus:outline-none focus:border-primary/50 cursor-pointer h-7"
+              >
+                <option value="ALL">All</option>
+                <option value="APPLIED">Applied</option>
+                <option value="ASSESSMENT_SCHEDULED">Assess Scheduled</option>
+                <option value="ASSESSMENT_COMPLETED">Assess Done</option>
+                <option value="INTERVIEW_SCHEDULED">Interview Scheduled</option>
+                <option value="INTERVIEW_COMPLETED">Interview Done</option>
+                <option value="OFFER_RECEIVED">Offer Received</option>
+                <option value="REJECTED">Rejected</option>
+              </select>
+            </div>
           </div>
         )}
 
         {/* Data View */}
-        <PlacementTable page={page} setPage={setPage} pageSize={PAGE_SIZE} />
+        <PlacementTable page={page} setPage={setPage} pageSize={PAGE_SIZE} status={status} setStatus={setStatus} />
 
         {/* Add Modal */}
         <AddPlacementModal open={showAddModal} onOpenChange={setShowAddModal} />

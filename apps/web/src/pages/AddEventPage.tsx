@@ -67,6 +67,7 @@ export default function AddEventPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["applications"] });
       queryClient.invalidateQueries({ queryKey: ["analytics", "dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["analytics", "applications"] });
       toast.success("Event added successfully");
       setLocation("/dashboard");
     },

@@ -28,10 +28,9 @@ class EventAppTrackerApplicationTests {
 
     @Test
     void testFindFilteredQueries() {
+        applicationRepository.findByUserId(1L, PageRequest.of(0, 10));
         applicationRepository.findFiltered(1L, null, null, PageRequest.of(0, 10));
-        applicationRepository.findFiltered(1L, null, "test", PageRequest.of(0, 10));
 
-        placementRepository.findFiltered(1L, null, null, PageRequest.of(0, 10));
-        placementRepository.findFiltered(1L, null, "test", PageRequest.of(0, 10));
+        placementRepository.findFiltered(1L, null, PageRequest.of(0, 10));
     }
 }

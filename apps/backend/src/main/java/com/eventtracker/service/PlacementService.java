@@ -50,24 +50,16 @@ public class PlacementService {
         return placementRepository.findByIdAndUserId(id, userId);
     }
 
-    public Page<PlacementDTO> getUserPlacements(Long userId, String status, String search, Pageable pageable) {
+    public Page<PlacementDTO> getUserPlacements(Long userId, String status, Pageable pageable) {
         PlacementStatus placementStatus = null;
         if (status != null && !status.trim().isEmpty() && !status.equalsIgnoreCase("ALL")) {
             placementStatus = parseStatus(status);
         }
-        String searchPattern = (search != null && !search.trim().isEmpty()) ? search.trim() : null;
 
-        return placementRepository.findFiltered(userId, placementStatus, searchPattern, pageable)
+        return placementRepository.findFiltered(userId, placementStatus, pageable)
                 .map(this::convertToDTO);
     }
 
-    public List<PlacementDTO> getUserPlacementsByStatus(Long userId, String status) {
-        PlacementStatus placementStatus = parseStatus(status);
-        return placementRepository.findByUserIdAndStatusOrderByIdDesc(userId, placementStatus)
-                .stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
-    }
 
     public Placement updatePlacement(Long id, Long userId, PlacementDTO request) {
         Placement placement = placementRepository.findByIdAndUserId(id, userId)

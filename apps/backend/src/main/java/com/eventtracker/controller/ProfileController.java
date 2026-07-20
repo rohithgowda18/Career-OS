@@ -31,8 +31,13 @@ public class ProfileController {
 
     private Long getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.getPrincipal() instanceof User) {
-            return ((User) authentication.getPrincipal()).getId();
+        if (authentication != null) {
+            Object principal = authentication.getPrincipal();
+            if (principal instanceof com.eventtracker.security.UserPrincipal) {
+                return ((com.eventtracker.security.UserPrincipal) principal).getId();
+            } else if (principal instanceof User) {
+                return ((User) principal).getId();
+            }
         }
         throw new RuntimeException("User not authenticated");
     }

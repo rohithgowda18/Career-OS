@@ -542,7 +542,7 @@
       "name": "Analytics",
       "item": [
         {
-          "name": "Applications Summary",
+          "name": "Applications Analytics",
           "request": {
             "method": "GET",
             "header": [
@@ -552,43 +552,9 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/analytics/applications/summary",
+              "raw": "{{baseUrl}}/api/analytics/applications",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "analytics", "applications", "summary"]
-            }
-          }
-        },
-        {
-          "name": "Applications Distribution",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/analytics/applications/status-distribution",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "analytics", "applications", "status-distribution"]
-            }
-          }
-        },
-        {
-          "name": "Applications Conversion Rates",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/analytics/applications/conversion-rates",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "analytics", "applications", "conversion-rates"]
+              "path": ["api", "analytics", "applications"]
             }
           }
         },

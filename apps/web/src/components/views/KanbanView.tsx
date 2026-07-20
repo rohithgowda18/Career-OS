@@ -29,6 +29,14 @@ const STATUSES = [
   "Rejected",
 ] as const;
 
+const EVENT_TYPES = [
+  "Hackathon",
+  "Workshop",
+  "Conference",
+  "Internship",
+  "Other",
+] as const;
+
 const STATUS_BADGE_CLASSES: Record<string, string> = {
   Interested: "bg-bg-elevated text-text-muted border-border",
   Applied: "bg-primary/10 text-primary border-primary/20",
@@ -42,12 +50,20 @@ export default function KanbanView() {
   const [showAddModal, setShowAddModal] = useState(false);
   const PAGE_SIZE = 8;
   const [page, setPage] = useState(0);
+  const [status, setStatus] = useState<string>("ALL");
+  const [eventType, setEventType] = useState<string>("ALL");
 
   // Fetch applications list
   const applicationsQuery = useQuery({
-    queryKey: ["applications", { page, size: PAGE_SIZE, sort: "deadline,asc" }],
+    queryKey: ["applications", { page, size: PAGE_SIZE, sort: "deadline,asc", status, eventType }],
     queryFn: () =>
-      applicationsApi.list({ page, size: PAGE_SIZE, sort: "deadline,asc" }),
+      applicationsApi.list({ 
+        page, 
+        size: PAGE_SIZE, 
+        sort: "deadline,asc", 
+        status: status === "ALL" ? undefined : status,
+        eventType: eventType === "ALL" ? undefined : eventType,
+      }),
   });
 
   const applicationsData = applicationsQuery.data || {
@@ -114,7 +130,7 @@ export default function KanbanView() {
 
   return (
     <div className="space-y-6 relative pb-20 md:pb-0 animate-in fade-in duration-300">
-      <div className="flex items-center justify-between border-b border-border/60 pb-5">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/60 pb-5">
         <div className="flex items-center gap-2.5">
           <div className="w-9 h-9 rounded-lg bg-bg-elevated border border-border flex items-center justify-center">
             <Layers className="w-4.5 h-4.5 text-primary" />
@@ -126,23 +142,100 @@ export default function KanbanView() {
             </p>
           </div>
         </div>
-        <Button
-          onClick={() => setShowAddModal(true)}
-          className="btn-primary h-9.5 px-4"
-        >
-          <Plus className="w-4 h-4 mr-1.5" />
-          Add Application
-        </Button>
+
+        <div className="flex flex-wrap items-center gap-3.5 self-end md:self-auto">
+          {/* Status select filter */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-[11px] font-semibold text-text-muted">Status:</span>
+            <select
+              value={status}
+              onChange={(e) => {
+                setStatus(e.target.value);
+                setPage(0);
+              }}
+              className="text-[11px] bg-bg-elevated border border-border rounded-lg px-2 py-0.5 text-text-main focus:outline-none focus:border-primary/50 cursor-pointer h-7"
+            >
+              <option value="ALL">All</option>
+              {STATUSES.map((s) => (
+                <option key={s} value={s}>
+                  {s === "UnderReview" ? "In Review" : s}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Event Type select filter */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-[11px] font-semibold text-text-muted">Event:</span>
+            <select
+              value={eventType}
+              onChange={(e) => {
+                setEventType(e.target.value);
+                setPage(0);
+              }}
+              className="text-[11px] bg-bg-elevated border border-border rounded-lg px-2 py-0.5 text-text-main focus:outline-none focus:border-primary/50 cursor-pointer h-7"
+            >
+              <option value="ALL">All</option>
+              {EVENT_TYPES.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {(status !== "ALL" || eventType !== "ALL") && (
+            <button
+              onClick={() => {
+                setStatus("ALL");
+                setEventType("ALL");
+                setPage(0);
+              }}
+              className="text-[11px] text-primary hover:text-primary-hover font-semibold cursor-pointer mr-1"
+            >
+              Clear Filters
+            </button>
+          )}
+
+          <Button
+            onClick={() => setShowAddModal(true)}
+            className="btn-primary h-9 px-4"
+          >
+            <Plus className="w-4 h-4 mr-1.5" />
+            Add Application
+          </Button>
+        </div>
       </div>
 
       {totalElements === 0 ? (
-        <EmptyState
-          title="No Applications"
-          description="Your pipeline workspace is empty. Begin logging your internship and event applications to track your process."
-          icon={Layers}
-          actionLabel="Add Application"
-          onAction={() => setShowAddModal(true)}
-        />
+        status !== "ALL" || eventType !== "ALL" ? (
+          <div className="py-12 text-center border border-dashed border-border/60 rounded-xl bg-bg-card/35">
+            <Layers className="w-8 h-8 text-text-dim/60 mx-auto mb-3" />
+            <h3 className="text-sm font-semibold text-text-main">No Match Found</h3>
+            <p className="text-xs text-text-dim mt-1.5">
+              No applications match your selected filters. Try clearing your filters or choosing different options.
+            </p>
+            <Button
+              onClick={() => {
+                setStatus("ALL");
+                setEventType("ALL");
+                setPage(0);
+              }}
+              variant="outline"
+              className="mt-4 border-border hover:bg-bg-elevated font-semibold text-xs h-9 px-4"
+            >
+              Clear All Filters
+            </Button>
+          </div>
+        ) : (
+          <EmptyState
+            title="No Applications"
+            description="Your pipeline workspace is empty. Begin logging your internship and event applications to track your process."
+            icon={Layers}
+            actionLabel="Add Application"
+            onAction={() => setShowAddModal(true)}
+          />
+        )
       ) : (
         <>
           {/* Desktop Table/List Hybrid View */}

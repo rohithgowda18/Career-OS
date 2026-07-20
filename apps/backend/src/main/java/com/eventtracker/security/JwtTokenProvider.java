@@ -52,34 +52,30 @@ public class JwtTokenProvider {
                 .compact();
     }
 
-    public Long getUserIdFromToken(String token) {
-        Claims claims = getAllClaimsFromToken(token);
-        return claims.get("userId", Long.class);
-    }
-
-    public String getEmailFromToken(String token) {
-        Claims claims = getAllClaimsFromToken(token);
-        return claims.get("email", String.class);
-    }
-
-    public boolean validateToken(String token) {
+    public Claims parseToken(String token) {
         try {
-            Jwts.parser()
+            return Jwts.parser()
                     .verifyWith(getSigningKey())
                     .build()
-                    .parseSignedClaims(token);
-            return true;
+                    .parseSignedClaims(token)
+                    .getPayload();
         } catch (Exception e) {
-            return false;
+            return null;
         }
     }
 
-    private Claims getAllClaimsFromToken(String token) {
-        return Jwts.parser()
-                .verifyWith(getSigningKey())
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
+    public Long getUserIdFromToken(String token) {
+        Claims claims = parseToken(token);
+        return claims != null ? claims.get("userId", Long.class) : null;
+    }
+
+    public String getEmailFromToken(String token) {
+        Claims claims = parseToken(token);
+        return claims != null ? claims.get("email", String.class) : null;
+    }
+
+    public boolean validateToken(String token) {
+        return parseToken(token) != null;
     }
 
     public long getJwtExpirationMillis() {

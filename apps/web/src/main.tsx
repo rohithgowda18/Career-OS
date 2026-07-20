@@ -20,7 +20,15 @@ if (typeof window !== "undefined" && !import.meta.env.DEV) {
   });
 }
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      staleTime: 30 * 1000,
+      retry: 1,
+    },
+  },
+});
 
 queryClient.getQueryCache().subscribe(event => {
   if (event.type === "updated" && event.action.type === "error") {

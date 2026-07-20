@@ -212,12 +212,6 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
     };
   }, [pullDistance, isRefreshing, queryClient]);
 
-  // Command palette state
-  const [showCommandPalette, setShowCommandPalette] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedIndex, setSelectedIndex] = useState(0);
-  const commandInputRef = useRef<HTMLInputElement>(null);
-
   // Sync online/offline state
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -229,39 +223,6 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
       window.removeEventListener("offline", handleOffline);
     };
   }, []);
-
-  // Fetch search items
-  const applicationsQuery = useQuery({
-    queryKey: ["applications", { page: 0, size: 100, sort: "deadline,asc" }],
-    queryFn: () => applicationsApi.list({ page: 0, size: 100, sort: "deadline,asc" }),
-    enabled: !!user && showCommandPalette,
-  });
-
-  const placementsQuery = useQuery({
-    queryKey: ["placements", { page: 0, size: 100, sort: "id,desc" }],
-    queryFn: () => placementsApi.list({ page: 0, size: 100, sort: "id,desc" }),
-    enabled: !!user && showCommandPalette,
-  });
-
-  const applications = applicationsQuery.data?.content || [];
-  const placements = placementsQuery.data?.content || [];
-
-  // Toggle command palette on Ctrl+K / Cmd+K
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
-        e.preventDefault();
-        setShowCommandPalette((prev) => !prev);
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
-
-  // Reset selected index when search query changes
-  useEffect(() => {
-    setSelectedIndex(0);
-  }, [searchQuery]);
 
   const handleConfirmInstall = async () => {
     setShowInstallDialog(false);
@@ -309,67 +270,6 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
     setLocation(path);
   };
 
-  // Filter items for command palette
-  const filteredApps = searchQuery
-    ? applications.filter(
-        (app: any) =>
-          app.eventName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          app.eventType?.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : [];
-
-  const filteredPlacements = searchQuery
-    ? placements.filter(
-        (place: any) =>
-          place.companyName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          place.role?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          place.location?.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : [];
-
-  // Default shortcuts when search query is empty
-  const defaultShortcuts = [
-    { label: "Go to Home", action: () => setLocation("/dashboard?view=dashboard") },
-    { label: "Go to Applications", action: () => setLocation("/dashboard?view=kanban") },
-    { label: "Go to Placements", action: () => setLocation("/placements") },
-    { label: "Go to My Skills", action: () => setLocation("/dashboard?view=skills") },
-    { label: "Go to Calendar", action: () => setLocation("/dashboard?view=calendar") },
-    { label: "Go to Profile Settings", action: () => setLocation("/dashboard?view=profile") },
-  ];
-
-  // Combine items to enable keyboard navigation index
-  const commandItems = searchQuery
-    ? [
-        ...filteredApps.map((app: any) => ({
-          label: `${app.eventName} (${app.eventType})`,
-          category: "Applications",
-          action: () => setLocation("/dashboard?view=kanban"),
-        })),
-        ...filteredPlacements.map((place: any) => ({
-          label: `${place.companyName} — ${place.role}`,
-          category: "Placements",
-          action: () => setLocation("/placements"),
-        })),
-      ]
-    : defaultShortcuts.map((s) => ({ ...s, category: "Navigation Shortcuts" }));
-
-  const handleCommandPaletteKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      setSelectedIndex((prev) => (prev + 1) % Math.max(1, commandItems.length));
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      setSelectedIndex((prev) => (prev - 1 + commandItems.length) % Math.max(1, commandItems.length));
-    } else if (e.key === "Enter") {
-      e.preventDefault();
-      if (commandItems[selectedIndex]) {
-        commandItems[selectedIndex].action();
-        setShowCommandPalette(false);
-        setSearchQuery("");
-      }
-    }
-  };
-
   return (
     <div className={cn("min-h-screen font-sans flex flex-col pb-28 md:pb-0 relative", themeTokens.pageBg)}>
       {/* Pull to Refresh Indicator */}
@@ -408,20 +308,6 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
               <WifiOff className="w-3.5 h-3.5 text-warning" />
             </div>
           )}
-        </div>
-
-        {/* Search Command Trigger in Sidebar */}
-        <div className="px-4 py-3">
-          <button 
-            onClick={() => setShowCommandPalette(true)}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-bg-elevated/40 border border-border text-[12px] text-text-dim hover:text-text-muted hover:border-border/80 transition-all text-left"
-          >
-            <Search className="w-3.5 h-3.5 shrink-0" />
-            <span className="flex-1 min-w-0 truncate">Search...</span>
-            <kbd className="ml-auto bg-bg-card border border-border px-1.5 py-0.5 rounded text-[10px] font-mono shrink-0 text-text-dim">
-              {isMac ? "⌘K" : "Ctrl+K"}
-            </kbd>
-          </button>
         </div>
 
         {/* Navigation Tabs */}
@@ -531,13 +417,6 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
         </div>
 
         <div className="flex items-center gap-2">
-          <button 
-            onClick={() => setShowCommandPalette(true)}
-            className="p-1.5 rounded-lg border border-border text-text-muted hover:text-text-main bg-bg-elevated/40"
-          >
-            <Search className="w-4 h-4" />
-          </button>
-          
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button 
@@ -764,80 +643,7 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
         </div>
       </nav>
 
-      {/* Global Command Palette Dialog */}
-      <Dialog open={showCommandPalette} onOpenChange={(v) => {
-        setShowCommandPalette(v);
-        if (!v) setSearchQuery("");
-      }}>
-        <DialogContent showCloseButton={false} className="max-w-lg bg-bg-card border-border text-text-main p-0 overflow-hidden rounded-xl shadow-2xl">
-          <div className="flex items-center border-b border-border px-4 h-12 bg-bg-elevated/20">
-            <Search className="w-4 h-4 text-text-dim mr-2.5 shrink-0" />
-            <input
-              ref={commandInputRef}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={handleCommandPaletteKeyDown}
-              placeholder="Search applications, placements, shortcuts..."
-              className="flex-1 min-w-0 bg-transparent outline-none border-none text-[13px] text-text-main placeholder:text-text-dim h-full py-2 mr-3"
-              autoFocus
-            />
-            <kbd className="ml-auto bg-bg-elevated border border-border px-1.5 py-0.5 rounded text-[10px] font-mono text-text-dim shrink-0">ESC</kbd>
-          </div>
 
-          <div className="max-h-[300px] overflow-y-auto p-2 space-y-2">
-            {commandItems.length === 0 ? (
-              <div className="p-8 text-center text-xs text-text-dim">
-                No matching results found
-              </div>
-            ) : (
-              <div>
-                {/* Group items by category */}
-                {Array.from(new Set(commandItems.map((i) => i.category))).map((category) => {
-                  const categoryItems = commandItems.filter((i) => i.category === category);
-                  return (
-                    <div key={category} className="space-y-1">
-                      <div className="text-[9px] font-bold uppercase tracking-wider text-text-dim px-3 py-1.5">
-                        {category}
-                      </div>
-                      {categoryItems.map((item, index) => {
-                        // Global index in flat commandItems
-                        const globalIndex = commandItems.findIndex((x) => x.label === item.label);
-                        const isSelected = globalIndex === selectedIndex;
-
-                        return (
-                          <button
-                            key={index}
-                            onClick={() => {
-                              item.action();
-                              setShowCommandPalette(false);
-                              setSearchQuery("");
-                            }}
-                            className={cn(
-                              "w-full flex items-center justify-between text-left px-3 py-2 rounded-lg text-xs transition-all",
-                              isSelected 
-                                ? "bg-bg-elevated text-text-main font-semibold shadow-xs" 
-                                : "text-text-muted hover:text-text-main hover:bg-bg-elevated/40"
-                            )}
-                          >
-                            <span className="truncate">{item.label}</span>
-                            {isSelected && (
-                              <ArrowRight className="w-3.5 h-3.5 text-primary animate-in slide-in-from-left-2 duration-150" />
-                            )}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-          <div className="border-t border-border px-4 py-2 bg-bg-elevated/10 flex items-center gap-4 text-[10px] text-text-dim">
-            <span>↑↓ to navigate</span>
-            <span>↵ to select</span>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* PWA Install Dialog */}
       <Dialog open={showInstallDialog} onOpenChange={setShowInstallDialog}>

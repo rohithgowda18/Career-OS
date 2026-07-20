@@ -6,6 +6,7 @@ import com.eventtracker.dto.AuthDTO.AuthResponse;
 import com.eventtracker.entity.User;
 import com.eventtracker.exception.DuplicateUserException;
 import com.eventtracker.security.JwtTokenProvider;
+import com.eventtracker.security.UserPrincipal;
 import com.eventtracker.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.servlet.http.HttpServletRequest;
@@ -68,11 +69,17 @@ public class AuthController {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication.isAuthenticated()) {
             Object principal = authentication.getPrincipal();
-            if (principal instanceof User) {
-                User user = (User) principal;
-                User updatedUser = userService.updateDisplayName(user.getId(), displayName);
-                // Also update display name on current security context principal if they are cached
-                user.setDisplayName(displayName);
+            Long userId = null;
+            if (principal instanceof UserPrincipal) {
+                userId = ((UserPrincipal) principal).getId();
+            } else if (principal instanceof User) {
+                userId = ((User) principal).getId();
+            }
+            if (userId != null) {
+                User updatedUser = userService.updateDisplayName(userId, displayName);
+                if (principal instanceof User) {
+                    ((User) principal).setDisplayName(displayName);
+                }
                 return ResponseEntity.ok(userService.convertToDTO(updatedUser));
             }
         }
@@ -110,9 +117,16 @@ public class AuthController {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication.isAuthenticated()) {
             Object principal = authentication.getPrincipal();
-            if (principal instanceof User) {
-                User user = (User) principal;
-                return ResponseEntity.ok(userService.convertToDTO(user));
+            Long userId = null;
+            if (principal instanceof UserPrincipal) {
+                userId = ((UserPrincipal) principal).getId();
+            } else if (principal instanceof User) {
+                userId = ((User) principal).getId();
+            }
+            if (userId != null) {
+                return userService.findById(userId)
+                        .map(fullUser -> ResponseEntity.ok(userService.convertToDTO(fullUser)))
+                        .orElse(ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());
             }
         }
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();

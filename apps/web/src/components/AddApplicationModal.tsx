@@ -60,6 +60,7 @@ export default function AddApplicationModal({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["applications"] });
       queryClient.invalidateQueries({ queryKey: ["analytics", "dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["analytics", "applications"] });
       toast.success("Application logged successfully");
       onOpenChange(false);
       resetForm();
@@ -72,6 +73,7 @@ export default function AddApplicationModal({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["applications"] });
       queryClient.invalidateQueries({ queryKey: ["analytics", "dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["analytics", "applications"] });
       toast.success("Application updated successfully");
       onOpenChange(false);
     },

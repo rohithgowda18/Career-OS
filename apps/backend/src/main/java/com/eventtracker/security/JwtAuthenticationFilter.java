@@ -32,15 +32,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             String jwt = getJwtFromRequest(request);
 
-            if (StringUtils.hasText(jwt) && tokenProvider.validateToken(jwt)) {
-                Long userId = tokenProvider.getUserIdFromToken(jwt);
+            if (StringUtils.hasText(jwt)) {
+                io.jsonwebtoken.Claims claims = tokenProvider.parseToken(jwt);
+                if (claims != null) {
+                    Long userId = claims.get("userId", Long.class);
+                    String email = claims.get("email", String.class);
 
-                userService.findById(userId).ifPresent(user -> {
+                    // Optimized path: use UserPrincipal directly from token claims without database lookups
+                    UserPrincipal principal = new UserPrincipal(userId, email);
                     UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                            user, null, user.getAuthorities());
+                            principal, null, principal.getAuthorities());
                     authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authentication);
-                });
+                }
             }
         } catch (Exception ex) {
             log.error("JWT Authentication error", ex);

@@ -28,6 +28,8 @@ interface PlacementTableProps {
   page: number;
   setPage: (page: number) => void;
   pageSize: number;
+  status: string;
+  setStatus: (status: string) => void;
 }
 
 const STATUS_CLASSES: Record<string, string> = {
@@ -50,7 +52,7 @@ const STATUS_LABELS: Record<string, string> = {
   REJECTED: "Rejected",
 };
 
-export default function PlacementTable({ page, setPage, pageSize }: PlacementTableProps) {
+export default function PlacementTable({ page, setPage, pageSize, status, setStatus }: PlacementTableProps) {
   const { themeTokens } = useTheme();
   const [selectedPlacement, setSelectedPlacement] = useState<any>(null);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -58,8 +60,13 @@ export default function PlacementTable({ page, setPage, pageSize }: PlacementTab
   const queryClient = useQueryClient();
 
   const placementsQuery = useQuery({
-    queryKey: ["placements", { page, size: pageSize, sort: "id,desc" }],
-    queryFn: () => placementsApi.list({ page, size: pageSize, sort: "id,desc" }),
+    queryKey: ["placements", { page, size: pageSize, sort: "id,desc", status }],
+    queryFn: () => placementsApi.list({ 
+      page, 
+      size: pageSize, 
+      sort: "id,desc", 
+      status: status === "ALL" ? undefined : status 
+    }),
   });
 
   const deleteMutation = useMutation({
@@ -127,39 +134,53 @@ export default function PlacementTable({ page, setPage, pageSize }: PlacementTab
     );
   }
 
-  if (placements.length === 0) {
-    return (
-      <div className="space-y-6">
-        <EmptyState
-          title="No Placements"
-          description="You haven't logged any placement opportunities yet. Add job offers, internships, and recruiter contacts to start your pipeline."
-          icon={Briefcase}
-          actionLabel="Add Placement"
-          onAction={() => setShowAddModal(true)}
-        />
-        <AddPlacementModal open={showAddModal} onOpenChange={setShowAddModal} />
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
-      {/* Mobile viewports list display */}
-      <div className="grid grid-cols-1 gap-4 md:hidden">
-        {placements.map((p: any) => (
-          <PlacementCard
-            key={p.id}
-            placement={p}
-            onEdit={() => handleEdit(p)}
-            onDelete={() => handleDelete(p.id, p.companyName)}
-          />
-        ))}
-        {placements.length === 0 && (
-          <div className="border border-dashed border-border/60 rounded-xl p-8 text-center text-xs text-text-dim">
-            No placement opportunities recorded yet
+
+      {placements.length === 0 ? (
+        status !== "ALL" ? (
+          <div className="py-12 text-center border border-dashed border-border/60 rounded-xl bg-bg-card/35">
+            <Briefcase className="w-8 h-8 text-text-dim/60 mx-auto mb-3" />
+            <h3 className="text-sm font-semibold text-text-main">No Match Found</h3>
+            <p className="text-xs text-text-dim mt-1.5">
+              No placement opportunities match your selected filter.
+            </p>
+            <Button
+              onClick={() => {
+                setStatus("ALL");
+                setPage(0);
+              }}
+              variant="outline"
+              className="mt-4 border-border hover:bg-bg-elevated font-semibold text-xs h-9 px-4"
+            >
+              Clear Status Filter
+            </Button>
           </div>
-        )}
-      </div>
+        ) : (
+          <>
+            <EmptyState
+              title="No Placements"
+              description="You haven't logged any placement opportunities yet. Add job offers, internships, and recruiter contacts to start your pipeline."
+              icon={Briefcase}
+              actionLabel="Add Placement"
+              onAction={() => setShowAddModal(true)}
+            />
+            <AddPlacementModal open={showAddModal} onOpenChange={setShowAddModal} />
+          </>
+        )
+      ) : (
+        <>
+          {/* Mobile viewports list display */}
+          <div className="grid grid-cols-1 gap-4 md:hidden">
+            {placements.map((p: any) => (
+              <PlacementCard
+                key={p.id}
+                placement={p}
+                onEdit={() => handleEdit(p)}
+                onDelete={() => handleDelete(p.id, p.companyName)}
+              />
+            ))}
+          </div>
 
       {/* Desktop data table display */}
       <div className={cn("overflow-hidden hidden md:block", themeTokens.card)}>
@@ -342,6 +363,8 @@ export default function PlacementTable({ page, setPage, pageSize }: PlacementTab
             </button>
           </div>
         </div>
+      )}
+      </>
       )}
 
       {selectedPlacement && (
