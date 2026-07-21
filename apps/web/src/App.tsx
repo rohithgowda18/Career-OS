@@ -7,6 +7,8 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import axios from "axios";
+import { BACKEND_URL } from "@/lib/restClient";
 
 // Lazy load route pages to improve load performance
 const LandingPage = React.lazy(() => import("./pages/LandingPage"));
@@ -155,6 +157,13 @@ function Router() {
 }
 
 function App() {
+  // Fire-and-forget background warm-up request to Render backend on app initial load
+  useEffect(() => {
+    axios.get(`${BACKEND_URL}/actuator/health`, { timeout: 10000 }).catch(() => {
+      // Silently ignore errors - warm-up is non-blocking background request
+    });
+  }, []);
+
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="glass">
