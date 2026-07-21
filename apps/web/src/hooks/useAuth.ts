@@ -48,17 +48,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setPollTrigger(prev => prev + 1);
   }, []);
 
-  // Centralized background backend readiness checking with exponential backoff polling and strict lifecycle aborts
+  // Centralized background backend readiness checking with fixed 3s retry polling and strict lifecycle aborts
   useEffect(() => {
     let active = true;
     let timeoutId: any;
+    let inFlight = false;
     const startTime = Date.now();
     const abortController = new AbortController();
 
-    const checkReadiness = async (delay = 2000) => {
+    const checkReadiness = async () => {
+      if (!active || inFlight) return;
+      inFlight = true;
+
       try {
         await axios.get(`${BACKEND_URL}/actuator/health`, { 
-          timeout: 8000,
+          timeout: 15000,
           signal: abortController.signal
         });
         if (active) {
@@ -69,6 +73,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setIsBackendReady(true);
         }
       } catch (err) {
+        inFlight = false;
         if (!active) return;
         if (axios.isCancel(err)) {
           console.log("[Debug Auth] Readiness check fetch request cancelled via cleanup.");
@@ -86,9 +91,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (elapsed > 10000) {
           setReadinessMessage("Server is waking up. This may take a moment on the first load...");
         }
-        // Exponential backoff up to 10 seconds max delay
-        const nextDelay = Math.min(delay * 1.5, 10000);
-        timeoutId = setTimeout(() => checkReadiness(nextDelay), delay);
+        
+        // Fixed short retry gap (3s) to eliminate detection gaps without exponential delay accumulation
+        timeoutId = setTimeout(checkReadiness, 3000);
       }
     };
 
