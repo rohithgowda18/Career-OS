@@ -159,9 +159,18 @@ function Router() {
 function App() {
   // Fire-and-forget background warm-up request to Render backend on app initial load
   useEffect(() => {
-    axios.get(`${BACKEND_URL}/actuator/health`, { timeout: 10000 }).catch(() => {
-      // Silently ignore errors - warm-up is non-blocking background request
-    });
+    if (import.meta.env.DEV) {
+      console.log(`[Performance] App initialized: ${Math.round(performance.now())}ms`);
+    }
+    axios.get(`${BACKEND_URL}/actuator/health`, { timeout: 10000 })
+      .then(() => {
+        if (import.meta.env.DEV) {
+          console.log(`[Performance] Backend first response: ${Math.round(performance.now())}ms`);
+        }
+      })
+      .catch(() => {
+        // Silently ignore errors - warm-up is non-blocking background request
+      });
   }, []);
 
   return (

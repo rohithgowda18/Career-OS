@@ -20,3 +20,10 @@ spring:
 app:
   frontend-url: ${FRONTEND_URL:https://career-os.rohith.app}
 
+logging:
+  level:
+    com.eventtracker: INFO
+    org.hibernate.SQL: INFO
+    org.hibernate.orm.jdbc.bind: INFO
+    root: INFO
+

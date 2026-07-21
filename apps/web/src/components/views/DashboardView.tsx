@@ -91,6 +91,12 @@ export default function DashboardView() {
 
   const isLoading = dashboardQuery.isLoading;
 
+  useEffect(() => {
+    if (!isLoading && import.meta.env.DEV) {
+      console.log(`[Performance] Dashboard data ready: ${Math.round(performance.now())}ms`);
+    }
+  }, [isLoading]);
+
   const dashboardData = dashboardQuery.data || {
     totalApplications: 0,
     deadlinesToday: [],
