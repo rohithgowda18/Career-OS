@@ -17,6 +17,7 @@ const OAuthSuccessPage = React.lazy(() => import("./pages/OAuthSuccessPage"));
 const Home = React.lazy(() => import("./pages/Home"));
 const PlacementsPage = React.lazy(() => import("./pages/PlacementsPage"));
 const AddEventPage = React.lazy(() => import("./pages/AddEventPage"));
+const PrivacyPage = React.lazy(() => import("./pages/PrivacyPage"));
 const NotFound = React.lazy(() => import("./pages/NotFound"));
 
 function Router() {
@@ -149,6 +150,7 @@ function Router() {
         <Route path="/dashboard" component={Home} />
         <Route path="/placements" component={PlacementsPage} />
         <Route path="/add" component={AddEventPage} />
+        <Route path="/privacy" component={PrivacyPage} />
         <Route path="/404" component={NotFound} />
         <Route component={NotFound} />
       </Switch>

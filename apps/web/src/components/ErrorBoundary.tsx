@@ -21,6 +21,18 @@ class ErrorBoundary extends Component<Props, State> {
     return { hasError: true, error };
   }
 
+  componentDidCatch(error: Error) {
+    if (error?.message?.includes("Failed to fetch dynamically imported module") || error?.message?.includes("Importing a module script failed")) {
+      const key = "last_chunk_reload";
+      const now = Date.now();
+      const last = localStorage.getItem(key);
+      if (!last || now - Number(last) > 10000) {
+        localStorage.setItem(key, String(now));
+        window.location.reload();
+      }
+    }
+  }
+
   render() {
     if (this.state.hasError) {
       return (
