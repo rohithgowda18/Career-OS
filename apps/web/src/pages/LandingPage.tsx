@@ -453,27 +453,15 @@ export default function LandingPage() {
                 <p className="text-xs text-text-muted leading-relaxed max-w-sm">
                   A personal career operating system for software engineering students and early-career developers.
                 </p>
-                <div className="text-xs text-text-dim pt-1 flex items-center gap-1.5 flex-wrap">
-                  <span>Built by <strong className="text-text-main font-semibold">Rohith Gowda K</strong></span>
-                  <span className="text-text-dim">•</span>
-                  <a
-                    href="https://www.rohith.app"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-text-muted hover:text-primary transition-colors font-medium underline underline-offset-2 inline-flex items-center gap-1"
-                  >
-                    <Globe className="w-3 h-3 text-primary" />
-                    <span>Portfolio</span>
-                  </a>
-                  <span className="text-text-dim">•</span>
+                <div className="text-xs text-text-dim pt-1">
+                  Built by{" "}
                   <a
                     href="https://github.com/rohithgowda18"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-text-muted hover:text-primary transition-colors font-medium underline underline-offset-2 inline-flex items-center gap-1"
+                    className="text-text-muted hover:text-primary transition-colors font-medium underline underline-offset-2"
                   >
-                    <Github className="w-3 h-3 text-text-main" />
-                    <span>GitHub</span>
+                    Rohith Gowda K
                   </a>
                 </div>
               </div>
@@ -495,13 +483,24 @@ export default function LandingPage() {
                   </li>
                   <li>
                     <a
-                      href="https://github.com/rohithgowda18/Career-OS/issues"
+                      href="https://github.com/rohithgowda18/Career-OS/issues/new?template=bug_report.md"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="hover:text-text-main transition-colors inline-flex items-center gap-1.5"
                     >
                       <ExternalLink className="w-3.5 h-3.5" />
                       <span>Report an Issue</span>
+                    </a>
+                  </li>
+                  <li>
+                    <a
+                      href="https://github.com/rohithgowda18/Career-OS/issues/new?template=feature_request.md"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:text-text-main transition-colors inline-flex items-center gap-1.5"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-primary" />
+                      <span>Request a Feature</span>
                     </a>
                   </li>
                   <li>
