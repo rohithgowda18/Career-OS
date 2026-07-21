@@ -19,3 +19,8 @@ spring:
 
 app:
   frontend-url: ${FRONTEND_URL:https://career-os.rohith.app}
+
+logging:
+  level:
+    com.zaxxer.hikari: DEBUG
+
