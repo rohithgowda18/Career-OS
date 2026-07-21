@@ -53,25 +53,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let active = true;
     let timeoutId: any;
     let inFlight = false;
-    let attemptCount = 0;
     const startTime = Date.now();
     const abortController = new AbortController();
 
     const checkReadiness = async () => {
       if (!active || inFlight) return;
       inFlight = true;
-      attemptCount++;
-      const reqStart = performance.now();
-      console.log(`[Readiness Instrument] Attempt #${attemptCount} initiated at t=${Date.now() - startTime}ms`);
 
       try {
         await axios.get(`${BACKEND_URL}/actuator/health`, { 
           timeout: 15000,
           signal: abortController.signal
         });
-        const reqDuration = Math.round(performance.now() - reqStart);
         if (active) {
-          console.log(`[Readiness Instrument] Attempt #${attemptCount} SUCCESS (200 OK) in ${reqDuration}ms. Total elapsed: ${Date.now() - startTime}ms`);
+          console.log("[Debug Auth] Backend is ready and healthy.");
           if (typeof window !== "undefined") {
             (window as any).__backendReadyFlag = true;
           }
@@ -79,10 +74,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } catch (err: any) {
         inFlight = false;
-        const reqDuration = Math.round(performance.now() - reqStart);
-        const isTimeout = err?.code === 'ECONNABORTED' || err?.message?.includes('timeout');
-        console.log(`[Readiness Instrument] Attempt #${attemptCount} FAILED in ${reqDuration}ms (isTimeout=${isTimeout}, err=${err?.message || err}). Total elapsed: ${Date.now() - startTime}ms`);
-
         if (!active) return;
         if (axios.isCancel(err)) {
           console.log("[Debug Auth] Readiness check fetch request cancelled via cleanup.");
