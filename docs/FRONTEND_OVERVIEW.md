@@ -248,3 +248,40 @@ To avoid wasting valuable vertical workspace real estate on dedicated query cont
   * `justify-between`: Maximizes spacing between elements, pushing the statistics details to the left margins and the filter controls to the right margins.
   * `h-7 px-2 py-0.5`: Stylizes the select element to match the height of small text lines, aligning with the visual hierarchy of the parent metrics.
   * `bg-bg-elevated border border-border rounded-lg`: Inherits theme variables, ensuring color presets automatically update border colors and background transparency when switching themes (e.g. Retro Terminal green borders or Neo Brutalist stark lines).
+
+---
+
+## 🌐 7. System Wake-Up & Cold-Start Lifecycle
+
+The frontend coordinates with the backend's centralized health polling layer to wake up the system efficiently when returning after inactivity.
+
+```
+             USER OPENS CAREER OS
+                     │
+             Health/wake request
+                     │
+          ┌──────────┴──────────┐
+        Warm                  Sleeping
+          │                      │
+       Fast UP             Render boots
+          │                      │
+          └──────────┬───────────┘
+                     ↓
+               HEALTH = UP
+                     ↓
+             Authentication
+                     ↓
+               Dashboard
+                     ↓
+          Only necessary queries
+```
+
+1. **User Opens Career OS:** The frontend PWA loads instantly from the cache, showing the initial landing page or protected route loader.
+2. **Health/Wake Request:** The frontend immediately issues a background `GET /actuator/health` request to probe status.
+3. **Warm vs. Sleeping Branch:**
+   * **Warm:** The container is active. `/actuator/health` returns `200 OK` instantly.
+   * **Sleeping:** Render Free (idle 15m) and Neon Serverless Database (idle 5m) are suspended. The Render proxy holds the TCP connection while provisioning the container, booting the JVM, and waking up the Neon compute node.
+4. **HEALTH = UP:** Once Spring Boot is running and the database connection is successfully established, the health probe returns `200 OK`. The frontend immediately terminates polling.
+5. **Authentication:** The frontend proceeds to session validation (`/api/auth/me` or authentication redirect).
+6. **Dashboard Mounting:** The dashboard shell is rendered.
+7. **Only Necessary Queries:** The home view runs exactly three summary queries (`/api/analytics/dashboard`, `/api/routines`, and `/api/routines/reports`). Full application and placement datasets are only queried when navigating to their respective sub-views.
