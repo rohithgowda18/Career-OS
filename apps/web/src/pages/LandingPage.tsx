@@ -44,6 +44,13 @@ export default function LandingPage() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Fire-and-forget background warm-up request to trigger Render cold-start while user views Landing Page
+  useEffect(() => {
+    axios.get(`${BACKEND_URL}/actuator/health`, { timeout: 10000 }).catch(() => {
+      // Silently ignore errors - warm-up is non-blocking background request
+    });
+  }, []);
+
   return (
     <div className="min-h-screen bg-bg-main text-text-main font-sans overflow-x-hidden relative selection:bg-primary/30">
       
