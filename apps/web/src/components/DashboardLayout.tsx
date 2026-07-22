@@ -255,8 +255,8 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
     return null;
   }
 
-  // Unified 5-Tab Navigation structure
-  const tabs = [
+  // Primary Desktop sidebar navigation structure (7 items)
+  const desktopTabs = [
     { id: "dashboard", label: "Home", icon: LayoutDashboard, path: "/dashboard?view=dashboard" },
     { id: "kanban", label: "Applications", icon: Layers, path: "/dashboard?view=kanban" },
     { id: "placements", label: "Placements", icon: Briefcase, path: "/placements" },
@@ -266,12 +266,22 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
     { id: "profile", label: "Profile", icon: UserCircle, path: "/dashboard?view=profile" },
   ] as const;
 
+  // Primary Mobile bottom navigation structure (6 standalone items, Profile accessed via top-right avatar)
+  const mobileTabs = [
+    { id: "dashboard", label: "Home", icon: LayoutDashboard, path: "/dashboard?view=dashboard" },
+    { id: "kanban", label: "Applications", icon: Layers, path: "/dashboard?view=kanban" },
+    { id: "placements", label: "Placements", icon: Briefcase, path: "/placements" },
+    { id: "skills", label: "Skills", icon: Award, path: "/dashboard?view=skills" },
+    { id: "routine", label: "Routine", icon: ListTodo, path: "/dashboard?view=routine" },
+    { id: "calendar", label: "Calendar", icon: CalendarIcon, path: "/dashboard?view=calendar" },
+  ] as const;
+
   const handleTabClick = (path: string) => {
     setLocation(path);
   };
 
   return (
-    <div className={cn("min-h-screen font-sans flex flex-col pb-28 md:pb-0 relative", themeTokens.pageBg)}>
+    <div className={cn("min-h-screen font-sans flex flex-col pb-32 md:pb-0 relative", themeTokens.pageBg)}>
       {/* Pull to Refresh Indicator */}
       {(pullDistance > 0 || isRefreshing) && (
         <div 
@@ -312,7 +322,7 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
 
         {/* Navigation Tabs */}
         <nav className="flex-1 px-3 py-2 space-y-1">
-          {tabs.map((tab) => {
+          {desktopTabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
             return (
@@ -455,49 +465,20 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
             </DropdownMenuContent>
           </DropdownMenu>
           
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="p-0.5 rounded-lg border border-border bg-bg-elevated/40 cursor-pointer flex items-center justify-center outline-none hover:border-border/80">
-                <Avatar className="h-6 w-6 border-none">
-                  <AvatarFallback className="text-[9px] font-bold bg-bg-elevated text-primary">
-                    {user?.displayName && user.displayName.trim() !== ""
-                      ? user.displayName.charAt(0).toUpperCase()
-                      : user?.email?.charAt(0).toUpperCase() || "U"}
-                  </AvatarFallback>
-                </Avatar>
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48 bg-bg-card border-border text-text-main">
-              <div className="p-2 border-b border-border">
-                <p className="text-[11px] truncate font-medium text-text-main">
-                  {user?.displayName && user.displayName.trim() !== ""
-                    ? user.displayName
-                    : user?.email}
-                </p>
-              </div>
-              <div className="p-1">
-                <DropdownMenuItem onClick={() => setLocation("/dashboard?view=profile")} className="cursor-pointer hover:bg-bg-elevated px-2 py-1.5 text-xs font-medium">
-                  Profile Settings
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={checkForUpdates} className="cursor-pointer hover:bg-bg-elevated px-2 py-1.5 text-xs font-medium flex items-center gap-2">
-                  <RefreshCw className={cn("h-3.5 w-3.5 text-text-dim", checkingUpdates && "animate-spin")} />
-                  <span>Check for Updates</span>
-                </DropdownMenuItem>
-
-                {!isInstalled && (
-                  <DropdownMenuItem onClick={() => setShowInstallDialog(true)} className="cursor-pointer text-primary hover:bg-primary/5 px-2 py-1.5 text-xs font-medium">
-                    Install App
-                  </DropdownMenuItem>
-                )}
-              </div>
-              <DropdownMenuSeparator className="bg-border" />
-              <div className="p-1">
-                <DropdownMenuItem onClick={logout} className="cursor-pointer text-danger hover:bg-danger/10 px-2 py-1.5 text-xs font-medium">
-                  Sign out
-                </DropdownMenuItem>
-              </div>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {/* Mobile Top-Right Avatar Button (Navigates directly to Profile) */}
+          <button 
+            onClick={() => setLocation("/dashboard?view=profile")}
+            title="Profile & Settings"
+            className="p-0.5 rounded-lg border border-border/80 bg-bg-elevated/40 cursor-pointer flex items-center justify-center outline-none hover:border-primary/50 transition-all"
+          >
+            <Avatar className="h-6.5 w-6.5 border-none">
+              <AvatarFallback className="text-[10px] font-bold bg-bg-elevated text-primary">
+                {user?.displayName && user.displayName.trim() !== ""
+                  ? user.displayName.charAt(0).toUpperCase()
+                  : user?.email?.charAt(0).toUpperCase() || "U"}
+              </AvatarFallback>
+            </Avatar>
+          </button>
 
           {!isInstalled && (
             <button 
@@ -612,10 +593,10 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
         </main>
       </div>
 
-      {/* Mobile Bottom Navigation */}
-      <nav className={cn("md:hidden fixed bottom-4 left-4 right-4 z-50 backdrop-blur-lg border border-border/80 rounded-2xl shadow-xl px-2", themeTokens.navbarBg)}>
-        <div className="grid grid-cols-7 h-16">
-          {tabs.map((tab) => {
+      {/* Mobile Bottom Navigation (6 Primary Standalone Destinations) */}
+      <nav className={cn("md:hidden fixed bottom-4 left-3 right-3 z-50 backdrop-blur-lg border border-border/80 rounded-2xl shadow-xl px-1", themeTokens.navbarBg)}>
+        <div className="grid grid-cols-6 h-16">
+          {mobileTabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
             return (
@@ -623,7 +604,7 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
                 key={tab.id}
                 onClick={() => handleTabClick(tab.path)}
                 className={cn(
-                  "flex flex-col items-center justify-center gap-1 transition-all relative py-1 rounded-xl cursor-pointer",
+                  "flex flex-col items-center justify-center gap-1 transition-all relative py-1 rounded-xl cursor-pointer min-w-0",
                   isActive ? themeTokens.accentText : "text-text-muted hover:text-text-main"
                 )}
               >
@@ -631,9 +612,9 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
                   "p-1.5 rounded-xl transition-all duration-300", 
                   isActive ? "bg-primary/10 text-primary scale-110" : ""
                 )}>
-                  <Icon className="w-5 h-5 shrink-0" />
+                  <Icon className="w-4.5 h-4.5 shrink-0" />
                 </div>
-                <span className="text-[9px] font-semibold tracking-wide uppercase leading-none mt-0.5">{tab.label}</span>
+                <span className="text-[9px] font-semibold tracking-tight uppercase leading-none mt-0.5 truncate max-w-full px-0.5">{tab.label}</span>
                 {isActive && (
                   <span className="absolute bottom-1 w-1 h-1 rounded-full bg-primary animate-pulse" />
                 )}

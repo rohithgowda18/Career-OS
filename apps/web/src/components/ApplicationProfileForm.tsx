@@ -19,14 +19,18 @@ import {
   Linkedin, 
   Globe, 
   MapPin,
-  Sliders
+  Sliders,
+  LogOut,
+  Award
 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 
 export default function ApplicationProfileForm() {
   const { currentTheme, setTheme } = useTheme();
   const queryClient = useQueryClient();
-  const { user, refresh } = useAuth();
+  const { user, refresh, logout } = useAuth();
   const [displayName, setDisplayName] = useState("");
+  const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
 
   const { data: profile, isLoading } = useQuery({
     queryKey: ["user", "profile"],
@@ -342,9 +346,63 @@ export default function ApplicationProfileForm() {
               </div>
             </div>
 
+            {/* Account Actions Block */}
+            <div className="pt-6 border-t border-border">
+              <h4 className="text-xs font-semibold uppercase tracking-wider text-text-dim mb-3 flex items-center gap-2">
+                <LogOut className="w-3.5 h-3.5 text-danger" /> Account Actions
+              </h4>
+              <div className="p-4 rounded-lg bg-danger/5 border border-danger/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h5 className="text-xs font-bold text-text-main">Sign Out of Workspace</h5>
+                  <p className="text-[11px] text-text-dim mt-0.5">Clears active authentication session on this device.</p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowSignOutConfirm(true)}
+                  className="border-danger/40 text-danger hover:bg-danger/10 hover:border-danger/60 text-xs font-semibold h-9 px-4 shrink-0 cursor-pointer"
+                >
+                  <LogOut className="w-3.5 h-3.5 mr-1.5" />
+                  <span>Sign Out</span>
+                </Button>
+              </div>
+            </div>
+
           </form>
         </div>
       </div>
+
+      {/* Confirm Sign Out Dialog */}
+      <Dialog open={showSignOutConfirm} onOpenChange={setShowSignOutConfirm}>
+        <DialogContent className="max-w-sm bg-bg-card border-border text-text-main rounded-xl p-6 shadow-2xl">
+          <DialogHeader className="space-y-2">
+            <DialogTitle className="text-base font-semibold text-text-main">Sign Out of Career OS?</DialogTitle>
+            <DialogDescription className="text-xs text-text-muted leading-relaxed">
+              Are you sure you want to sign out? Your session token will be cleared and you will be redirected to the login page.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex justify-end gap-2 pt-4 border-t border-border/40 mt-4 text-xs font-semibold">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setShowSignOutConfirm(false)}
+              className="px-4 h-9 font-semibold text-text-muted hover:text-text-main cursor-pointer"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={() => {
+                setShowSignOutConfirm(false);
+                logout();
+              }}
+              className="bg-danger hover:bg-danger/90 text-white px-4 h-9 font-semibold cursor-pointer"
+            >
+              Sign Out
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
