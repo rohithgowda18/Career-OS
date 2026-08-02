@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { SkillsSkeleton } from "@/components/ui/ViewSkeletons";
 import { useQuery } from "@tanstack/react-query";
 import { skillsApi } from "@/lib/api/skillsApi";
 import { Loader2, Award, Edit2 } from "lucide-react";
@@ -72,12 +73,7 @@ export default function SkillTable({ page, setPage, pageSize, search }: SkillTab
   };
 
   if (skillsQuery.isLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center py-24 gap-3 bg-bg-card border border-border/60 rounded-xl">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        <p className="text-xs font-semibold text-text-dim uppercase tracking-wider animate-pulse">Loading skills...</p>
-      </div>
-    );
+    return <SkillsSkeleton />;
   }
 
   if (skills.length === 0) {

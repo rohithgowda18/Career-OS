@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useTheme } from "@/contexts/ThemeContext";
 import { Badge } from "@/components/ui/badge";
+import { KanbanSkeleton } from "@/components/ui/ViewSkeletons";
 
 const STATUSES = [
   "Interested",
@@ -100,11 +101,7 @@ export default function KanbanView() {
   };
 
   if (applicationsQuery.isLoading) {
-    return (
-      <div className="flex items-center justify-center py-24">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
+    return <KanbanSkeleton />;
   }
 
   if (applicationsQuery.isError) {

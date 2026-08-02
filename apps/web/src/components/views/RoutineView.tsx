@@ -19,6 +19,7 @@ import {
   Award,
   TrendingUp
 } from "lucide-react";
+import { RoutineSkeleton } from "@/components/ui/ViewSkeletons";
 
 const WEEKDAYS = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY"];
 const DAY_LABELS: Record<string, string> = {
@@ -162,9 +163,7 @@ export default function RoutineView() {
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        </div>
+        <RoutineSkeleton />
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column: My Daily Routine */}

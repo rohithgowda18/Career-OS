@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { AnalyticsSkeleton } from "@/components/ui/ViewSkeletons";
 import { useQuery } from "@tanstack/react-query";
 import { analyticsApi } from "@/lib/api/analyticsApi";
 import { placementsApi } from "@/lib/api/placementsApi";
@@ -71,11 +72,7 @@ export default function AnalyticsDashboard() {
     : (placementAnalyticsQuery.isLoading || placementTrendsQuery.isLoading);
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
+    return <AnalyticsSkeleton />;
   }
 
   // Event Analytics Data Mapping

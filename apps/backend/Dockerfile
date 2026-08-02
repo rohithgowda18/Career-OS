@@ -8,7 +8,7 @@ RUN mvn -B -ntp dependency:go-offline
 
 COPY src ./src
 RUN mvn -B -ntp clean package -DskipTests && \
-    cp target/event-app-tracker-*.jar /workspace/app.jar
+    cp target/career-os*.jar /workspace/app.jar
 
 FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app

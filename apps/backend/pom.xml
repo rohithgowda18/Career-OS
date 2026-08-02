@@ -6,11 +6,11 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.eventtracker</groupId>
-    <artifactId>event-app-tracker</artifactId>
+    <artifactId>career-os</artifactId>
     <version>1.0.0</version>
     <packaging>jar</packaging>
 
-    <name>Event App Tracker</name>
+    <name>Career OS</name>
     <description>Event application tracking and recommendations</description>
 
     <parent>
@@ -140,6 +140,7 @@
 
 
     <build>
+        <finalName>career-os</finalName>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>

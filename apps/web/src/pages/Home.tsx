@@ -1,6 +1,7 @@
 import React, { Suspense } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Loader2 } from "lucide-react";
+import { KanbanSkeleton, AnalyticsSkeleton, RoutineSkeleton, SkillsSkeleton } from "@/components/ui/ViewSkeletons";
 import DashboardView from "@/components/views/DashboardView";
 const KanbanView = React.lazy(() => import("@/components/views/KanbanView"));
 const CalendarView = React.lazy(() => import("@/components/views/CalendarView"));
@@ -78,6 +79,10 @@ export default function Home() {
   return (
     <DashboardLayout activeTab={currentView}>
       <Suspense fallback={
+        currentView === "kanban" ? <KanbanSkeleton /> :
+        currentView === "analytics" ? <AnalyticsSkeleton /> :
+        currentView === "routine" ? <RoutineSkeleton /> :
+        currentView === "skills" ? <SkillsSkeleton /> :
         <div className="flex items-center justify-center py-24">
           <Loader2 className="w-6 h-6 animate-spin text-primary" />
         </div>

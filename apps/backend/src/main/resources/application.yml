@@ -3,7 +3,7 @@ spring:
     import: optional:file:.env[.properties]
 
   application:
-    name: event-app-tracker
+    name: career-os
 
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/event_tracker_db}

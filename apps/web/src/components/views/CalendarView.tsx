@@ -142,13 +142,13 @@ export default function CalendarView() {
 
   const handleExportCalendar = async () => {
     try {
-      let icalContent = `BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Event Tracker//EN\nMETHOD:PUBLISH\n`;
+      let icalContent = `BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Career OS//EN\nMETHOD:PUBLISH\n`;
       events.forEach((event: CalendarEvent) => {
         const dateStr = event.deadline
           .toISOString()
           .split("T")[0]
           .replace(/-/g, "");
-        icalContent += `BEGIN:VEVENT\nUID:${event.id}@eventtracker\nDTSTART;VALUE=DATE:${dateStr}\nSUMMARY:${event.eventName} - ${event.status}\nEND:VEVENT\n`;
+        icalContent += `BEGIN:VEVENT\nUID:${event.id}@career-os\nDTSTART;VALUE=DATE:${dateStr}\nSUMMARY:${event.eventName} - ${event.status}\nEND:VEVENT\n`;
       });
       icalContent += `END:VCALENDAR`;
 

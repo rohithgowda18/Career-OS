@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import DashboardLayout from "@/components/DashboardLayout";
 import PlacementTable from "@/components/PlacementTable";
 import AddPlacementModal from "@/components/AddPlacementModal";
+import { PlacementsSkeleton } from "@/components/ui/ViewSkeletons";
 import { cn } from "@/lib/utils";
 import {
   Plus,
@@ -64,11 +65,8 @@ export default function PlacementsPage() {
           </div>
         </div>
 
-        {/* Quiet, Minimal KPI Indicators Row (Workflow-first style, replaces large widgets) */}
         {analyticsQuery.isLoading ? (
-          <div className="flex items-center justify-center py-4">
-            <Loader2 className="w-5 h-5 animate-spin text-primary" />
-          </div>
+          <PlacementsSkeleton />
         ) : (
           <div className="flex flex-wrap items-center justify-between gap-y-2 gap-x-6 text-xs text-text-muted border-b border-border/40 pb-4">
             <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
