@@ -15,11 +15,16 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 
 @Component
-@RequiredArgsConstructor
 public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
     private final JwtTokenProvider jwtTokenProvider;
     private final UserService userService;
+
+    public OAuth2LoginSuccessHandler(JwtTokenProvider jwtTokenProvider, 
+                                     @org.springframework.context.annotation.Lazy UserService userService) {
+        this.jwtTokenProvider = jwtTokenProvider;
+        this.userService = userService;
+    }
 
     @Value("${app.oauth2.redirect-url}")
     private String oauth2RedirectUrl;
