@@ -16,6 +16,10 @@ const getApiBaseUrl = () => {
 
 // Remove trailing slashes and one /api suffix so callers may configure either
 // https://backend.example.com or https://backend.example.com/api.
+const normalizedUrl = getApiBaseUrl()
+  .replace(/\/+$/, '')
+  .replace(/\/api\/?$/, '');
+
 const configuredAuthUrl = import.meta.env.VITE_AUTH_API_URL?.trim();
 const authBaseUrl = configuredAuthUrl || (import.meta.env.DEV ? 'http://localhost:8081' : normalizedUrl);
 const normalizedAuthUrl = authBaseUrl.replace(/\/+$/, '').replace(/\/api\/?$/, '');
