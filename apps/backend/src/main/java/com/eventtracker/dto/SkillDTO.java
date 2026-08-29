@@ -1,7 +1,7 @@
 package com.eventtracker.dto;
 
-import com.eventtracker.entity.SkillCategory;
-import com.eventtracker.entity.SkillLevel;
+import com.eventtracker.entity.Skill.SkillCategory;
+import com.eventtracker.entity.Skill.SkillLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

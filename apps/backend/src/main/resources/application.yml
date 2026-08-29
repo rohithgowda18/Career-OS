@@ -69,12 +69,9 @@ app:
   oauth2:
     redirect-url: ${OAUTH2_REDIRECT_URL:${FRONTEND_URL:https://career-os.rohith.app}/oauth-success}
 
+  ai-extraction-service:
+    url: ${AI_EXTRACTION_SERVICE_URL:http://localhost:8082}
 
-
-gemini:
-  api:
-    key: ${GEMINI_API_KEY:}
-    model: ${GEMINI_API_MODEL:gemini-2.5-flash}
 
 logging:
   level:

@@ -1,0 +1,21 @@
+server:
+  port: ${PORT:8082}
+
+gemini:
+  api:
+    key: ${GEMINI_API_KEY:}
+    model: ${GEMINI_API_MODEL:gemini-2.5-flash}
+
+logging:
+  level:
+    com.careeros.ai: DEBUG
+    root: INFO
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,info"
+  endpoint:
+    health:
+      show-details: always

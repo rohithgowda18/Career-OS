@@ -1,11 +1,11 @@
-package com.eventtracker.service;
+package com.careeros.auth.service;
 
-import com.eventtracker.dto.UserDTO;
-import com.eventtracker.entity.User;
-import com.eventtracker.entity.UserProfile;
-import com.eventtracker.exception.DuplicateUserException;
-import com.eventtracker.repository.UserRepository;
-import com.eventtracker.repository.UserProfileRepository;
+import com.careeros.auth.dto.UserDTO;
+import com.careeros.auth.entity.User;
+import com.careeros.auth.entity.UserProfile;
+import com.careeros.auth.exception.DuplicateUserException;
+import com.careeros.auth.repository.UserRepository;
+import com.careeros.auth.repository.UserProfileRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;

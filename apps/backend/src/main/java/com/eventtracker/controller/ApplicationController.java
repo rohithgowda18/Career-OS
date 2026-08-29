@@ -2,10 +2,8 @@ package com.eventtracker.controller;
 
 import com.eventtracker.dto.ApplicationDTO;
 import com.eventtracker.entity.Application;
-import com.eventtracker.entity.User;
 import com.eventtracker.service.ApplicationService;
 import com.eventtracker.service.GeminiExtractionService;
-import com.eventtracker.service.UserService;
 import com.eventtracker.security.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
@@ -31,7 +29,6 @@ public class ApplicationController {
 
     private final ApplicationService applicationService;
     private final GeminiExtractionService geminiExtractionService;
-    private final UserService userService;
 
     @PostMapping("/extract")
     @Operation(operationId = "extractApplication", summary = "Extract application details using AI")
@@ -59,8 +56,6 @@ public class ApplicationController {
             Object principal = authentication.getPrincipal();
             if (principal instanceof UserPrincipal) {
                 return ((UserPrincipal) principal).getId();
-            } else if (principal instanceof User) {
-                return ((User) principal).getId();
             }
         }
         throw new RuntimeException("User not authenticated");
@@ -92,8 +87,7 @@ public class ApplicationController {
     public ResponseEntity<?> create(@Valid @RequestBody ApplicationDTO dto) {
         try {
             Long userId = getCurrentUserId();
-            User user = userService.findById(userId).orElseThrow(() -> new IllegalArgumentException("User not found"));
-            Application application = applicationService.createApplication(user, dto);
+            Application application = applicationService.createApplication(userId, dto);
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(applicationService.convertToDTO(application));
         } catch (Exception e) {

@@ -4,7 +4,6 @@ import com.eventtracker.dto.RoutineDTO;
 import com.eventtracker.dto.RoutineReportDTO;
 import com.eventtracker.entity.RoutineTask;
 import com.eventtracker.entity.RoutineCompletion;
-import com.eventtracker.entity.User;
 import com.eventtracker.repository.RoutineTaskRepository;
 import com.eventtracker.repository.RoutineCompletionRepository;
 import lombok.RequiredArgsConstructor;
@@ -24,9 +23,9 @@ public class RoutineService {
     private final RoutineTaskRepository routineTaskRepository;
     private final RoutineCompletionRepository routineCompletionRepository;
 
-    public RoutineTask createTask(User user, RoutineDTO dto) {
+    public RoutineTask createTask(Long userId, RoutineDTO dto) {
         RoutineTask task = new RoutineTask();
-        task.setUser(user);
+        task.setUserId(userId);
         task.setTitle(dto.getTitle().trim());
         task.setDisplayOrder(dto.getDisplayOrder());
         return routineTaskRepository.save(task);
@@ -191,7 +190,7 @@ public class RoutineService {
     public RoutineDTO convertToDTO(RoutineTask task, boolean completed) {
         RoutineDTO dto = new RoutineDTO();
         dto.setId(task.getId());
-        dto.setUserId(task.getUser().getId());
+        dto.setUserId(task.getUserId());
         dto.setTitle(task.getTitle());
         dto.setDisplayOrder(task.getDisplayOrder());
         dto.setCompleted(completed);

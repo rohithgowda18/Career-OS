@@ -2,10 +2,8 @@ package com.eventtracker.controller;
 
 import com.eventtracker.dto.PlacementDTO;
 import com.eventtracker.entity.Placement;
-import com.eventtracker.entity.User;
 import com.eventtracker.service.PlacementService;
 import com.eventtracker.service.GeminiExtractionService;
-import com.eventtracker.service.UserService;
 import com.eventtracker.security.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
@@ -30,7 +28,6 @@ public class PlacementController {
     
     private final PlacementService placementService;
     private final GeminiExtractionService geminiExtractionService;
-    private final UserService userService;
 
     @PostMapping("/extract")
     @Operation(operationId = "extractPlacement", summary = "Extract placement details using AI")
@@ -58,8 +55,6 @@ public class PlacementController {
             Object principal = authentication.getPrincipal();
             if (principal instanceof UserPrincipal) {
                 return ((UserPrincipal) principal).getId();
-            } else if (principal instanceof User) {
-                return ((User) principal).getId();
             }
         }
         throw new RuntimeException("User not authenticated");
@@ -90,8 +85,7 @@ public class PlacementController {
     public ResponseEntity<?> create(@Valid @RequestBody PlacementDTO request) {
         try {
             Long userId = getCurrentUserId();
-            User user = userService.findById(userId).orElseThrow(() -> new IllegalArgumentException("User not found"));
-            Placement placement = placementService.createPlacement(user, request);
+            Placement placement = placementService.createPlacement(userId, request);
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(placementService.convertToDTO(placement));
         } catch (Exception e) {

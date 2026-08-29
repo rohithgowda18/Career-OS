@@ -1,9 +1,7 @@
 package com.eventtracker.controller;
 
 import com.eventtracker.dto.ImportRequestDTO;
-import com.eventtracker.entity.User;
 import com.eventtracker.service.ImportService;
-import com.eventtracker.service.UserService;
 import com.eventtracker.security.UserPrincipal;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +19,6 @@ import java.util.Map;
 public class ImportController {
 
     private final ImportService importService;
-    private final UserService userService;
 
     @PostMapping("/text")
     public ResponseEntity<?> importText(@AuthenticationPrincipal Object principal,
@@ -33,8 +30,6 @@ public class ImportController {
         Long userId = null;
         if (principal instanceof UserPrincipal) {
             userId = ((UserPrincipal) principal).getId();
-        } else if (principal instanceof User) {
-            userId = ((User) principal).getId();
         }
 
         if (userId == null) {
@@ -42,8 +37,7 @@ public class ImportController {
         }
 
         try {
-            User user = userService.findById(userId).orElseThrow(() -> new IllegalArgumentException("User not found"));
-            Map<String, Object> result = importService.importContent(user, request);
+            Map<String, Object> result = importService.importContent(userId, request);
             return ResponseEntity.ok(result);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));

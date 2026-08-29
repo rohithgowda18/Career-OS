@@ -2,7 +2,6 @@ package com.eventtracker.service;
 
 import com.eventtracker.dto.ApplicationDTO;
 import com.eventtracker.entity.Application;
-import com.eventtracker.entity.User;
 import com.eventtracker.exception.DuplicateEventException;
 import com.eventtracker.repository.ApplicationRepository;
 import lombok.RequiredArgsConstructor;
@@ -22,18 +21,18 @@ import java.util.Optional;
 public class ApplicationService {
     private final ApplicationRepository applicationRepository;
 
-    public Application createApplication(User user, ApplicationDTO dto) {
+    public Application createApplication(Long userId, ApplicationDTO dto) {
         String normalizedUrl = UrlUtils.normalizeUrl(dto.getUrl());
         
         if (normalizedUrl != null) {
-            applicationRepository.findByUserIdAndUrl(user.getId(), normalizedUrl)
+            applicationRepository.findByUserIdAndUrl(userId, normalizedUrl)
                 .ifPresent(app -> {
                     throw new DuplicateEventException("Event already saved in your tracker");
                 });
         }
 
         Application app = new Application();
-        app.setUser(user);
+        app.setUserId(userId);
         app.setEventName(dto.getEventName());
         app.setEventType(parseEventType(dto.getEventType()));
         app.setStatus(parseStatus(dto.getStatus()));

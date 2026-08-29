@@ -22,10 +22,8 @@ public class Placement {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @JsonIgnore
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    @Column(name = "user_id", nullable = false)
+    private Long userId;
 
     @Column(name = "company_name", nullable = false)
     private String companyName;
@@ -62,4 +60,14 @@ public class Placement {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    public enum PlacementStatus {
+        APPLIED,
+        ASSESSMENT_SCHEDULED,
+        ASSESSMENT_COMPLETED,
+        INTERVIEW_SCHEDULED,
+        INTERVIEW_COMPLETED,
+        OFFER_RECEIVED,
+        REJECTED
+    }
 }

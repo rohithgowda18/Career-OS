@@ -2,8 +2,7 @@ package com.eventtracker.service;
 
 import com.eventtracker.dto.PlacementDTO;
 import com.eventtracker.entity.Placement;
-import com.eventtracker.entity.PlacementStatus;
-import com.eventtracker.entity.User;
+import com.eventtracker.entity.Placement.PlacementStatus;
 import com.eventtracker.exception.DuplicatePlacementException;
 import com.eventtracker.repository.PlacementRepository;
 import lombok.RequiredArgsConstructor;
@@ -24,15 +23,15 @@ import java.util.stream.Collectors;
 public class PlacementService {
     private final PlacementRepository placementRepository;
 
-    public Placement createPlacement(User user, PlacementDTO request) {
+    public Placement createPlacement(Long userId, PlacementDTO request) {
         String normLink = UrlUtils.normalizeUrl(request.getApplicationLink());
-        placementRepository.findDuplicate(user.getId(), request.getCompanyName(), request.getRole(), normLink)
+        placementRepository.findDuplicate(userId, request.getCompanyName(), request.getRole(), normLink)
             .ifPresent(p -> {
                 throw new DuplicatePlacementException("Placement for this company and role with this link is already saved in your tracker");
             });
 
         Placement placement = new Placement();
-        placement.setUser(user);
+        placement.setUserId(userId);
         placement.setCompanyName(request.getCompanyName());
         placement.setRole(request.getRole());
         placement.setLocation(request.getLocation());
@@ -106,7 +105,7 @@ public class PlacementService {
     public PlacementDTO convertToDTO(Placement p) {
         PlacementDTO dto = new PlacementDTO();
         dto.setId(p.getId());
-        dto.setUserId(p.getUser().getId());
+        dto.setUserId(p.getUserId());
         dto.setCompanyName(p.getCompanyName());
         dto.setRole(p.getRole());
         dto.setLocation(p.getLocation());

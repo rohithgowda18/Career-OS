@@ -13,7 +13,7 @@ import java.util.Optional;
 public interface ApplicationRepository extends JpaRepository<Application, Long> {
     Page<Application> findByUserId(Long userId, Pageable pageable);
 
-    @org.springframework.data.jpa.repository.Query("SELECT a FROM Application a WHERE a.user.id = :userId " +
+    @org.springframework.data.jpa.repository.Query("SELECT a FROM Application a WHERE a.userId = :userId " +
            "AND (:status IS NULL OR a.status = :status) " +
            "AND (:eventType IS NULL OR a.eventType = :eventType)")
     Page<Application> findFiltered(@org.springframework.data.repository.query.Param("userId") Long userId,

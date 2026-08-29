@@ -2,7 +2,7 @@ package com.eventtracker.service;
 
 import com.eventtracker.entity.Application;
 import com.eventtracker.entity.Placement;
-import com.eventtracker.entity.PlacementStatus;
+import com.eventtracker.entity.Placement.PlacementStatus;
 import com.eventtracker.repository.ApplicationRepository;
 import com.eventtracker.repository.PlacementRepository;
 import lombok.RequiredArgsConstructor;
@@ -184,7 +184,7 @@ public class AnalyticsService {
     private PlacementDTO convertPlacementToDTO(Placement p) {
         PlacementDTO dto = new PlacementDTO();
         dto.setId(p.getId());
-        dto.setUserId(p.getUser().getId());
+        dto.setUserId(p.getUserId());
         dto.setCompanyName(p.getCompanyName());
         dto.setRole(p.getRole());
         dto.setLocation(p.getLocation());

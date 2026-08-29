@@ -1,7 +1,7 @@
 package com.eventtracker.dto;
 
-import com.eventtracker.entity.SkillCategory;
-import com.eventtracker.entity.SkillLevel;
+import com.eventtracker.entity.Skill.SkillCategory;
+import com.eventtracker.entity.Skill.SkillLevel;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;

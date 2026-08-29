@@ -5,7 +5,6 @@ import com.eventtracker.dto.ImportRequestDTO;
 import com.eventtracker.dto.PlacementDTO;
 import com.eventtracker.entity.Application;
 import com.eventtracker.entity.Placement;
-import com.eventtracker.entity.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -24,8 +23,8 @@ public class ImportService {
     private final ApplicationService applicationService;
 
     @Transactional
-    public Map<String, Object> importContent(User user, ImportRequestDTO request) {
-        log.info("Processing manual import request from source: '{}' for user: {}", request.getSource(), user.getId());
+    public Map<String, Object> importContent(Long userId, ImportRequestDTO request) {
+        log.info("Processing manual import request from source: '{}' for user: {}", request.getSource(), userId);
 
         String classification = geminiExtractionService.classifyEmail(request.getContent());
         log.info("Import content classified as: {}", classification);
@@ -39,7 +38,7 @@ public class ImportService {
             if (details.getStatus() == null || details.getStatus().isBlank()) {
                 details.setStatus("APPLIED");
             }
-            Placement placement = placementService.createPlacement(user, details);
+            Placement placement = placementService.createPlacement(userId, details);
             
             response.put("type", "PLACEMENT");
             response.put("id", placement.getId());
@@ -53,7 +52,7 @@ public class ImportService {
             if (details.getStatus() == null || details.getStatus().isBlank()) {
                 details.setStatus("Applied");
             }
-            Application application = applicationService.createApplication(user, details);
+            Application application = applicationService.createApplication(userId, details);
 
             response.put("type", "APPLICATION");
             response.put("id", application.getId());

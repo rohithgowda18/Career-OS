@@ -4,7 +4,6 @@ import com.eventtracker.dto.CreateSkillRequest;
 import com.eventtracker.dto.SkillDTO;
 import com.eventtracker.dto.UpdateSkillRequest;
 import com.eventtracker.entity.Skill;
-import com.eventtracker.entity.User;
 import com.eventtracker.exception.DuplicateSkillException;
 import com.eventtracker.repository.SkillRepository;
 import lombok.RequiredArgsConstructor;
@@ -21,14 +20,14 @@ import java.util.Optional;
 public class SkillService {
     private final SkillRepository skillRepository;
 
-    public Skill createSkill(User user, CreateSkillRequest request) {
+    public Skill createSkill(Long userId, CreateSkillRequest request) {
         String trimmedName = request.getName().trim();
-        if (skillRepository.existsByUserIdAndNameIgnoreCase(user.getId(), trimmedName)) {
+        if (skillRepository.existsByUserIdAndNameIgnoreCase(userId, trimmedName)) {
             throw new DuplicateSkillException("You have already added this skill: " + trimmedName);
         }
 
         Skill skill = new Skill();
-        skill.setUser(user);
+        skill.setUserId(userId);
         skill.setName(trimmedName);
         skill.setCategory(request.getCategory());
         skill.setLevel(request.getLevel());
@@ -38,7 +37,7 @@ public class SkillService {
 
     public Skill updateSkill(Long id, Long userId, UpdateSkillRequest request) {
         Skill skill = skillRepository.findById(id)
-                .filter(s -> s.getUser().getId().equals(userId))
+                .filter(s -> s.getUserId().equals(userId))
                 .orElseThrow(() -> new IllegalArgumentException("Skill not found"));
 
         String trimmedName = request.getName().trim();
@@ -68,12 +67,12 @@ public class SkillService {
     @Transactional(readOnly = true)
     public Optional<Skill> getSkillById(Long id, Long userId) {
         return skillRepository.findById(id)
-                .filter(s -> s.getUser().getId().equals(userId));
+                .filter(s -> s.getUserId().equals(userId));
     }
 
     public void deleteSkill(Long id, Long userId) {
         Skill skill = skillRepository.findById(id)
-                .filter(s -> s.getUser().getId().equals(userId))
+                .filter(s -> s.getUserId().equals(userId))
                 .orElseThrow(() -> new IllegalArgumentException("Skill not found"));
         skillRepository.delete(skill);
     }

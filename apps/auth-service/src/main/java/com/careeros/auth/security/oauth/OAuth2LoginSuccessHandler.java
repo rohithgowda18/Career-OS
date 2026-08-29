@@ -1,8 +1,8 @@
-package com.eventtracker.security.oauth;
+package com.careeros.auth.security.oauth;
 
-import com.eventtracker.entity.User;
-import com.eventtracker.security.JwtTokenProvider;
-import com.eventtracker.service.UserService;
+import com.careeros.auth.entity.User;
+import com.careeros.auth.security.JwtTokenProvider;
+import com.careeros.auth.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -58,4 +58,3 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
         getRedirectStrategy().sendRedirect(request, response, redirectUrl);
     }
 }
-

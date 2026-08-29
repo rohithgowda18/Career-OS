@@ -1,14 +1,13 @@
-package com.eventtracker.controller;
+package com.careeros.auth.controller;
 
-import com.eventtracker.dto.AuthDTO.LoginRequest;
-import com.eventtracker.dto.AuthDTO.RegisterRequest;
-import com.eventtracker.dto.AuthDTO.AuthResponse;
-import com.eventtracker.entity.User;
-import com.eventtracker.exception.DuplicateUserException;
-import com.eventtracker.security.JwtTokenProvider;
-import com.eventtracker.security.UserPrincipal;
-import com.eventtracker.service.UserService;
-import io.swagger.v3.oas.annotations.Operation;
+import com.careeros.auth.dto.AuthDTO.LoginRequest;
+import com.careeros.auth.dto.AuthDTO.RegisterRequest;
+import com.careeros.auth.dto.AuthDTO.AuthResponse;
+import com.careeros.auth.entity.User;
+import com.careeros.auth.exception.DuplicateUserException;
+import com.careeros.auth.security.JwtTokenProvider;
+import com.careeros.auth.security.UserPrincipal;
+import com.careeros.auth.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -37,7 +36,6 @@ public class AuthController {
     private final PasswordEncoder passwordEncoder;
 
     @PostMapping("/register")
-    @Operation(operationId = "register", summary = "Register a new user")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request) {
         try {
             User user = userService.createUser(
@@ -63,7 +61,6 @@ public class AuthController {
     }
 
     @PutMapping("/me/display-name")
-    @Operation(operationId = "updateDisplayName", summary = "Update display name of the current user")
     public ResponseEntity<?> updateDisplayName(@RequestBody Map<String, String> body) {
         String displayName = body.get("displayName");
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -87,7 +84,6 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    @Operation(operationId = "login", summary = "Login to obtain JWT token")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
         try {
             Optional<User> user = userService.findByEmail(request.getEmail());
@@ -112,7 +108,6 @@ public class AuthController {
     }
 
     @GetMapping("/me")
-    @Operation(operationId = "getCurrentUser", summary = "Get current authenticated user info")
     public ResponseEntity<?> getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication.isAuthenticated()) {
@@ -133,7 +128,6 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    @Operation(operationId = "logout", summary = "Logout current user session")
     public ResponseEntity<?> logout(HttpServletRequest request) {
         SecurityContextHolder.clearContext();
         return ResponseEntity.ok("Logout successful");

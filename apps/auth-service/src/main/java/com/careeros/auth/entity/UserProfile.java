@@ -1,4 +1,4 @@
-package com.eventtracker.entity;
+package com.careeros.auth.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;

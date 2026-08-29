@@ -1,9 +1,10 @@
-package com.eventtracker.controller;
+package com.careeros.auth.controller;
 
-import com.eventtracker.dto.UserProfileDTO;
-import com.eventtracker.entity.User;
-import com.eventtracker.service.ProfileService;
-import io.swagger.v3.oas.annotations.Operation;
+import com.careeros.auth.dto.UserProfileDTO;
+import com.careeros.auth.entity.User;
+import com.careeros.auth.service.ProfileService;
+import com.careeros.auth.security.UserPrincipal;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -18,13 +19,11 @@ public class ProfileController {
     private final ProfileService profileService;
 
     @GetMapping
-    @Operation(operationId = "getProfile", summary = "Get current user profile")
     public ResponseEntity<UserProfileDTO> getMyProfile() {
         return ResponseEntity.of(profileService.getProfileByUserId(getCurrentUserId()));
     }
 
     @PutMapping
-    @Operation(operationId = "updateProfile", summary = "Update current user profile")
     public ResponseEntity<UserProfileDTO> updateMyProfile(@RequestBody UserProfileDTO updates) {
         return ResponseEntity.ok(profileService.updateProfile(getCurrentUserId(), updates));
     }
@@ -33,8 +32,8 @@ public class ProfileController {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null) {
             Object principal = authentication.getPrincipal();
-            if (principal instanceof com.eventtracker.security.UserPrincipal) {
-                return ((com.eventtracker.security.UserPrincipal) principal).getId();
+            if (principal instanceof UserPrincipal) {
+                return ((UserPrincipal) principal).getId();
             } else if (principal instanceof User) {
                 return ((User) principal).getId();
             }

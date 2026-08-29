@@ -16,9 +16,9 @@ const getApiBaseUrl = () => {
 
 // Remove trailing slashes and one /api suffix so callers may configure either
 // https://backend.example.com or https://backend.example.com/api.
-const normalizedUrl = getApiBaseUrl()
-  .replace(/\/+$/, '')
-  .replace(/\/api\/?$/, '');
+const configuredAuthUrl = import.meta.env.VITE_AUTH_API_URL?.trim();
+const authBaseUrl = configuredAuthUrl || (import.meta.env.DEV ? 'http://localhost:8081' : normalizedUrl);
+const normalizedAuthUrl = authBaseUrl.replace(/\/+$/, '').replace(/\/api\/?$/, '');
 
 const restClient = axios.create({
   baseURL: normalizedUrl,
@@ -30,10 +30,15 @@ const restClient = axios.create({
 
 
 console.log(`[Debug REST] Axios instance initialized with baseURL: "${normalizedUrl}"`);
+console.log(`[Debug REST] Auth Service baseURL: "${normalizedAuthUrl}"`);
 
 // Add a request interceptor to include the JWT token
 restClient.interceptors.request.use(
   (config) => {
+    // Dynamic routing to Auth Service in Phase 1
+    if (config.url && (config.url.startsWith('/api/auth') || config.url.startsWith('/api/profile') || config.url.startsWith('/login/oauth2'))) {
+      config.baseURL = normalizedAuthUrl;
+    }
     console.log(`[Debug REST] Request Interceptor - URL: "${config.url}", Method: "${config.method}", fullURL: "${config.baseURL || ''}${config.url || ''}"`);
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('token');
@@ -91,6 +96,6 @@ restClient.interceptors.response.use(
   }
 );
 
-export { normalizedUrl as BACKEND_URL };
+export { normalizedUrl as BACKEND_URL, normalizedAuthUrl as AUTH_BACKEND_URL };
 export default restClient;
 

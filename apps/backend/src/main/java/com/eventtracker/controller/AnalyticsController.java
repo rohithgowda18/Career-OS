@@ -1,6 +1,5 @@
 package com.eventtracker.controller;
 
-import com.eventtracker.entity.User;
 import com.eventtracker.security.UserPrincipal;
 import com.eventtracker.service.AnalyticsService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -56,8 +55,6 @@ public class AnalyticsController {
             Object principal = authentication.getPrincipal();
             if (principal instanceof UserPrincipal) {
                 return ((UserPrincipal) principal).getId();
-            } else if (principal instanceof User) {
-                return ((User) principal).getId();
             }
         }
         throw new RuntimeException("User not authenticated");

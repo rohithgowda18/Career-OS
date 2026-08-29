@@ -1,4 +1,4 @@
-package com.eventtracker.dto;
+package com.careeros.auth.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

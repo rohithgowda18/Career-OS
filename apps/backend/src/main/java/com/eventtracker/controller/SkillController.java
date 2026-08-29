@@ -4,9 +4,7 @@ import com.eventtracker.dto.CreateSkillRequest;
 import com.eventtracker.dto.SkillDTO;
 import com.eventtracker.dto.UpdateSkillRequest;
 import com.eventtracker.entity.Skill;
-import com.eventtracker.entity.User;
 import com.eventtracker.service.SkillService;
-import com.eventtracker.service.UserService;
 import com.eventtracker.security.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
@@ -27,7 +25,6 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class SkillController {
     private final SkillService skillService;
-    private final UserService userService;
 
     private Long getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -35,8 +32,6 @@ public class SkillController {
             Object principal = authentication.getPrincipal();
             if (principal instanceof UserPrincipal) {
                 return ((UserPrincipal) principal).getId();
-            } else if (principal instanceof User) {
-                return ((User) principal).getId();
             }
         }
         throw new RuntimeException("User not authenticated");
@@ -46,8 +41,7 @@ public class SkillController {
     public ResponseEntity<?> create(@Valid @RequestBody CreateSkillRequest request) {
         try {
             Long userId = getCurrentUserId();
-            User user = userService.findById(userId).orElseThrow(() -> new IllegalArgumentException("User not found"));
-            Skill skill = skillService.createSkill(user, request);
+            Skill skill = skillService.createSkill(userId, request);
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(skillService.convertToDTO(skill));
         } catch (Exception e) {

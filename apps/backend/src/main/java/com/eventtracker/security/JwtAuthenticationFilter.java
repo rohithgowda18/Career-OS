@@ -11,19 +11,15 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import com.eventtracker.service.UserService;
-
 import java.io.IOException;
 
 @Slf4j
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider tokenProvider;
-    private final UserService userService;
 
-    public JwtAuthenticationFilter(JwtTokenProvider tokenProvider, UserService userService) {
+    public JwtAuthenticationFilter(JwtTokenProvider tokenProvider) {
         this.tokenProvider = tokenProvider;
-        this.userService = userService;
     }
 
     @Override
@@ -38,7 +34,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     Long userId = claims.get("userId", Long.class);
                     String email = claims.get("email", String.class);
 
-                    // Optimized path: use UserPrincipal directly from token claims without database lookups
+                    // Lightweight principal constructed directly from JWT claims without database queries
                     UserPrincipal principal = new UserPrincipal(userId, email);
                     UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                             principal, null, principal.getAuthorities());

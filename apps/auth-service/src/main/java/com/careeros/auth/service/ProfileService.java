@@ -1,8 +1,8 @@
-package com.eventtracker.service;
+package com.careeros.auth.service;
 
-import com.eventtracker.dto.UserProfileDTO;
-import com.eventtracker.entity.UserProfile;
-import com.eventtracker.repository.UserProfileRepository;
+import com.careeros.auth.dto.UserProfileDTO;
+import com.careeros.auth.entity.UserProfile;
+import com.careeros.auth.repository.UserProfileRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

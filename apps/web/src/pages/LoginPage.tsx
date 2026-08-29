@@ -7,7 +7,7 @@ import { Terminal, Loader2, ArrowLeft, Key, Mail, Eye, EyeOff } from "lucide-rea
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { authApi } from "@/lib/api/authApi";
 import { useAuth } from "@/hooks/useAuth";
-import { BACKEND_URL } from "@/lib/restClient";
+import { AUTH_BACKEND_URL } from "@/lib/restClient";
 import { toast } from "sonner";
 import axios from "axios";
 
@@ -100,7 +100,7 @@ export default function LoginPage() {
   const isLoading = loginMutation.isPending || registerMutation.isPending || isWakingBackend;
 
   const handleOAuthLogin = (provider: "google" | "github") => {
-    const url = `${BACKEND_URL}/oauth2/authorization/${provider}`;
+    const url = `${AUTH_BACKEND_URL}/oauth2/authorization/${provider}`;
     const width = 500;
     const height = 650;
     const left = window.screen.width / 2 - width / 2;

@@ -22,10 +22,8 @@ public class Skill {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @JsonIgnore
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    @Column(name = "user_id", nullable = false)
+    private Long userId;
 
     @Column(nullable = false)
     private String name;
@@ -45,4 +43,23 @@ public class Skill {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    public enum SkillCategory {
+        BACKEND,
+        FRONTEND,
+        DATABASE,
+        DEVOPS,
+        CLOUD,
+        COMPUTER_SCIENCE,
+        AI_ML,
+        MOBILE,
+        TESTING,
+        OTHER
+    }
+
+    public enum SkillLevel {
+        BEGINNER,
+        INTERMEDIATE,
+        ADVANCED
+    }
 }
