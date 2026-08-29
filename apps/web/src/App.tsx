@@ -35,21 +35,29 @@ function Router() {
 
   useEffect(() => {
     const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-    console.log(`[Debug Auth] Router Route Guard - path: "${location}", token in localStorage: ${token ? "YES" : "NO"}, auth loading: ${loading}, isAuthenticated: ${isAuthenticated}`);
+    if (import.meta.env.DEV) {
+      console.log(`[Debug Auth] Router Route Guard - path: "${location}", token in localStorage: ${token ? "YES" : "NO"}, auth loading: ${loading}, isAuthenticated: ${isAuthenticated}`);
+    }
     
     if (loading) {
-      console.log("[Debug Auth] Route Guard - Auth is initializing, holding navigation decisions.");
+      if (import.meta.env.DEV) {
+        console.log("[Debug Auth] Route Guard - Auth is initializing, holding navigation decisions.");
+      }
       return;
     }
 
     if (isAuthenticated) {
       if (location === "/" || location === "/login") {
-        console.log(`[Debug Auth] Route Guard - Authenticated user at "${location}". Redirecting directly to "/dashboard".`);
+        if (import.meta.env.DEV) {
+          console.log(`[Debug Auth] Route Guard - Authenticated user at "${location}". Redirecting directly to "/dashboard".`);
+        }
         setLocation("/dashboard");
       }
     } else {
       if (location === "/dashboard" || location === "/placements" || location === "/add") {
-        console.log(`[Debug Auth] Route Guard - Unauthenticated user trying to access protected "${location}". Redirecting to "/login".`);
+        if (import.meta.env.DEV) {
+          console.log(`[Debug Auth] Route Guard - Unauthenticated user trying to access protected "${location}". Redirecting to "/login".`);
+        }
         setLocation("/login");
       }
     }

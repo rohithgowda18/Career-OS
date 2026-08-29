@@ -66,7 +66,9 @@ export default function EditCategorySkillsModal({
       await Promise.all([
         ...localSkills.map(s => {
           if (s.id === undefined || s.id === null) {
-            console.error("Skipping update. Skill is missing an ID:", s);
+            if (import.meta.env.DEV) {
+              console.error("Skipping update. Skill is missing an ID:", s);
+            }
             return Promise.resolve();
           }
           if (s.id < 0) {

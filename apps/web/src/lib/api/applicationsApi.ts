@@ -6,6 +6,8 @@ export interface ApplicationListParams {
   sort?: string;
   status?: string;
   eventType?: string;
+  startDate?: string;
+  endDate?: string;
 }
 
 export const applicationsApi = {
@@ -16,6 +18,8 @@ export const applicationsApi = {
       sort: params?.sort ?? 'deadline,asc',
       status: params?.status,
       eventType: params?.eventType,
+      startDate: params?.startDate,
+      endDate: params?.endDate,
     };
     const response = (await restClient.get('/api/applications', { params: queryParams })).data;
     

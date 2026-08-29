@@ -25,31 +25,17 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { usePWAInstall } from "@/hooks/usePWAInstall";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import axios from "axios";
 import { BACKEND_URL } from "@/lib/restClient";
+import InstallAppDialog from "@/components/InstallAppDialog";
 
 export default function LandingPage() {
   const [, setLocation] = useLocation();
   const [scrolled, setScrolled] = useState(false);
   const [showInstallDialog, setShowInstallDialog] = useState(false);
   const { isInstallable, isIOS, triggerInstall } = usePWAInstall();
-
-  const handleConfirmInstall = async () => {
-    setShowInstallDialog(false);
-    try {
-      const outcome = await triggerInstall();
-      if (outcome === "accepted") {
-        toast.success("App installed successfully.");
-      } else {
-        toast.info("Installation cancelled.");
-      }
-    } catch (error) {
-      toast.error("Failed to trigger installation.");
-    }
-  };
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -576,63 +562,7 @@ export default function LandingPage() {
         </footer>
       </main>
 
-      {/* Install App dialog */}
-      <Dialog open={showInstallDialog} onOpenChange={setShowInstallDialog}>
-        <DialogContent className="max-w-md bg-bg-card border-border text-text-main rounded-xl shadow-2xl p-6">
-          <DialogHeader className="space-y-2">
-            <DialogTitle className="text-base font-semibold">
-              {isIOS ? "Install Career OS on iOS" : "Install Career OS Desktop App"}
-            </DialogTitle>
-            <DialogDescription className="text-xs text-text-muted leading-relaxed">
-              {isIOS 
-                ? "Install this app on your iOS device for faster loading times and a full native application layout."
-                : "Install this application locally to enable native shortcut support and run in standalone window mode."}
-            </DialogDescription>
-          </DialogHeader>
-          
-          {isIOS ? (
-            <div className="space-y-3 py-3 text-xs text-text-main">
-              <p className="font-semibold text-primary">Instructions for Safari:</p>
-              <ol className="list-decimal list-inside space-y-2 font-medium">
-                <li>
-                  Tap the <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-bg-elevated border border-border text-[10px]">📤 Share</span> button.
-                </li>
-                <li>
-                  Scroll down and tap <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-bg-elevated border border-border text-[10px]">➕ Add to Home Screen</span>.
-                </li>
-                <li>
-                  Tap <span className="font-semibold text-primary">Add</span> in the top-right corner.
-                </li>
-              </ol>
-            </div>
-          ) : null}
-
-          <DialogFooter className="flex justify-end gap-2 pt-4 border-t border-border/40 mt-4 text-xs font-semibold">
-            <Button
-              type="button"
-              variant={isIOS ? "default" : "ghost"}
-              onClick={() => setShowInstallDialog(false)}
-              className={cn(
-                "px-4 h-9 font-semibold",
-                isIOS 
-                  ? "bg-primary hover:bg-primary-hover text-white" 
-                  : "text-text-muted hover:text-text-main"
-              )}
-            >
-              {isIOS ? "Done" : "Cancel"}
-            </Button>
-            {!isIOS && (
-              <Button
-                type="button"
-                onClick={handleConfirmInstall}
-                className="bg-primary hover:bg-primary-hover text-white px-4 h-9 font-semibold"
-              >
-                Install
-              </Button>
-            )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <InstallAppDialog open={showInstallDialog} onOpenChange={setShowInstallDialog} />
     </div>
   );
 }

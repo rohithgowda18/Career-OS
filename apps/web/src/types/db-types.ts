@@ -49,3 +49,20 @@ export interface AnalyticsSummary {
   rejected: number;
   overallAcceptanceRate: number;
 }
+
+export type PlacementStatus = 'Applied' | 'Assessment Scheduled' | 'Interview Scheduled' | 'Offer Received' | 'Rejected';
+
+export interface Placement {
+  id: number;
+  userId: number;
+  companyName: string;
+  role: string;
+  status: PlacementStatus;
+  deadline: string | null;
+  assessmentDate: string | null;
+  interviewDate: string | null;
+  notes: string | null;
+  url: string | null;
+  createdAt: string;
+  updatedAt: string;
+}

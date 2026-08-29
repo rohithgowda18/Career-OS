@@ -5,6 +5,8 @@ export interface PlacementListParams {
   size?: number;
   sort?: string;
   status?: string;
+  startDate?: string;
+  endDate?: string;
 }
 
 export const placementsApi = {
@@ -14,6 +16,8 @@ export const placementsApi = {
       size: params?.size ?? 20,
       sort: params?.sort ?? 'id,desc',
       status: params?.status,
+      startDate: params?.startDate,
+      endDate: params?.endDate,
     };
     const response = (await restClient.get('/api/placements', { params: queryParams })).data;
     

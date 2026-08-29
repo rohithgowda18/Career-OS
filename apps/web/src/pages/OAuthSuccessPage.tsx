@@ -16,11 +16,15 @@ export default function OAuthSuccessPage() {
 
     if (token) {
       if (window.opener) {
-        console.log("[Debug OAuth] Detected parent window, posting OAUTH_SUCCESS message and closing popup.");
+        if (import.meta.env.DEV) {
+          console.log("[Debug OAuth] Detected parent window, posting OAUTH_SUCCESS message and closing popup.");
+        }
         window.opener.postMessage({ type: "OAUTH_SUCCESS", token }, window.location.origin);
         window.close();
       } else {
-        console.error("[Debug OAuth] No parent window found. Popup communication failed.");
+        if (import.meta.env.DEV) {
+          console.error("[Debug OAuth] No parent window found. Popup communication failed.");
+        }
         toast.error("OAuth authentication failed: parent window could not be reached.");
         setLocation("/login?oauth_error=no_parent");
       }

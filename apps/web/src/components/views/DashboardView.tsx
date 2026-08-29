@@ -29,6 +29,20 @@ import { format, isToday, isWithinInterval, addDays } from "date-fns";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { toast } from "sonner";
 import EmptyState from "@/components/ui/EmptyState";
+import type { Application } from "@/types/db-types";
+
+interface DashboardData {
+  totalApplications: number;
+  deadlinesToday: Application[];
+  deadlinesTodayCount: number;
+  interviewsThisWeek: number;
+  awaitingResponses: number;
+  offersAwaitingDecision: number;
+  upcomingDeadlines: Application[];
+  upcomingDeadlinesCount: number;
+  awaitingFeedback: Application[];
+  recentActivity: Application[];
+}
 
 export default function DashboardView() {
   const { user } = useAuth();
@@ -62,7 +76,7 @@ export default function DashboardView() {
       queryClient.invalidateQueries({ queryKey: ["routines"] });
       queryClient.invalidateQueries({ queryKey: ["routines", "reports"] });
     },
-    onError: (err: any) => {
+    onError: (err: Error) => {
       toast.error(err.message || "Failed to toggle task");
     }
   });
@@ -97,7 +111,7 @@ export default function DashboardView() {
     }
   }, [isLoading]);
 
-  const dashboardData = dashboardQuery.data || {
+  const dashboardData = dashboardQuery.data as DashboardData || {
     totalApplications: 0,
     deadlinesToday: [],
     deadlinesTodayCount: 0,
@@ -112,13 +126,13 @@ export default function DashboardView() {
 
   // Combine upcoming deadlines (next 7 days, excluding today)
   const upcomingDeadlinesList = useMemo(() => {
-    const items: any[] = [];
-    (dashboardData.upcomingDeadlines || []).forEach((app: any) => {
+    const items: { id: string; name: string; label: string; date: Date; status: string }[] = [];
+    (dashboardData.upcomingDeadlines || []).forEach((app: Application) => {
       items.push({
         id: `upcoming-app-${app.id}`,
         name: app.eventName,
         label: app.eventType,
-        date: new Date(app.deadline),
+        date: new Date(app.deadline!),
         status: app.status,
       });
     });
@@ -320,7 +334,7 @@ export default function DashboardView() {
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {dashboardData.awaitingFeedback.map((app: any) => (
+                {dashboardData.awaitingFeedback.map((app: Application) => (
                   <div
                     key={app.id}
                     className="p-3 rounded-lg bg-bg-main border border-border/80 hover:border-border transition-all flex flex-col justify-between"
@@ -483,7 +497,7 @@ export default function DashboardView() {
               />
             ) : (
               <div className="space-y-3">
-                {dashboardData.recentActivity.map((act: any) => (
+                {dashboardData.recentActivity.map((act: Application) => (
                   <div key={act.id} className="text-xs space-y-1">
                     <p className="font-semibold text-text-main truncate">{act.eventName}</p>
                     <div className="flex items-center justify-between text-[10px] text-text-dim">

@@ -34,7 +34,9 @@ export default function LoginPage() {
 
   const handleAuthWithRetry = async (authFn: () => Promise<any>) => {
     if (!isBackendReady) {
-      console.log("[Debug Auth] Backend is not ready yet. Awaiting readiness...");
+      if (import.meta.env.DEV) {
+        console.log("[Debug Auth] Backend is not ready yet. Awaiting readiness...");
+      }
       setIsWakingBackend(true);
       toast.info("Server is waking up, please wait a moment...");
       
@@ -111,7 +113,9 @@ export default function LoginPage() {
     );
 
     if (!popup || popup.closed || typeof popup.closed === 'undefined') {
-      console.warn("[Debug OAuth] Popup blocked or unsupported.");
+      if (import.meta.env.DEV) {
+        console.warn("[Debug OAuth] Popup blocked or unsupported.");
+      }
       toast.error("OAuth popup was blocked by the browser. Please allow popups for this site and try again.");
       return;
     }

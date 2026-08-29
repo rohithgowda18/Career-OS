@@ -21,7 +21,6 @@ import {
   Sparkles,
   Command,
   Plus,
-  Palette,
   RefreshCw,
   Award,
   ListTodo
@@ -37,11 +36,12 @@ import {
 import { cn } from "@/lib/utils";
 import { useLocation } from "wouter";
 import { usePWAInstall } from "@/hooks/usePWAInstall";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import AddApplicationModal from "@/components/AddApplicationModal";
 import AddPlacementModal from "@/components/AddPlacementModal";
+import InstallAppDialog from "@/components/InstallAppDialog";
+import ThemeSelector from "@/components/ThemeSelector";
 
 interface DashboardLayoutProps {
   activeTab: "dashboard" | "kanban" | "placements" | "skills" | "routine" | "calendar" | "analytics" | "profile";
@@ -223,24 +223,6 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
       window.removeEventListener("offline", handleOffline);
     };
   }, []);
-
-  const handleConfirmInstall = async () => {
-    setShowInstallDialog(false);
-    if (!isIOS && !installPromptEvent) {
-      toast.info("Installation is managed by your browser. If already installed, you can open OMP from your applications. Otherwise, look for the 'Install' icon in the browser address bar.", { duration: 6000 });
-      return;
-    }
-    try {
-      const outcome = await triggerInstall();
-      if (outcome === "accepted") {
-        toast.success("App installed successfully.");
-      } else {
-        toast.info("Installation cancelled.");
-      }
-    } catch (error) {
-      toast.error("Failed to trigger installation.");
-    }
-  };
 
   if (loading) {
     return (
@@ -426,44 +408,8 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
           )}
         </div>
 
-        <div className="flex items-center gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button 
-                title="Change Theme"
-                className="p-1.5 rounded-lg border border-border text-text-muted hover:text-text-main bg-bg-elevated/40 cursor-pointer"
-              >
-                <Palette className="w-4 h-4" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48 bg-bg-card border-border text-text-main mt-1">
-              <div className="px-2.5 py-1.5 border-b border-border">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-text-dim">Choose Theme</p>
-              </div>
-              <div className="p-1 space-y-0.5">
-                <DropdownMenuItem onClick={() => setTheme("glass")} className={cn("cursor-pointer rounded-md px-2.5 py-1.5 text-xs font-medium flex items-center justify-between", currentTheme === "glass" && "bg-primary/10 text-primary")}>
-                  <span>Glass (VisionOS)</span>
-                  <span className="w-2.5 h-2.5 rounded-full bg-violet-500 border border-white/20" />
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setTheme("cyberpunk")} className={cn("cursor-pointer rounded-md px-2.5 py-1.5 text-xs font-medium flex items-center justify-between", currentTheme === "cyberpunk" && "bg-primary/10 text-primary")}>
-                  <span>Cyberpunk</span>
-                  <span className="w-2.5 h-2.5 rounded-full bg-yellow-400 border border-white/20" />
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setTheme("brutalist")} className={cn("cursor-pointer rounded-md px-2.5 py-1.5 text-xs font-medium flex items-center justify-between", currentTheme === "brutalist" && "bg-primary/10 text-primary")}>
-                  <span>Neo Brutalist</span>
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 border border-white/20" />
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setTheme("terminal")} className={cn("cursor-pointer rounded-md px-2.5 py-1.5 text-xs font-medium flex items-center justify-between", currentTheme === "terminal" && "bg-primary/10 text-primary")}>
-                  <span>Retro Terminal</span>
-                  <span className="w-2.5 h-2.5 rounded-full bg-green-500 border border-white/20 font-mono text-[9px] flex items-center justify-center text-black">$&gt;</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setTheme("claymorphism")} className={cn("cursor-pointer rounded-md px-2.5 py-1.5 text-xs font-medium flex items-center justify-between", currentTheme === "claymorphism" && "bg-primary/10 text-primary")}>
-                  <span>Claymorphism</span>
-                  <span className="w-2.5 h-2.5 rounded-full bg-pink-400 border border-white/20" />
-                </DropdownMenuItem>
-              </div>
-            </DropdownMenuContent>
-          </DropdownMenu>
+<div className="flex items-center gap-2">
+          <ThemeSelector currentTheme={currentTheme} setTheme={setTheme} variant="button" />
           
           {/* Mobile Top-Right Avatar Button (Navigates directly to Profile) */}
           <button 
@@ -502,45 +448,8 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
             <span className="text-xs font-semibold text-text-main capitalize">{activeTab === "kanban" ? "Applications" : activeTab}</span>
           </div>
 
-          <div className="flex items-center gap-3">
-            {/* Desktop Theme Selector Icon */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button 
-                  title="Change Theme"
-                  className="p-1.5 h-8 w-8 flex items-center justify-center rounded-lg border border-border text-text-muted hover:text-text-main bg-bg-elevated/40 hover:bg-bg-elevated/80 transition-all cursor-pointer"
-                >
-                  <Palette className="w-4 h-4" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48 bg-bg-card border-border text-text-main mt-1">
-                <div className="px-2.5 py-1.5 border-b border-border">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-text-dim">Choose Theme</p>
-                </div>
-                <div className="p-1 space-y-0.5">
-                  <DropdownMenuItem onClick={() => setTheme("glass")} className={cn("cursor-pointer rounded-md px-2.5 py-1.5 text-xs font-medium flex items-center justify-between", currentTheme === "glass" && "bg-primary/10 text-primary")}>
-                    <span>Glass (VisionOS)</span>
-                    <span className="w-2.5 h-2.5 rounded-full bg-violet-500 border border-white/20" />
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setTheme("cyberpunk")} className={cn("cursor-pointer rounded-md px-2.5 py-1.5 text-xs font-medium flex items-center justify-between", currentTheme === "cyberpunk" && "bg-primary/10 text-primary")}>
-                    <span>Cyberpunk</span>
-                    <span className="w-2.5 h-2.5 rounded-full bg-yellow-400 border border-white/20" />
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setTheme("brutalist")} className={cn("cursor-pointer rounded-md px-2.5 py-1.5 text-xs font-medium flex items-center justify-between", currentTheme === "brutalist" && "bg-primary/10 text-primary")}>
-                    <span>Neo Brutalist</span>
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 border border-white/20" />
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setTheme("terminal")} className={cn("cursor-pointer rounded-md px-2.5 py-1.5 text-xs font-medium flex items-center justify-between", currentTheme === "terminal" && "bg-primary/10 text-primary")}>
-                    <span>Retro Terminal</span>
-                    <span className="w-2.5 h-2.5 rounded-full bg-green-500 border border-white/20 font-mono text-[9px] flex items-center justify-center text-black">$&gt;</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setTheme("claymorphism")} className={cn("cursor-pointer rounded-md px-2.5 py-1.5 text-xs font-medium flex items-center justify-between", currentTheme === "claymorphism" && "bg-primary/10 text-primary")}>
-                    <span>Claymorphism</span>
-                    <span className="w-2.5 h-2.5 rounded-full bg-pink-400 border border-white/20" />
-                  </DropdownMenuItem>
-                </div>
-              </DropdownMenuContent>
-            </DropdownMenu>
+<div className="flex items-center gap-3">
+            <ThemeSelector currentTheme={currentTheme} setTheme={setTheme} variant="icon" />
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -627,62 +536,7 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
 
 
       {/* PWA Install Dialog */}
-      <Dialog open={showInstallDialog} onOpenChange={setShowInstallDialog}>
-        <DialogContent className="max-w-md bg-bg-card border-border text-text-main rounded-xl shadow-2xl p-6">
-          <DialogHeader className="space-y-2">
-            <DialogTitle className="text-base font-semibold">
-              {isIOS ? "Install Career OS on iOS" : "Install Career OS Desktop App"}
-            </DialogTitle>
-            <DialogDescription className="text-xs text-text-muted leading-relaxed">
-              {isIOS 
-                ? "Install this app on your iOS device for faster loading times and a full native application layout."
-                : "Install this application locally to enable native shortcut support and run in standalone window mode."}
-            </DialogDescription>
-          </DialogHeader>
-          
-          {isIOS ? (
-            <div className="space-y-3 py-3 text-xs text-text-main">
-              <p className="font-semibold text-primary">Instructions for Safari:</p>
-              <ol className="list-decimal list-inside space-y-2 font-medium">
-                <li>
-                  Tap the <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-bg-elevated border border-border text-[10px]">📤 Share</span> button.
-                </li>
-                <li>
-                  Scroll down and tap <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-bg-elevated border border-border text-[10px]">➕ Add to Home Screen</span>.
-                </li>
-                <li>
-                  Tap <span className="font-semibold text-primary">Add</span> in the top-right corner.
-                </li>
-              </ol>
-            </div>
-          ) : null}
-
-          <DialogFooter className="flex justify-end gap-2 pt-4 border-t border-border/40 mt-4 text-xs font-semibold">
-            <Button
-              type="button"
-              variant={isIOS ? "default" : "ghost"}
-              onClick={() => setShowInstallDialog(false)}
-              className={cn(
-                "px-4 h-9 font-semibold",
-                isIOS 
-                  ? "bg-primary hover:bg-primary-hover text-white" 
-                  : "text-text-muted hover:text-text-main"
-              )}
-            >
-              {isIOS ? "Done" : "Cancel"}
-            </Button>
-            {!isIOS && (
-              <Button
-                type="button"
-                onClick={handleConfirmInstall}
-                className="bg-primary hover:bg-primary-hover text-white px-4 h-9 font-semibold"
-              >
-                Install
-              </Button>
-            )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <InstallAppDialog open={showInstallDialog} onOpenChange={setShowInstallDialog} />
 
       {/* Mobile Global FAB */}
       <div className="md:hidden fixed bottom-24 right-4 z-40">

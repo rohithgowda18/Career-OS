@@ -42,6 +42,7 @@ public class SkillController {
         throw new RuntimeException("User not authenticated");
     }
 
+    @PostMapping
     public ResponseEntity<?> create(@Valid @RequestBody CreateSkillRequest request) {
         try {
             Long userId = getCurrentUserId();

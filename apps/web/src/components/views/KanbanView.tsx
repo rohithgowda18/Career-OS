@@ -3,7 +3,6 @@ import { applicationsApi } from "@/lib/api/applicationsApi";
 import {
   Loader2,
   Plus,
-  Compass,
   ChevronLeft,
   ChevronRight,
   ExternalLink,
@@ -12,7 +11,7 @@ import {
   Layers
 } from "lucide-react";
 import EmptyState from "@/components/ui/EmptyState";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import AddApplicationModal from "@/components/AddApplicationModal";
 import ApplicationCard from "@/components/ApplicationCard";
@@ -21,6 +20,8 @@ import { format } from "date-fns";
 import { useTheme } from "@/contexts/ThemeContext";
 import { Badge } from "@/components/ui/badge";
 import { KanbanSkeleton } from "@/components/ui/ViewSkeletons";
+import type { Application } from "@/types/db-types";
+import { useLocation } from "wouter";
 
 const STATUSES = [
   "Interested",
@@ -38,21 +39,63 @@ const EVENT_TYPES = [
   "Other",
 ] as const;
 
-const STATUS_BADGE_CLASSES: Record<string, string> = {
-  Interested: "bg-bg-elevated text-text-muted border-border",
-  Applied: "bg-primary/10 text-primary border-primary/20",
-  UnderReview: "bg-amber-500/10 text-amber-500 border-amber-500/20",
-  Accepted: "bg-success/10 text-success border-success/20",
-  Rejected: "bg-danger/10 text-danger border-danger/20",
-};
-
 export default function KanbanView() {
   const { themeTokens } = useTheme();
+  const [, setLocation] = useLocation();
   const [showAddModal, setShowAddModal] = useState(false);
   const PAGE_SIZE = 8;
   const [page, setPage] = useState(0);
-  const [status, setStatus] = useState<string>("ALL");
-  const [eventType, setEventType] = useState<string>("ALL");
+  
+  // Initialize filters from URL params
+  const [status, setStatus] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      return params.get("status") || "ALL";
+    }
+    return "ALL";
+  });
+  const [eventType, setEventType] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      return params.get("eventType") || "ALL";
+    }
+    return "ALL";
+  });
+
+  // Sync URL with filter state
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    let changed = false;
+    if (status !== "ALL") {
+      params.set("status", status);
+    } else {
+      params.delete("status");
+    }
+    if (eventType !== "ALL") {
+      params.set("eventType", eventType);
+    } else {
+      params.delete("eventType");
+    }
+    params.set("page", page.toString());
+    const newSearch = params.toString();
+    const currentSearch = window.location.search.slice(1);
+    if (newSearch !== currentSearch) {
+      setLocation(`/dashboard?view=kanban${newSearch ? `?${newSearch}` : ""}`, { replace: true });
+    }
+  }, [status, eventType, page, setLocation]);
+
+  // Sync page from URL on mount
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const urlPage = parseInt(params.get("page") || "0", 10);
+      const urlStatus = params.get("status") || "ALL";
+      const urlEventType = params.get("eventType") || "ALL";
+      if (!isNaN(urlPage)) setPage(urlPage);
+      setStatus(urlStatus);
+      setEventType(urlEventType);
+    }
+  }, []);
 
   // Fetch applications list
   const applicationsQuery = useQuery({
@@ -72,7 +115,7 @@ export default function KanbanView() {
     totalElements: 0,
     totalPages: 0,
   };
-  const applications = applicationsData.content || [];
+  const applications = applicationsData.content as Application[] || [];
   const totalElements = applicationsData.totalElements || 0;
   const totalPages = applicationsData.totalPages || 0;
 

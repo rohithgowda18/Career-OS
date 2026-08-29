@@ -6,6 +6,7 @@ import {
   Calendar as CalendarIcon,
   List,
   Clock,
+  CalendarCheck2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
@@ -13,9 +14,11 @@ import { applicationsApi } from "@/lib/api/applicationsApi";
 import { placementsApi } from "@/lib/api/placementsApi";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { format, isToday } from "date-fns";
+import { format, isToday, startOfMonth, endOfMonth, addMonths, subMonths } from "date-fns";
 import EmptyState from "@/components/ui/EmptyState";
+import { CalendarSkeleton } from "@/components/ui/ViewSkeletons";
 import { useLocation } from "wouter";
+import type { Application, Placement } from "@/types/db-types";
 
 const DAYS_OF_WEEK = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTHS = [
@@ -50,6 +53,15 @@ interface CalendarEvent {
   deadline: Date;
 }
 
+function getDateRangeForMonth(date: Date) {
+  const start = startOfMonth(subMonths(date, 1));
+  const end = endOfMonth(addMonths(date, 1));
+  return {
+    startDate: start.toISOString().split("T")[0],
+    endDate: end.toISOString().split("T")[0],
+  };
+}
+
 export default function CalendarView() {
   const [, setLocation] = useLocation();
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
@@ -65,34 +77,49 @@ export default function CalendarView() {
     return () => window.removeEventListener("resize", checkViewport);
   }, []);
 
+  // Compute date range for current view (current month ±1 for smooth navigation)
+  const dateRange = useMemo(() => getDateRangeForMonth(currentDate), [currentDate]);
+
   const applicationsQuery = useQuery({
-    queryKey: ["applications", { page: 0, size: 1000, sort: "deadline,asc" }],
+    queryKey: ["applications", "calendar", dateRange.startDate, dateRange.endDate],
     queryFn: () =>
-      applicationsApi.list({ page: 0, size: 1000, sort: "deadline,asc" }),
+      applicationsApi.list({ 
+        page: 0, 
+        size: 100, 
+        sort: "deadline,asc",
+        startDate: dateRange.startDate,
+        endDate: dateRange.endDate,
+      }),
   });
   const applicationsData = applicationsQuery.data || { content: [] };
-  const applications = applicationsData.content || [];
+  const applications = applicationsData.content as Application[] || [];
 
   const placementsQuery = useQuery({
-    queryKey: ["placements", { page: 0, size: 1000, sort: "id,desc" }],
+    queryKey: ["placements", "calendar", dateRange.startDate, dateRange.endDate],
     queryFn: () =>
-      placementsApi.list({ page: 0, size: 1000, sort: "id,desc" }),
+      placementsApi.list({ 
+        page: 0, 
+        size: 100, 
+        sort: "id,desc",
+        startDate: dateRange.startDate,
+        endDate: dateRange.endDate,
+      }),
   });
   const placementsData = placementsQuery.data || { content: [] };
-  const placements = placementsData.content || [];
+  const placements = placementsData.content as Placement[] || [];
 
   const events = useMemo(() => {
     const appEvents = applications
-      .filter((app: any) => app.deadline)
-      .map((app: any) => ({
+      .filter((app: Application) => app.deadline)
+      .map((app: Application) => ({
         id: `app-${app.id}`,
         eventName: app.eventName,
         status: app.status,
         deadline: new Date(app.deadline!),
       }));
 
-    const placementEvents = placements.flatMap((p: any) => {
-      const items: any[] = [];
+    const placementEvents = placements.flatMap((p: Placement) => {
+      const items: CalendarEvent[] = [];
       if (p.assessmentDate) {
         items.push({
           id: `place-as-${p.id}`,
@@ -140,31 +167,39 @@ export default function CalendarView() {
       new Date(currentDate.getFullYear(), currentDate.getMonth() + 1)
     );
 
-  const handleExportCalendar = async () => {
-    try {
-      let icalContent = `BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Career OS//EN\nMETHOD:PUBLISH\n`;
-      events.forEach((event: CalendarEvent) => {
-        const dateStr = event.deadline
-          .toISOString()
-          .split("T")[0]
-          .replace(/-/g, "");
-        icalContent += `BEGIN:VEVENT\nUID:${event.id}@career-os\nDTSTART;VALUE=DATE:${dateStr}\nSUMMARY:${event.eventName} - ${event.status}\nEND:VEVENT\n`;
-      });
-      icalContent += `END:VCALENDAR`;
+const handleExportCalendar = async () => {
+      try {
+        let icalContent = `BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Career OS//EN\nMETHOD:PUBLISH\n`;
+        events.forEach((event: CalendarEvent) => {
+          const dateStr = event.deadline
+            .toISOString()
+            .split("T")[0]
+            .replace(/-/g, "");
+          icalContent += `BEGIN:VEVENT\nUID:${event.id}@career-os\nDTSTART;VALUE=DATE:${dateStr}\nSUMMARY:${event.eventName} - ${event.status}\nEND:VEVENT\n`;
+        });
+        icalContent += `END:VCALENDAR`;
 
-      const blob = new Blob([icalContent], { type: "text/calendar" });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `event-applications.ics`;
-      link.click();
-      toast.success("Calendar exported successfully");
-    } catch (error) {
-      toast.error("Failed to export calendar");
-    }
-  };
+        const blob = new Blob([icalContent], { type: "text/calendar" });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `event-applications.ics`;
+        link.click();
+        toast.success("Calendar exported successfully");
+      } catch (error) {
+        toast.error("Failed to export calendar");
+      }
+    };
 
-  const daysInMonth = getDaysInMonth(currentDate);
+    const handleGoToToday = () => {
+      setCurrentDate(new Date());
+    };
+
+    const isCurrentMonth = currentDate.getMonth() === new Date().getMonth() && currentDate.getFullYear() === new Date().getFullYear();
+
+    const isLoading = applicationsQuery.isLoading || placementsQuery.isLoading;
+
+    const daysInMonth = getDaysInMonth(currentDate);
   const firstDay = getFirstDayOfMonth(currentDate);
   const calendarDays: (number | null)[] = [];
   for (let i = 0; i < firstDay; i++) calendarDays.push(null);
@@ -183,8 +218,10 @@ export default function CalendarView() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
-      {/* Calendar View Control Header */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-border/60 pb-5">
+      {isLoading && <CalendarSkeleton />}
+      {!isLoading && (
+        <>
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-border/60 pb-5">
         <div className="flex items-center gap-3 bg-bg-card p-1 rounded-lg border border-border">
           <Button
             variant="ghost"
@@ -208,6 +245,14 @@ export default function CalendarView() {
         </div>
 
         <div className="flex items-center gap-2 w-full sm:w-auto">
+          <Button
+            onClick={handleGoToToday}
+            variant={isCurrentMonth ? "default" : "outline"}
+            disabled={isCurrentMonth}
+            className="flex-1 sm:flex-none gap-2 border-border bg-bg-card hover:bg-bg-elevated font-semibold text-xs h-9 px-4 cursor-pointer"
+          >
+            <CalendarCheck2 className="w-3.5 h-3.5" /> <span>Today</span>
+          </Button>
           <Button
             onClick={handleExportCalendar}
             variant="outline"
@@ -406,7 +451,9 @@ export default function CalendarView() {
             </div>
           );
         })}
-      </div>
+</div>
+        </>
+      )}
     </div>
   );
 }

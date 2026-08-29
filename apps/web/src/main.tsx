@@ -10,11 +10,11 @@ let updateSW: any;
 if (typeof window !== "undefined" && !import.meta.env.DEV) {
   updateSW = registerSW({
     onNeedRefresh() {
-      console.log("New content available, please refresh.");
+      if (import.meta.env.DEV) console.log("New content available, please refresh.");
       window.dispatchEvent(new CustomEvent("pwa-update-available", { detail: { updateSW } }));
     },
     onOfflineReady() {
-      console.log("App ready to work offline.");
+      if (import.meta.env.DEV) console.log("App ready to work offline.");
       window.dispatchEvent(new CustomEvent("pwa-offline-ready"));
     },
   });
@@ -33,7 +33,7 @@ const queryClient = new QueryClient({
 queryClient.getQueryCache().subscribe(event => {
   if (event.type === "updated" && event.action.type === "error") {
     const error = event.query.state.error;
-    console.error("[API Query Error]", error);
+    if (import.meta.env.DEV) console.error("[API Query Error]", error);
   }
 });
 
@@ -41,7 +41,7 @@ queryClient.getQueryCache().subscribe(event => {
 queryClient.getMutationCache().subscribe(event => {
   if (event.type === "updated" && event.action.type === "error") {
     const error = event.mutation.state.error;
-    console.error("[API Mutation Error]", error);
+    if (import.meta.env.DEV) console.error("[API Mutation Error]", error);
   }
 });
 

@@ -12,9 +12,12 @@ import {
   Loader2,
   MapPin,
   DollarSign,
-  Briefcase
+  Briefcase,
+  Copy,
+  Check
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PlacementsSkeleton } from "@/components/ui/ViewSkeletons";
 import EditPlacementModal from "@/components/EditPlacementModal";
 import AddPlacementModal from "@/components/AddPlacementModal";
 import PlacementCard from "@/components/PlacementCard";
@@ -57,7 +60,18 @@ export default function PlacementTable({ page, setPage, pageSize, status, setSta
   const [selectedPlacement, setSelectedPlacement] = useState<any>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [copiedUrlId, setCopiedUrlId] = useState<number | null>(null);
   const queryClient = useQueryClient();
+
+  const handleCopyUrl = (url: string, id: number) => {
+    navigator.clipboard.writeText(url).then(() => {
+      setCopiedUrlId(id);
+      toast.success("Link copied to clipboard");
+      setTimeout(() => setCopiedUrlId(null), 2000);
+    }).catch(() => {
+      toast.error("Failed to copy link");
+    });
+  };
 
   const placementsQuery = useQuery({
     queryKey: ["placements", { page, size: pageSize, sort: "id,desc", status }],
@@ -127,11 +141,7 @@ export default function PlacementTable({ page, setPage, pageSize, status, setSta
   };
 
   if (placementsQuery.isLoading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
+    return <PlacementsSkeleton />;
   }
 
   return (
@@ -274,14 +284,26 @@ export default function PlacementTable({ page, setPage, pageSize, status, setSta
                   <td className="p-3 text-right">
                     <div className="flex items-center justify-end gap-1 opacity-75 group-hover:opacity-100 transition-opacity">
                       {p.applicationLink && (
-                        <a
-                          href={p.applicationLink}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="h-8 w-8 text-text-dim hover:text-primary hover:bg-bg-elevated flex items-center justify-center rounded-lg"
-                        >
-                          <Globe className="w-3.5 h-3.5" />
-                        </a>
+                        <div className="flex items-center gap-1">
+                          <a
+                            href={p.applicationLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="h-8 w-8 text-text-dim hover:text-primary hover:bg-bg-elevated flex items-center justify-center rounded-lg"
+                            title="Open link"
+                          >
+                            <Globe className="w-3.5 h-3.5" />
+                          </a>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleCopyUrl(p.applicationLink!, p.id)}
+                            className="h-8 w-8 text-text-dim hover:text-primary hover:bg-bg-elevated"
+                            title={copiedUrlId === p.id ? "Copied!" : "Copy link"}
+                          >
+                            {copiedUrlId === p.id ? <Check className="w-3.5 h-3.5 text-success" /> : <Copy className="w-3.5 h-3.5" />}
+                          </Button>
+                        </div>
                       )}
                       <Button
                         variant="ghost"

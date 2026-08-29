@@ -181,3 +181,72 @@ export function SkillsSkeleton() {
     </div>
   );
 }
+
+export function CalendarSkeleton() {
+  return (
+    <div className="space-y-6 animate-in fade-in duration-300">
+      {/* Header Skeleton */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-border/60 pb-5">
+        <div className="flex items-center gap-3 bg-bg-card p-1 rounded-lg border border-border">
+          <Skeleton className="h-8 w-8 rounded" />
+          <Skeleton className="h-5 w-32 rounded" />
+          <Skeleton className="h-8 w-8 rounded" />
+        </div>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <Skeleton className="h-9 w-32 rounded-lg" />
+        </div>
+      </div>
+
+      {/* Calendar Grid Skeleton */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 bg-bg-card border border-border rounded-xl p-4.5 space-y-4">
+          <div className="grid grid-cols-7 gap-1.5 mb-1">
+            {[...Array(7)].map((_, i) => (
+              <Skeleton key={i} className="h-6 w-full rounded" />
+            ))}
+          </div>
+          <div className="grid grid-cols-7 gap-1.5">
+            {[...Array(42)].map((_, i) => (
+              <div key={i} className="min-h-[75px] p-1.5 rounded-lg border bg-bg-main/30">
+                <Skeleton className="h-4 w-6 rounded mb-1" />
+                <div className="space-y-1">
+                  <Skeleton className="h-3 w-20 rounded" />
+                  <Skeleton className="h-3 w-16 rounded" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Agenda Skeleton */}
+        <div className="bg-bg-card border border-border rounded-xl p-5 space-y-4">
+          <Skeleton className="h-4 w-36 rounded" />
+          <div className="space-y-3 max-h-[420px] overflow-y-auto">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="p-3 rounded-lg bg-bg-main border border-border/80">
+                <div className="flex items-start justify-between gap-2.5">
+                  <Skeleton className="h-4 w-40 rounded" />
+                  <Skeleton className="h-4 w-20 rounded-full" />
+                </div>
+                <div className="mt-3 flex items-center justify-between">
+                  <Skeleton className="h-3 w-16 rounded" />
+                  <Skeleton className="h-3 w-24 rounded" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Legend Skeleton */}
+      <div className="flex flex-wrap gap-x-6 gap-y-2.5 p-4.5 bg-bg-card/50 border border-border border-dashed rounded-xl">
+        {[1, 2, 3, 4, 5, 6, 7].map((i) => (
+          <div key={i} className="flex items-center gap-2">
+            <Skeleton className="w-2 h-2 rounded-full" />
+            <Skeleton className="h-3 w-24 rounded" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
