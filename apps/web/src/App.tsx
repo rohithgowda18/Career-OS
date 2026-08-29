@@ -34,30 +34,16 @@ function Router() {
   const [location, setLocation] = useLocation();
 
   useEffect(() => {
-    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-    if (import.meta.env.DEV) {
-      console.log(`[Debug Auth] Router Route Guard - path: "${location}", token in localStorage: ${token ? "YES" : "NO"}, auth loading: ${loading}, isAuthenticated: ${isAuthenticated}`);
-    }
-    
     if (loading) {
-      if (import.meta.env.DEV) {
-        console.log("[Debug Auth] Route Guard - Auth is initializing, holding navigation decisions.");
-      }
       return;
     }
 
     if (isAuthenticated) {
       if (location === "/" || location === "/login") {
-        if (import.meta.env.DEV) {
-          console.log(`[Debug Auth] Route Guard - Authenticated user at "${location}". Redirecting directly to "/dashboard".`);
-        }
         setLocation("/dashboard");
       }
     } else {
       if (location === "/dashboard" || location === "/placements" || location === "/add") {
-        if (import.meta.env.DEV) {
-          console.log(`[Debug Auth] Route Guard - Unauthenticated user trying to access protected "${location}". Redirecting to "/login".`);
-        }
         setLocation("/login");
       }
     }

@@ -29,7 +29,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setTokenState] = useState<string | null>(() => {
     if (typeof window !== "undefined") {
       const foundToken = localStorage.getItem("token");
-      console.log("[Debug Auth] AuthProvider constructor - token found in localStorage:", foundToken ? "YES" : "NO");
       return foundToken;
     }
     return null;
@@ -121,24 +120,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [meQuery.isError, meQuery.error]);
 
   const retryAuth = useCallback(() => {
-    console.log("[Debug Auth] Retrying user profile authentication...");
     meQuery.refetch();
   }, [meQuery]);
 
   useEffect(() => {
-    console.log(`[Debug Auth] AuthProvider useEffect initialization check - token: ${token ? "YES" : "NO"}, backendReady: ${isBackendReady}, queryState: ${meQuery.status}, transientError: ${isAuthTransientError}`);
     if (!token) {
-      console.log("[Debug Auth] No token state present. Setting isInitializing to false.");
       setIsInitializing(false);
     } else if (isBackendReady) {
       if (meQuery.isSuccess) {
-        console.log("[Debug Auth] meQuery finished successfully. Setting isInitializing to false.");
         setIsInitializing(false);
       } else if (meQuery.isError) {
-        if (isAuthTransientError) {
-          console.log("[Debug Auth] meQuery finished with a transient error. Keeping loading state for manual retry.");
-        } else {
-          console.log("[Debug Auth] meQuery finished with a permanent authentication error (401/403). Clearing session.");
+        if (!isAuthTransientError) {
           localStorage.removeItem("token");
           setTokenState(null);
           setIsInitializing(false);
@@ -148,7 +140,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [token, isBackendReady, meQuery.isSuccess, meQuery.isError, isAuthTransientError]);
 
   const setToken = useCallback((newToken: string | null) => {
-    console.log("[Debug Auth] setToken called - new token present:", newToken ? "YES" : "NO");
     if (newToken) {
       localStorage.setItem("token", newToken);
     } else {
@@ -158,7 +149,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const logout = useCallback(() => {
-    console.log("[Debug Auth] logout called - clearing state");
     localStorage.removeItem("token");
     setTokenState(null);
     queryClient.clear();
