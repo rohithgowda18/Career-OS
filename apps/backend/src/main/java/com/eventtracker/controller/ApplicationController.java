@@ -3,7 +3,7 @@ package com.eventtracker.controller;
 import com.eventtracker.dto.ApplicationDTO;
 import com.eventtracker.entity.Application;
 import com.eventtracker.service.ApplicationService;
-import com.eventtracker.service.GeminiExtractionService;
+import com.eventtracker.service.AiExtractionService;
 import com.eventtracker.security.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
@@ -28,7 +28,7 @@ import java.util.Optional;
 public class ApplicationController {
 
     private final ApplicationService applicationService;
-    private final GeminiExtractionService geminiExtractionService;
+    private final AiExtractionService aiExtractionService;
 
     @PostMapping("/extract")
     @Operation(operationId = "extractApplication", summary = "Extract application details using AI")
@@ -41,7 +41,7 @@ public class ApplicationController {
             return ResponseEntity.badRequest().body("emailContent length exceeds limit of 10000 characters");
         }
         try {
-            ApplicationDTO result = geminiExtractionService.extractApplicationDetails(emailContent);
+            ApplicationDTO result = aiExtractionService.extractApplicationDetails(emailContent);
             return ResponseEntity.ok(result);
         } catch (Exception e) {
             log.error("AI Extraction failed for application", e);

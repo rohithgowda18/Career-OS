@@ -3,7 +3,7 @@ package com.eventtracker.controller;
 import com.eventtracker.dto.PlacementDTO;
 import com.eventtracker.entity.Placement;
 import com.eventtracker.service.PlacementService;
-import com.eventtracker.service.GeminiExtractionService;
+import com.eventtracker.service.AiExtractionService;
 import com.eventtracker.security.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
@@ -27,7 +27,7 @@ import java.util.Optional;
 public class PlacementController {
     
     private final PlacementService placementService;
-    private final GeminiExtractionService geminiExtractionService;
+    private final AiExtractionService aiExtractionService;
 
     @PostMapping("/extract")
     @Operation(operationId = "extractPlacement", summary = "Extract placement details using AI")
@@ -40,7 +40,7 @@ public class PlacementController {
             return ResponseEntity.badRequest().body("emailContent length exceeds limit of 10000 characters");
         }
         try {
-            PlacementDTO result = geminiExtractionService.extractPlacementDetails(emailContent);
+            PlacementDTO result = aiExtractionService.extractPlacementDetails(emailContent);
             return ResponseEntity.ok(result);
         } catch (Exception e) {
             log.error("AI Extraction failed", e);

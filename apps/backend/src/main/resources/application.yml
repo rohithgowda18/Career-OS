@@ -59,6 +59,7 @@ app:
 
   ai-extraction-service:
     url: ${AI_EXTRACTION_SERVICE_URL:http://localhost:8082}
+    internal-key: ${AI_SERVICE_INTERNAL_KEY:${INTERNAL_SERVICE_KEY:career-os-internal-ai-secret}}
 
 
 logging:

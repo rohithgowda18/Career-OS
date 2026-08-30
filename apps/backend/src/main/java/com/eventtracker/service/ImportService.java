@@ -18,7 +18,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class ImportService {
 
-    private final GeminiExtractionService geminiExtractionService;
+    private final AiExtractionService aiExtractionService;
     private final PlacementService placementService;
     private final ApplicationService applicationService;
 
@@ -26,7 +26,7 @@ public class ImportService {
     public Map<String, Object> importContent(Long userId, ImportRequestDTO request) {
         log.info("Processing manual import request from source: '{}' for user: {}", request.getSource(), userId);
 
-        String classification = geminiExtractionService.classifyEmail(request.getContent());
+        String classification = aiExtractionService.classifyEmail(request.getContent());
         log.info("Import content classified as: {}", classification);
 
         Map<String, Object> response = new HashMap<>();
@@ -34,7 +34,7 @@ public class ImportService {
         response.put("classification", classification);
 
         if ("PLACEMENT".equals(classification)) {
-            PlacementDTO details = geminiExtractionService.extractPlacementDetails(request.getContent());
+            PlacementDTO details = aiExtractionService.extractPlacementDetails(request.getContent());
             if (details.getStatus() == null || details.getStatus().isBlank()) {
                 details.setStatus("APPLIED");
             }
@@ -48,7 +48,7 @@ public class ImportService {
             return response;
 
         } else if ("APPLICATION".equals(classification)) {
-            ApplicationDTO details = geminiExtractionService.extractApplicationDetails(request.getContent());
+            ApplicationDTO details = aiExtractionService.extractApplicationDetails(request.getContent());
             if (details.getStatus() == null || details.getStatus().isBlank()) {
                 details.setStatus("Applied");
             }

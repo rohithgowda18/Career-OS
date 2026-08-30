@@ -1,6 +1,9 @@
 server:
   port: ${PORT:8082}
 
+app:
+  internal-key: ${AI_SERVICE_INTERNAL_KEY:${INTERNAL_SERVICE_KEY:career-os-internal-ai-secret}}
+
 gemini:
   api:
     key: ${GEMINI_API_KEY:}

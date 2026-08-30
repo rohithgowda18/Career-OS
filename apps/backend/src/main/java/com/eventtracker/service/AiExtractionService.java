@@ -14,7 +14,7 @@ import java.util.Map;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class GeminiExtractionService {
+public class AiExtractionService {
 
     private final AiExtractionClient aiExtractionClient;
 
