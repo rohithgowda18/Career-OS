@@ -9,8 +9,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.Map;
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -44,19 +42,5 @@ public class AiExtractionService {
             log.error("Unexpected failure calling AI application extraction service via Feign", e);
             throw new AiServiceException("Failed to communicate with AI Extraction Service: " + e.getMessage(), 503, e);
         }
-    }
-
-    public String classifyEmail(String emailContent) {
-        log.info("Delegating email classification to AI service via OpenFeign");
-        try {
-            ExtractionRequest request = new ExtractionRequest(emailContent);
-            Map<String, String> response = aiExtractionClient.classify(request);
-            if (response != null && response.containsKey("classification")) {
-                return response.get("classification");
-            }
-        } catch (Exception e) {
-            log.error("Failed to classify email content via AI Extraction Service", e);
-        }
-        return "IRRELEVANT";
     }
 }

@@ -20,13 +20,6 @@ public class ExtractionController {
 
     private final GeminiExtractionService geminiExtractionService;
 
-    @PostMapping("/classify")
-    public ResponseEntity<Map<String, String>> classify(@Valid @RequestBody ExtractionRequest request) {
-        log.info("Request to classify email content");
-        String classification = geminiExtractionService.classifyEmail(request.getEmailContent());
-        return ResponseEntity.ok(Map.of("classification", classification));
-    }
-
     @PostMapping("/placement")
     public ResponseEntity<?> extractPlacement(@Valid @RequestBody ExtractionRequest request) {
         log.info("Request to extract placement details");
