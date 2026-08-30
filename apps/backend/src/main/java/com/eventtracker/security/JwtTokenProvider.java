@@ -21,9 +21,6 @@ public class JwtTokenProvider {
     @Value("${app.jwt.secret:your-secret-key-change-this-in-production}")
     private String jwtSecret;
 
-    @Value("${app.jwt.expiration:86400000}")
-    private long jwtExpirationMillis;
-
     @PostConstruct
     void validateConfiguration() {
         if (jwtSecret != null) {
@@ -36,20 +33,6 @@ public class JwtTokenProvider {
 
     private SecretKey getSigningKey() {
         return Keys.hmacShaKeyFor(jwtSecret.getBytes());
-    }
-
-    public String generateToken(Long userId, String email) {
-        Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + jwtExpirationMillis);
-
-        return Jwts.builder()
-                .claim("userId", userId)
-                .claim("email", email)
-                .setSubject(userId.toString())
-                .setIssuedAt(now)
-                .setExpiration(expiryDate)
-                .signWith(getSigningKey(), SignatureAlgorithm.HS512)
-                .compact();
     }
 
     public Claims parseToken(String token) {
@@ -76,9 +59,5 @@ public class JwtTokenProvider {
 
     public boolean validateToken(String token) {
         return parseToken(token) != null;
-    }
-
-    public long getJwtExpirationMillis() {
-        return jwtExpirationMillis;
     }
 }

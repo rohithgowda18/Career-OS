@@ -10,7 +10,6 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class PlacementDTO {
     private Long id;
-    private Long userId;
     private String companyName;
     private String role;
     private String location;
