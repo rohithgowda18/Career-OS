@@ -4,20 +4,18 @@ import com.eventtracker.dto.ApplicationDTO;
 import com.eventtracker.dto.ExtractionRequest;
 import com.eventtracker.dto.PlacementDTO;
 import org.springframework.cloud.openfeign.FeignClient;
-import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
 @FeignClient(
         name = "ai-extraction-service",
-        url = "${AI_EXTRACTION_SERVICE_URL:${app.ai-extraction-service.url:http://localhost:8082}}",
-        configuration = AiExtractionClientConfiguration.class
+        url = "${AI_EXTRACTION_SERVICE_URL:http://localhost:8082}"
 )
 public interface AiExtractionClient {
 
-    @PostMapping(value = "/api/extraction/placement", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping("/api/extraction/placement")
     PlacementDTO extractPlacement(@RequestBody ExtractionRequest request);
 
-    @PostMapping(value = "/api/extraction/application", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping("/api/extraction/application")
     ApplicationDTO extractApplication(@RequestBody ExtractionRequest request);
 }
