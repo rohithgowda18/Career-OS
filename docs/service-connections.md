@@ -146,27 +146,50 @@ public class Application {
 
 ---
 
-### E. Career Service ──► AI Service HTTP Delegation (`apps/backend`)
+### E. Career Service ──► AI Service OpenFeign Client (`apps/backend`)
 
-Career Service calls AI Extraction Service via HTTP POST:
+Career Service uses **Spring Cloud OpenFeign** for declarative synchronous communication with the AI service:
+
+```java
+// apps/backend/src/main/java/com/eventtracker/client/AiExtractionClient.java
+@FeignClient(
+    name = "ai-extraction-service",
+    url = "${AI_EXTRACTION_SERVICE_URL:${app.ai-extraction-service.url:http://localhost:8082}}",
+    configuration = AiExtractionClientConfiguration.class
+)
+public interface AiExtractionClient {
+
+    @PostMapping(value = "/api/extraction/classify", consumes = MediaType.APPLICATION_JSON_VALUE)
+    Map<String, String> classify(@RequestBody ExtractionRequest request);
+
+    @PostMapping(value = "/api/extraction/placement", consumes = MediaType.APPLICATION_JSON_VALUE)
+    PlacementDTO extractPlacement(@RequestBody ExtractionRequest request);
+
+    @PostMapping(value = "/api/extraction/application", consumes = MediaType.APPLICATION_JSON_VALUE)
+    ApplicationDTO extractApplication(@RequestBody ExtractionRequest request);
+}
+```
+
+Service Layer delegating to Feign Client:
 
 ```java
 // apps/backend/src/main/java/com/eventtracker/service/GeminiExtractionService.java
 @Service
+@RequiredArgsConstructor
 public class GeminiExtractionService {
-    private final RestClient restClient;
+    private final AiExtractionClient aiExtractionClient;
 
-    public GeminiExtractionService(@Value("${app.ai-extraction-service.url:http://localhost:8082}") String aiServiceUrl) {
-        this.restClient = RestClient.builder().baseUrl(aiServiceUrl).build();
+    public PlacementDTO extractPlacementDetails(String emailContent) {
+        return aiExtractionClient.extractPlacement(new ExtractionRequest(emailContent));
     }
 
-    public ExtractionResult extractFromEmail(String emailBody) {
-        return restClient.post()
-                .uri("/api/ai/extract")
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(new ExtractionRequest(emailBody))
-                .retrieve()
-                .body(ExtractionResult.class);
+    public ApplicationDTO extractApplicationDetails(String emailContent) {
+        return aiExtractionClient.extractApplication(new ExtractionRequest(emailContent));
+    }
+
+    public String classifyEmail(String emailContent) {
+        Map<String, String> response = aiExtractionClient.classify(new ExtractionRequest(emailContent));
+        return response != null ? response.getOrDefault("classification", "IRRELEVANT") : "IRRELEVANT";
     }
 }
 ```

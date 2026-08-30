@@ -5,6 +5,19 @@ spring:
   application:
     name: career-os
 
+  cloud:
+    openfeign:
+      client:
+        config:
+          default:
+            connectTimeout: 5000
+            readTimeout: 60000
+            loggerLevel: basic
+          ai-extraction-service:
+            connectTimeout: 5000
+            readTimeout: 60000
+            loggerLevel: basic
+
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/event_tracker_db}
     username: ${DB_USERNAME:postgres}
