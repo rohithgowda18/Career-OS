@@ -115,7 +115,7 @@ CREATE INDEX IF NOT EXISTS idx_routine_completion_date ON routine_completion(com
 -- SAVED JOBS (Minimal pointer: userId, externalJobId, source, createdAt)
 CREATE TABLE IF NOT EXISTS saved_jobs (
     id BIGSERIAL PRIMARY KEY,
-    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_id BIGINT NOT NULL,
     external_job_id VARCHAR(255) NOT NULL,
     source VARCHAR(100) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
