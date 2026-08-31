@@ -1,5 +1,6 @@
 import restClient from '../restClient';
 
+// Full normalized JobDTO owned by Job Service (:8083)
 export interface JobDTO {
   externalJobId: string;
   title: string;
@@ -38,6 +39,29 @@ export interface JobSearchResponse {
   source: string;
 }
 
+// Minimal SavedJob response from Career Service (:8080)
+export interface SavedJobResponse {
+  id: number;
+  externalJobId: string;
+  source: string;
+  createdAt: string;
+}
+
+export interface SaveJobPayload {
+  externalJobId: string;
+  source?: string;
+}
+
+export interface TrackJobPayload {
+  company: string;
+  title: string;
+  jobType?: string;
+  location?: string;
+  applyUrl?: string;
+  source?: string;
+  status?: string;
+}
+
 export const jobsApi = {
   // Queries Job Service (:8083) for live Jobvetta listings
   searchJobs: async (params?: JobSearchParams): Promise<JobSearchResponse> => {
@@ -58,7 +82,7 @@ export const jobsApi = {
   },
 
   // Queries Career Service (:8080) for authenticated user's saved jobs
-  getSavedJobs: async (page = 0, size = 10): Promise<{ content: JobDTO[]; totalElements: number; totalPages: number }> => {
+  getSavedJobs: async (page = 0, size = 10): Promise<{ content: SavedJobResponse[]; totalElements: number; totalPages: number }> => {
     const response = (await restClient.get('/api/jobs/saved', { params: { page, size } })).data;
     return {
       content: response?.content || [],
@@ -67,9 +91,9 @@ export const jobsApi = {
     };
   },
 
-  // Calls Career Service (:8080) to persist a saved job
-  saveJob: async (job: JobDTO): Promise<any> => {
-    const response = await restClient.post('/api/jobs/saved', job);
+  // Calls Career Service (:8080) to persist minimal saved job pointer
+  saveJob: async (payload: SaveJobPayload): Promise<SavedJobResponse> => {
+    const response = await restClient.post('/api/jobs/saved', payload);
     return response.data;
   },
 
@@ -78,9 +102,9 @@ export const jobsApi = {
     await restClient.delete(`/api/jobs/saved/${savedJobId}`);
   },
 
-  // Calls Career Service (:8080) to convert a job into an active Application
-  trackApplication: async (job: JobDTO, status = 'Applied'): Promise<any> => {
-    const response = await restClient.post('/api/jobs/track', job, { params: { status } });
+  // Calls Career Service (:8080) POST /api/applications/from-job to track into Applications
+  trackApplication: async (payload: TrackJobPayload): Promise<any> => {
+    const response = await restClient.post('/api/applications/from-job', payload);
     return response.data;
   },
 };

@@ -1,9 +1,11 @@
 package com.eventtracker.controller;
 
 import com.eventtracker.dto.ApplicationDTO;
+import com.eventtracker.dto.TrackJobApplicationRequest;
 import com.eventtracker.entity.Application;
 import com.eventtracker.service.ApplicationService;
 import com.eventtracker.service.AiExtractionService;
+import com.eventtracker.service.JobService;
 import com.eventtracker.security.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
@@ -29,6 +31,7 @@ public class ApplicationController {
 
     private final ApplicationService applicationService;
     private final AiExtractionService aiExtractionService;
+    private final JobService jobService;
 
     @PostMapping("/extract")
     @Operation(operationId = "extractApplication", summary = "Extract application details using AI")
@@ -107,6 +110,22 @@ public class ApplicationController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         } catch (Exception e) {
             log.error("Error updating application", e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/from-job")
+    @Operation(operationId = "createApplicationFromJob", summary = "Track a discovered job opportunity as an application")
+    public ResponseEntity<?> createFromJob(@Valid @RequestBody TrackJobApplicationRequest request) {
+        try {
+            Long userId = getCurrentUserId();
+            Application application = jobService.trackJobAsApplication(userId, request);
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(applicationService.convertToDTO(application));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            log.error("Error creating application from job", e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
     }

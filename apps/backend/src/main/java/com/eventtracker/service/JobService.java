@@ -1,19 +1,20 @@
 package com.eventtracker.service;
 
 import com.eventtracker.dto.ApplicationDTO;
-import com.eventtracker.dto.JobDTO;
+import com.eventtracker.dto.SaveJobRequest;
+import com.eventtracker.dto.SavedJobResponse;
+import com.eventtracker.dto.TrackJobApplicationRequest;
 import com.eventtracker.entity.Application;
 import com.eventtracker.entity.SavedJob;
 import com.eventtracker.repository.SavedJobRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -26,47 +27,37 @@ public class JobService {
     private final ApplicationService applicationService;
 
     @Transactional(readOnly = true)
-    public Page<JobDTO> getSavedJobs(Long userId, Pageable pageable) {
-        Page<SavedJob> savedPage = savedJobRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable);
-        List<JobDTO> dtos = savedPage.getContent().stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
-        return new PageImpl<>(dtos, pageable, savedPage.getTotalElements());
+    public Page<SavedJobResponse> getSavedJobs(Long userId, Pageable pageable) {
+        return savedJobRepository.findByUserIdOrderByCreatedAtDesc(userId, pageable)
+                .map(this::convertToResponse);
     }
 
-    public SavedJob saveJob(Long userId, JobDTO dto) {
-        if (dto.getExternalJobId() == null || dto.getExternalJobId().isBlank()) {
+    @Transactional(readOnly = true)
+    public List<SavedJobResponse> getAllSavedJobsForUser(Long userId) {
+        return savedJobRepository.findByUserId(userId).stream()
+                .map(this::convertToResponse)
+                .collect(Collectors.toList());
+    }
+
+    public SavedJobResponse saveJob(Long userId, SaveJobRequest request) {
+        if (request.getExternalJobId() == null || request.getExternalJobId().isBlank()) {
             throw new IllegalArgumentException("externalJobId is required");
         }
-        if (dto.getTitle() == null || dto.getTitle().isBlank()) {
-            throw new IllegalArgumentException("title is required");
-        }
-        if (dto.getCompany() == null || dto.getCompany().isBlank()) {
-            throw new IllegalArgumentException("company is required");
-        }
-        if (dto.getApplyUrl() == null || dto.getApplyUrl().isBlank()) {
-            throw new IllegalArgumentException("applyUrl is required");
-        }
+        String source = (request.getSource() != null && !request.getSource().isBlank())
+                ? request.getSource().trim()
+                : "Jobvetta";
 
-        return savedJobRepository.findByUserIdAndExternalJobId(userId, dto.getExternalJobId())
+        SavedJob savedJob = savedJobRepository.findByUserIdAndExternalJobIdAndSource(userId, request.getExternalJobId().trim(), source)
                 .orElseGet(() -> {
-                    SavedJob savedJob = SavedJob.builder()
+                    SavedJob newSaved = SavedJob.builder()
                             .userId(userId)
-                            .externalJobId(dto.getExternalJobId())
-                            .title(dto.getTitle())
-                            .company(dto.getCompany())
-                            .location(dto.getLocation())
-                            .jobType(dto.getJobType())
-                            .experience(dto.getExperienceLevel())
-                            .workMode(dto.getWorkMode())
-                            .source(dto.getSource() != null ? dto.getSource() : "Jobvetta")
-                            .applyUrl(dto.getApplyUrl())
-                            .description(dto.getDescription())
-                            .skills(dto.getSkills() != null ? String.join(", ", dto.getSkills()) : null)
-                            .postedAt(dto.getPostedAt())
+                            .externalJobId(request.getExternalJobId().trim())
+                            .source(source)
                             .build();
-                    return savedJobRepository.save(savedJob);
+                    return savedJobRepository.save(newSaved);
                 });
+
+        return convertToResponse(savedJob);
     }
 
     public void deleteSavedJob(Long userId, Long savedJobId) {
@@ -75,56 +66,42 @@ public class JobService {
         savedJobRepository.delete(saved);
     }
 
-    public Application trackJobAsApplication(Long userId, JobDTO jobDTO, String initialStatus) {
-        if (jobDTO == null) {
-            throw new IllegalArgumentException("Job data is required to track application");
+    public Application trackJobAsApplication(Long userId, TrackJobApplicationRequest request) {
+        if (request == null) {
+            throw new IllegalArgumentException("Tracking request is required");
         }
 
         ApplicationDTO appDTO = new ApplicationDTO();
-        appDTO.setEventName(jobDTO.getCompany() + " - " + jobDTO.getTitle());
-        
+        appDTO.setEventName(request.getCompany() + " - " + request.getTitle());
+
         String eventType = "Other";
-        if (jobDTO.getJobType() != null && jobDTO.getJobType().toLowerCase().contains("intern")) {
+        if (request.getJobType() != null && request.getJobType().toLowerCase().contains("intern")) {
             eventType = "Internship";
         }
         appDTO.setEventType(eventType);
 
-        String status = (initialStatus != null && !initialStatus.isBlank()) ? initialStatus : "Applied";
+        String status = (request.getStatus() != null && !request.getStatus().isBlank())
+                ? request.getStatus()
+                : "Applied";
         appDTO.setStatus(status);
 
-        appDTO.setUrl(jobDTO.getApplyUrl());
-        appDTO.setLocation(jobDTO.getLocation());
-        
-        String sourceNote = "Discovered via Career OS Jobs (" + (jobDTO.getSource() != null ? jobDTO.getSource() : "Jobvetta") + ")";
-        appDTO.setNotes(sourceNote);
+        appDTO.setUrl(request.getApplyUrl());
+        appDTO.setLocation(request.getLocation());
+
+        String sourceName = (request.getSource() != null && !request.getSource().isBlank())
+                ? request.getSource()
+                : "Jobvetta";
+        appDTO.setNotes("Discovered via Career OS Jobs (Source: " + sourceName + ")");
 
         return applicationService.createApplication(userId, appDTO);
     }
 
-    private JobDTO convertToDTO(SavedJob saved) {
-        List<String> skillsList = Collections.emptyList();
-        if (saved.getSkills() != null && !saved.getSkills().isBlank()) {
-            skillsList = Arrays.stream(saved.getSkills().split(","))
-                    .map(String::trim)
-                    .filter(s -> !s.isEmpty())
-                    .collect(Collectors.toList());
-        }
-
-        return JobDTO.builder()
-                .savedJobId(saved.getId())
-                .saved(true)
+    private SavedJobResponse convertToResponse(SavedJob saved) {
+        return SavedJobResponse.builder()
+                .id(saved.getId())
                 .externalJobId(saved.getExternalJobId())
-                .title(saved.getTitle())
-                .company(saved.getCompany())
-                .location(saved.getLocation())
-                .jobType(saved.getJobType())
-                .experienceLevel(saved.getExperience())
-                .workMode(saved.getWorkMode())
                 .source(saved.getSource())
-                .applyUrl(saved.getApplyUrl())
-                .description(saved.getDescription())
-                .postedAt(saved.getPostedAt())
-                .skills(skillsList)
+                .createdAt(saved.getCreatedAt())
                 .build();
     }
 }

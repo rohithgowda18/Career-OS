@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { jobsApi, JobDTO, JobSearchParams } from "@/lib/api/jobsApi";
+import { jobsApi, JobDTO, JobSearchParams, SavedJobResponse } from "@/lib/api/jobsApi";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -19,8 +19,6 @@ import {
   Layers,
   RefreshCw,
   SlidersHorizontal,
-  ChevronLeft,
-  ChevronRight,
   Compass,
   AlertCircle,
   Banknote,
@@ -66,25 +64,62 @@ export default function JobsPage() {
     retry: 1,
   });
 
-  const savedQuery = useQuery({
-    queryKey: ["jobs", "saved", page],
+  const savedPointersQuery = useQuery({
+    queryKey: ["jobs", "saved-pointers", page],
     queryFn: () => jobsApi.getSavedJobs(page, PAGE_SIZE),
-    enabled: activeTab === "saved",
+    enabled: activeTab === "saved" || activeTab === "discover",
   });
 
-  // Check saved job IDs to mark discovery jobs with saved indicator
-  const savedJobIds = new Set(
-    (savedQuery.data?.content || []).map((s) => s.externalJobId)
+  // Hydrate saved jobs from Job Service for the Saved tab
+  const savedJobsHydrationQuery = useQuery({
+    queryKey: ["jobs", "saved-hydrated", savedPointersQuery.data?.content],
+    queryFn: async () => {
+      const pointers = savedPointersQuery.data?.content || [];
+      if (pointers.length === 0) return [];
+      const jobs = await Promise.all(
+        pointers.map(async (p: SavedJobResponse) => {
+          try {
+            const job = await jobsApi.getJobDetails(p.externalJobId);
+            return {
+              ...job,
+              saved: true,
+              savedJobId: p.id,
+            };
+          } catch (err) {
+            return {
+              externalJobId: p.externalJobId,
+              title: "Job Listing",
+              company: "Opportunity",
+              source: p.source,
+              applyUrl: `https://www.jobvetta.com/jobs/${p.externalJobId}`,
+              saved: true,
+              savedJobId: p.id,
+            } as JobDTO;
+          }
+        })
+      );
+      return jobs;
+    },
+    enabled: activeTab === "saved" && (savedPointersQuery.data?.content?.length || 0) > 0,
+  });
+
+  // Map of externalJobId -> savedJobId for instant lookups
+  const savedMap = new Map<string, number>(
+    (savedPointersQuery.data?.content || []).map((s) => [s.externalJobId, s.id])
   );
 
   // Mutations
   const saveMutation = useMutation({
-    mutationFn: (job: JobDTO) => jobsApi.saveJob(job),
-    onSuccess: (_, job) => {
+    mutationFn: (job: JobDTO) =>
+      jobsApi.saveJob({
+        externalJobId: job.externalJobId,
+        source: job.source || "Jobvetta",
+      }),
+    onSuccess: (savedRes, job) => {
       toast.success(`Saved "${job.title}"`);
-      queryClient.invalidateQueries({ queryKey: ["jobs", "saved"] });
+      queryClient.invalidateQueries({ queryKey: ["jobs", "saved-pointers"] });
       if (selectedJob && selectedJob.externalJobId === job.externalJobId) {
-        setSelectedJob((prev) => (prev ? { ...prev, saved: true } : null));
+        setSelectedJob((prev) => (prev ? { ...prev, saved: true, savedJobId: savedRes.id } : null));
       }
     },
     onError: (err: any) => {
@@ -96,7 +131,8 @@ export default function JobsPage() {
     mutationFn: (savedJobId: number) => jobsApi.deleteSavedJob(savedJobId),
     onSuccess: () => {
       toast.success("Job removed from saved list");
-      queryClient.invalidateQueries({ queryKey: ["jobs", "saved"] });
+      queryClient.invalidateQueries({ queryKey: ["jobs", "saved-pointers"] });
+      queryClient.invalidateQueries({ queryKey: ["jobs", "saved-hydrated"] });
       if (selectedJob) {
         setSelectedJob((prev) => (prev ? { ...prev, saved: false, savedJobId: undefined } : null));
       }
@@ -107,7 +143,16 @@ export default function JobsPage() {
   });
 
   const trackMutation = useMutation({
-    mutationFn: (job: JobDTO) => jobsApi.trackApplication(job, "Applied"),
+    mutationFn: (job: JobDTO) =>
+      jobsApi.trackApplication({
+        company: job.company,
+        title: job.title,
+        jobType: job.jobType,
+        location: job.location,
+        applyUrl: job.applyUrl,
+        source: job.source || "Jobvetta",
+        status: "Applied",
+      }),
     onSuccess: (_, job) => {
       toast.success(`Added "${job.company} - ${job.title}" to Applications tracker!`);
       queryClient.invalidateQueries({ queryKey: ["applications"] });
@@ -118,8 +163,9 @@ export default function JobsPage() {
   });
 
   const handleSaveToggle = (job: JobDTO) => {
-    if (job.saved && job.savedJobId) {
-      unsaveMutation.mutate(job.savedJobId);
+    const existingSavedId = job.savedJobId || savedMap.get(job.externalJobId);
+    if (existingSavedId) {
+      unsaveMutation.mutate(existingSavedId);
     } else {
       saveMutation.mutate(job);
     }
@@ -139,7 +185,6 @@ export default function JobsPage() {
     setSelectedJob(job);
     setIsDetailsOpen(true);
 
-    // If description or skills are missing from search summary, fetch full detail from Job Service
     if (!job.description && job.externalJobId) {
       try {
         setIsLoadingDetail(true);
@@ -147,10 +192,11 @@ export default function JobsPage() {
         setSelectedJob((prev) => ({
           ...job,
           ...detailedJob,
-          saved: prev?.saved || savedJobIds.has(job.externalJobId),
+          saved: prev?.saved || savedMap.has(job.externalJobId),
+          savedJobId: prev?.savedJobId || savedMap.get(job.externalJobId),
         }));
       } catch (err) {
-        // Fallback to existing summary data
+        // Fallback to summary
       } finally {
         setIsLoadingDetail(false);
       }
@@ -161,16 +207,21 @@ export default function JobsPage() {
     activeTab === "discover"
       ? (discoverQuery.data?.jobs || []).map((j) => ({
           ...j,
-          saved: savedJobIds.has(j.externalJobId),
+          saved: savedMap.has(j.externalJobId),
+          savedJobId: savedMap.get(j.externalJobId),
         }))
-      : savedQuery.data?.content || [];
+      : savedJobsHydrationQuery.data || [];
 
-  const isLoading = activeTab === "discover" ? discoverQuery.isLoading : savedQuery.isLoading;
-  const isError = activeTab === "discover" ? discoverQuery.isError : savedQuery.isError;
+  const isLoading =
+    activeTab === "discover"
+      ? discoverQuery.isLoading
+      : savedPointersQuery.isLoading || (savedJobsHydrationQuery.isLoading && (savedPointersQuery.data?.content?.length || 0) > 0);
+
+  const isError = activeTab === "discover" ? discoverQuery.isError : savedPointersQuery.isError;
   const totalElements =
     activeTab === "discover"
       ? (discoverQuery.data?.total || 0)
-      : (savedQuery.data?.totalElements || 0);
+      : (savedPointersQuery.data?.totalElements || 0);
 
   return (
     <DashboardLayout activeTab="jobs" activeTabName="Jobs">

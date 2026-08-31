@@ -1,12 +1,12 @@
 package com.eventtracker.controller;
 
-import com.eventtracker.dto.JobDTO;
-import com.eventtracker.entity.Application;
-import com.eventtracker.entity.SavedJob;
+import com.eventtracker.dto.SaveJobRequest;
+import com.eventtracker.dto.SavedJobResponse;
 import com.eventtracker.security.UserPrincipal;
 import com.eventtracker.service.JobService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -23,7 +23,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/jobs")
 @RequiredArgsConstructor
-@Tag(name = "Saved Jobs & Application Tracking", description = "Endpoints for saved jobs persistence and application tracking")
+@Tag(name = "Saved Jobs", description = "Endpoints for user saved jobs persistence in Career Service")
 public class JobController {
 
     private final JobService jobService;
@@ -44,7 +44,7 @@ public class JobController {
     public ResponseEntity<?> getSavedJobs(Pageable pageable) {
         try {
             Long userId = getRequiredUserId();
-            Page<JobDTO> savedJobs = jobService.getSavedJobs(userId, pageable);
+            Page<SavedJobResponse> savedJobs = jobService.getSavedJobs(userId, pageable);
             return ResponseEntity.ok(savedJobs);
         } catch (Exception e) {
             log.error("Error fetching saved jobs", e);
@@ -54,11 +54,11 @@ public class JobController {
     }
 
     @PostMapping("/saved")
-    @Operation(summary = "Save a job opportunity")
-    public ResponseEntity<?> saveJob(@RequestBody JobDTO dto) {
+    @Operation(summary = "Save a job opportunity (idempotent)")
+    public ResponseEntity<?> saveJob(@Valid @RequestBody SaveJobRequest request) {
         try {
             Long userId = getRequiredUserId();
-            SavedJob savedJob = jobService.saveJob(userId, dto);
+            SavedJobResponse savedJob = jobService.saveJob(userId, request);
             return ResponseEntity.status(HttpStatus.CREATED).body(savedJob);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("error", "BAD_REQUEST", "message", e.getMessage()));
@@ -83,24 +83,6 @@ public class JobController {
             log.error("Error deleting saved job", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "SERVER_ERROR", "message", e.getMessage()));
-        }
-    }
-
-    @PostMapping("/track")
-    @Operation(summary = "Track a job as an application in Career OS")
-    public ResponseEntity<?> trackApplication(
-            @RequestBody JobDTO jobDTO,
-            @RequestParam(defaultValue = "Applied") String status) {
-        try {
-            Long userId = getRequiredUserId();
-            Application createdApp = jobService.trackJobAsApplication(userId, jobDTO, status);
-            return ResponseEntity.status(HttpStatus.CREATED).body(createdApp);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", "BAD_REQUEST", "message", e.getMessage()));
-        } catch (Exception e) {
-            log.error("Error tracking job application", e);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of("error", "TRACKING_ERROR", "message", e.getMessage()));
         }
     }
 }

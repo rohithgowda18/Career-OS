@@ -14,13 +14,11 @@ public interface SavedJobRepository extends JpaRepository<SavedJob, Long> {
 
     Page<SavedJob> findByUserIdOrderByCreatedAtDesc(Long userId, Pageable pageable);
 
-    Optional<SavedJob> findByUserIdAndExternalJobId(Long userId, String externalJobId);
+    List<SavedJob> findByUserId(Long userId);
+
+    Optional<SavedJob> findByUserIdAndExternalJobIdAndSource(Long userId, String externalJobId, String source);
 
     Optional<SavedJob> findByIdAndUserId(Long id, Long userId);
 
-    boolean existsByUserIdAndExternalJobId(Long userId, String externalJobId);
-
-    List<SavedJob> findByUserId(Long userId);
-
-    void deleteByIdAndUserId(Long id, Long userId);
+    boolean existsByUserIdAndExternalJobIdAndSource(Long userId, String externalJobId, String source);
 }

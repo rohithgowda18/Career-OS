@@ -10,9 +10,15 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "saved_jobs", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"user_id", "external_job_id"})
-})
+@Table(
+    name = "saved_jobs",
+    uniqueConstraints = {
+        @UniqueConstraint(name = "uq_saved_jobs_user_ext_source", columnNames = {"user_id", "external_job_id", "source"})
+    },
+    indexes = {
+        @Index(name = "idx_saved_jobs_user_id", columnList = "user_id")
+    }
+)
 @Data
 @Builder
 @NoArgsConstructor
@@ -29,38 +35,8 @@ public class SavedJob {
     @Column(name = "external_job_id", nullable = false)
     private String externalJobId;
 
-    @Column(name = "title", nullable = false)
-    private String title;
-
-    @Column(name = "company", nullable = false)
-    private String company;
-
-    @Column(name = "location")
-    private String location;
-
-    @Column(name = "job_type")
-    private String jobType;
-
-    @Column(name = "experience")
-    private String experience;
-
-    @Column(name = "work_mode")
-    private String workMode;
-
-    @Column(name = "source")
+    @Column(name = "source", nullable = false, length = 100)
     private String source;
-
-    @Column(name = "apply_url", nullable = false, columnDefinition = "TEXT")
-    private String applyUrl;
-
-    @Column(name = "description", columnDefinition = "TEXT")
-    private String description;
-
-    @Column(name = "skills", columnDefinition = "TEXT")
-    private String skills;
-
-    @Column(name = "posted_at")
-    private String postedAt;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
