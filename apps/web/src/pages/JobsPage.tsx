@@ -23,7 +23,8 @@ import {
   ChevronRight,
   Compass,
   AlertCircle,
-  Banknote
+  Banknote,
+  Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -37,12 +38,14 @@ export default function JobsPage() {
   const [jobType, setJobType] = useState<string>("ALL");
   const [workMode, setWorkMode] = useState<string>("ALL");
   const [experienceLevel, setExperienceLevel] = useState<string>("ALL");
+  const [days, setDays] = useState<number>(30);
   const [page, setPage] = useState(0);
   const PAGE_SIZE = 10;
 
   // Selected job for modal details view
   const [selectedJob, setSelectedJob] = useState<JobDTO | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [isLoadingDetail, setIsLoadingDetail] = useState(false);
 
   // Queries
   const searchParams: JobSearchParams = {
@@ -51,6 +54,7 @@ export default function JobsPage() {
     jobType: jobType !== "ALL" ? jobType : undefined,
     workMode: workMode !== "ALL" ? workMode : undefined,
     experienceLevel: experienceLevel !== "ALL" ? experienceLevel : undefined,
+    days: days > 0 ? days : undefined,
     page,
     size: PAGE_SIZE,
   };
@@ -68,14 +72,19 @@ export default function JobsPage() {
     enabled: activeTab === "saved",
   });
 
+  // Check saved job IDs to mark discovery jobs with saved indicator
+  const savedJobIds = new Set(
+    (savedQuery.data?.content || []).map((s) => s.externalJobId)
+  );
+
   // Mutations
   const saveMutation = useMutation({
     mutationFn: (job: JobDTO) => jobsApi.saveJob(job),
     onSuccess: (_, job) => {
       toast.success(`Saved "${job.title}"`);
-      queryClient.invalidateQueries({ queryKey: ["jobs"] });
+      queryClient.invalidateQueries({ queryKey: ["jobs", "saved"] });
       if (selectedJob && selectedJob.externalJobId === job.externalJobId) {
-        setSelectedJob((prev) => prev ? { ...prev, saved: true } : null);
+        setSelectedJob((prev) => (prev ? { ...prev, saved: true } : null));
       }
     },
     onError: (err: any) => {
@@ -87,9 +96,9 @@ export default function JobsPage() {
     mutationFn: (savedJobId: number) => jobsApi.deleteSavedJob(savedJobId),
     onSuccess: () => {
       toast.success("Job removed from saved list");
-      queryClient.invalidateQueries({ queryKey: ["jobs"] });
+      queryClient.invalidateQueries({ queryKey: ["jobs", "saved"] });
       if (selectedJob) {
-        setSelectedJob((prev) => prev ? { ...prev, saved: false, savedJobId: undefined } : null);
+        setSelectedJob((prev) => (prev ? { ...prev, saved: false, savedJobId: undefined } : null));
       }
     },
     onError: (err: any) => {
@@ -126,16 +135,42 @@ export default function JobsPage() {
     queryClient.invalidateQueries({ queryKey: ["jobs", "discover"] });
   };
 
-  const handleOpenDetails = (job: JobDTO) => {
+  const handleOpenDetails = async (job: JobDTO) => {
     setSelectedJob(job);
     setIsDetailsOpen(true);
+
+    // If description or skills are missing from search summary, fetch full detail from Job Service
+    if (!job.description && job.externalJobId) {
+      try {
+        setIsLoadingDetail(true);
+        const detailedJob = await jobsApi.getJobDetails(job.externalJobId);
+        setSelectedJob((prev) => ({
+          ...job,
+          ...detailedJob,
+          saved: prev?.saved || savedJobIds.has(job.externalJobId),
+        }));
+      } catch (err) {
+        // Fallback to existing summary data
+      } finally {
+        setIsLoadingDetail(false);
+      }
+    }
   };
 
-  const currentData = activeTab === "discover" ? discoverQuery.data?.content : savedQuery.data?.content;
+  const currentData: JobDTO[] =
+    activeTab === "discover"
+      ? (discoverQuery.data?.jobs || []).map((j) => ({
+          ...j,
+          saved: savedJobIds.has(j.externalJobId),
+        }))
+      : savedQuery.data?.content || [];
+
   const isLoading = activeTab === "discover" ? discoverQuery.isLoading : savedQuery.isLoading;
   const isError = activeTab === "discover" ? discoverQuery.isError : savedQuery.isError;
-  const totalPages = activeTab === "discover" ? (discoverQuery.data?.totalPages || 0) : (savedQuery.data?.totalPages || 0);
-  const totalElements = activeTab === "discover" ? (discoverQuery.data?.totalElements || 0) : (savedQuery.data?.totalElements || 0);
+  const totalElements =
+    activeTab === "discover"
+      ? (discoverQuery.data?.total || 0)
+      : (savedQuery.data?.totalElements || 0);
 
   return (
     <DashboardLayout activeTab="jobs" activeTabName="Jobs">
@@ -147,9 +182,9 @@ export default function JobsPage() {
               <Compass className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <h2 className="text-xl font-bold tracking-tight text-text-main">Job Opportunities</h2>
+              <h2 className="text-xl font-bold tracking-tight text-text-main">Job Discovery</h2>
               <p className="text-xs text-text-dim mt-0.5">
-                Discover live internships, fresher roles, and engineering opportunities
+                Live, vetted India tech jobs and internships via official employer sources
               </p>
             </div>
           </div>
@@ -188,7 +223,7 @@ export default function JobsPage() {
           </div>
         </div>
 
-        {/* Search & Filters Bar (Only on Discover tab) */}
+        {/* Search & Filters Bar (Discover tab) */}
         {activeTab === "discover" && (
           <div className="space-y-3.5 bg-bg-card border border-border/80 rounded-2xl p-4 sm:p-5 shadow-sm">
             <form onSubmit={handleSearchSubmit} className="grid grid-cols-1 md:grid-cols-12 gap-2.5">
@@ -197,7 +232,7 @@ export default function JobsPage() {
                 <Input
                   value={keyword}
                   onChange={(e) => setKeyword(e.target.value)}
-                  placeholder="Job title, skills (e.g. Software Engineer, React, Java)..."
+                  placeholder="Role, skills or company (e.g. React Developer, Java, Intern, Fresher)..."
                   className="pl-10 h-10 bg-bg-elevated/60 border-border text-xs focus:border-primary/50 text-text-main"
                 />
               </div>
@@ -207,7 +242,7 @@ export default function JobsPage() {
                 <Input
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
-                  placeholder="City or region (e.g. Bangalore, Remote, India)..."
+                  placeholder="Indian city or state (e.g. Bengaluru, Hyderabad, Pune, Mumbai)..."
                   className="pl-10 h-10 bg-bg-elevated/60 border-border text-xs focus:border-primary/50 text-text-main"
                 />
               </div>
@@ -223,8 +258,31 @@ export default function JobsPage() {
               </div>
             </form>
 
+            {/* Quick Location Chips */}
+            <div className="flex flex-wrap items-center gap-1.5 pt-1 text-xs">
+              <span className="text-[11px] font-semibold text-text-dim mr-1">Popular:</span>
+              {["Bengaluru", "Hyderabad", "Pune", "Mumbai", "Delhi NCR", "Remote"].map((city) => (
+                <button
+                  key={city}
+                  type="button"
+                  onClick={() => {
+                    setLocation(city === "Remote" ? "" : city);
+                    if (city === "Remote") setWorkMode("Remote");
+                    setPage(0);
+                    queryClient.invalidateQueries({ queryKey: ["jobs", "discover"] });
+                  }}
+                  className={cn(
+                    "text-[11px] px-2.5 py-0.5 rounded-full border border-border/80 bg-bg-elevated/40 hover:bg-primary/10 hover:border-primary/40 text-text-dim hover:text-primary transition-all cursor-pointer font-medium",
+                    location === city && "bg-primary/10 border-primary text-primary"
+                  )}
+                >
+                  {city}
+                </button>
+              ))}
+            </div>
+
             {/* Filter Chips */}
-            <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-border/40 text-xs">
+            <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-border/40 text-xs">
               <span className="text-[11px] font-semibold text-text-dim flex items-center gap-1 mr-1">
                 <SlidersHorizontal className="w-3 h-3" />
                 Filters:
@@ -240,9 +298,9 @@ export default function JobsPage() {
                 className="text-xs bg-bg-elevated border border-border rounded-lg px-2.5 py-1 text-text-main focus:outline-none focus:border-primary/50 cursor-pointer h-7"
               >
                 <option value="ALL">All Types</option>
-                <option value="internship">Internship</option>
-                <option value="full_time">Full-time</option>
-                <option value="contract">Contract</option>
+                <option value="Internship">Internship</option>
+                <option value="Full-time">Full-time</option>
+                <option value="Contract">Contract</option>
               </select>
 
               {/* Experience */}
@@ -255,9 +313,9 @@ export default function JobsPage() {
                 className="text-xs bg-bg-elevated border border-border rounded-lg px-2.5 py-1 text-text-main focus:outline-none focus:border-primary/50 cursor-pointer h-7"
               >
                 <option value="ALL">All Experience</option>
-                <option value="fresher">Fresher / Entry Level</option>
-                <option value="0-1 years">0–1 Years</option>
-                <option value="1-2 years">1–2 Years</option>
+                <option value="Fresher">Fresher / Entry Level</option>
+                <option value="Junior">0–2 Years</option>
+                <option value="Mid">3–5 Years</option>
               </select>
 
               {/* Work Mode */}
@@ -270,12 +328,27 @@ export default function JobsPage() {
                 className="text-xs bg-bg-elevated border border-border rounded-lg px-2.5 py-1 text-text-main focus:outline-none focus:border-primary/50 cursor-pointer h-7"
               >
                 <option value="ALL">All Work Modes</option>
-                <option value="remote">Remote</option>
-                <option value="hybrid">Hybrid</option>
-                <option value="onsite">On-site</option>
+                <option value="Remote">Remote</option>
+                <option value="Hybrid">Hybrid</option>
+                <option value="On-site">On-site</option>
               </select>
 
-              {(keyword || location || jobType !== "ALL" || workMode !== "ALL" || experienceLevel !== "ALL") && (
+              {/* Posting Age */}
+              <select
+                value={days}
+                onChange={(e) => {
+                  setDays(Number(e.target.value));
+                  setPage(0);
+                }}
+                className="text-xs bg-bg-elevated border border-border rounded-lg px-2.5 py-1 text-text-main focus:outline-none focus:border-primary/50 cursor-pointer h-7"
+              >
+                <option value="7">Last 7 days</option>
+                <option value="15">Last 15 days</option>
+                <option value="30">Last 30 days</option>
+                <option value="90">Last 90 days</option>
+              </select>
+
+              {(keyword || location || jobType !== "ALL" || workMode !== "ALL" || experienceLevel !== "ALL" || days !== 30) && (
                 <button
                   onClick={() => {
                     setKeyword("");
@@ -283,6 +356,7 @@ export default function JobsPage() {
                     setJobType("ALL");
                     setWorkMode("ALL");
                     setExperienceLevel("ALL");
+                    setDays(30);
                     setPage(0);
                   }}
                   className="text-[11px] text-text-dim hover:text-primary font-medium underline ml-auto cursor-pointer"
@@ -298,8 +372,8 @@ export default function JobsPage() {
         {!isLoading && !isError && currentData && currentData.length > 0 && (
           <div className="flex items-center justify-between text-xs text-text-dim px-1">
             <span>
-              Showing {currentData.length} of {totalElements} opportunities
-              {activeTab === "discover" && " (via Adzuna)"}
+              Showing {currentData.length} opportunities {totalElements > 0 && `(Total: ~${totalElements})`}
+              {activeTab === "discover" && " • Source: Jobvetta"}
             </span>
           </div>
         )}
@@ -333,7 +407,7 @@ export default function JobsPage() {
             </div>
             <h3 className="text-base font-semibold text-text-main">Unable to load jobs right now</h3>
             <p className="text-xs text-text-dim max-w-md mx-auto">
-              We encountered an issue connecting to the live job discovery provider. Please verify your internet connection or try again.
+              We encountered an issue connecting to the Jobvetta discovery service. Please verify your connection or try again.
             </p>
             <Button
               variant="outline"
@@ -358,7 +432,7 @@ export default function JobsPage() {
             </h3>
             <p className="text-xs text-text-dim max-w-md mx-auto">
               {activeTab === "discover"
-                ? "Try searching for broader keywords, different job types, or clearing location filters."
+                ? "Try searching for broader keywords like 'Developer' or 'Engineer', or clearing specific location filters."
                 : "When browsing jobs, click the Save icon to keep track of opportunities you want to revisit."}
             </p>
             {activeTab === "saved" && (
@@ -392,7 +466,7 @@ export default function JobsPage() {
                       </h3>
                       {job.postedAt && (
                         <span className="text-[10px] text-text-dim shrink-0">
-                          • {job.postedAt.split("T")[0]}
+                          • {job.postedAt}
                         </span>
                       )}
                     </div>
@@ -460,7 +534,7 @@ export default function JobsPage() {
                   </div>
                 </div>
 
-                {/* Badges & Description snippet */}
+                {/* Badges */}
                 <div className="flex flex-wrap items-center gap-1.5">
                   {job.jobType && (
                     <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 text-[11px] py-0.5">
@@ -486,13 +560,20 @@ export default function JobsPage() {
                   )}
                 </div>
 
-                {/* Description Snippet */}
-                {job.description && (
+                {/* Description Snippet or Click to view */}
+                {job.description ? (
                   <p
                     onClick={() => handleOpenDetails(job)}
                     className="text-xs text-text-muted line-clamp-2 cursor-pointer leading-relaxed hover:text-text-main transition-colors"
                   >
                     {job.description}
+                  </p>
+                ) : (
+                  <p
+                    onClick={() => handleOpenDetails(job)}
+                    className="text-[11px] text-text-dim cursor-pointer hover:text-primary transition-colors flex items-center gap-1"
+                  >
+                    <span>Click to view full description and required skills →</span>
                   </p>
                 )}
 
@@ -511,37 +592,6 @@ export default function JobsPage() {
                 )}
               </div>
             ))}
-          </div>
-        )}
-
-        {/* Pagination Bar */}
-        {!isLoading && !isError && totalPages > 1 && (
-          <div className="flex items-center justify-between pt-4 border-t border-border/40 text-xs">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage((p) => Math.max(0, p - 1))}
-              disabled={page === 0}
-              className="h-8 px-3 text-xs border-border cursor-pointer"
-            >
-              <ChevronLeft className="w-4 h-4 mr-1" />
-              Previous
-            </Button>
-
-            <span className="text-text-dim font-medium">
-              Page {page + 1} of {totalPages}
-            </span>
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
-              disabled={page >= totalPages - 1}
-              className="h-8 px-3 text-xs border-border cursor-pointer"
-            >
-              Next
-              <ChevronRight className="w-4 h-4 ml-1" />
-            </Button>
           </div>
         )}
 

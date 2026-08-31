@@ -1,4 +1,4 @@
-package com.eventtracker.dto;
+package com.careeros.job.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,11 +11,10 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class JobSearchResult {
-    private List<JobDTO> content;
-    private long totalElements;
-    private int totalPages;
-    private int currentPage;
+public class JobSearchResponse {
+    private List<JobDTO> jobs;
+    private long total;
+    private int page;
     private int size;
     private String source;
 }

@@ -2,14 +2,11 @@ package com.eventtracker;
 
 import com.eventtracker.dto.ApplicationDTO;
 import com.eventtracker.dto.JobDTO;
-import com.eventtracker.dto.JobSearchCriteria;
-import com.eventtracker.dto.JobSearchResult;
 import com.eventtracker.entity.Application;
 import com.eventtracker.entity.SavedJob;
 import com.eventtracker.repository.SavedJobRepository;
 import com.eventtracker.service.ApplicationService;
 import com.eventtracker.service.JobService;
-import com.eventtracker.service.job.JobProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,7 +16,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -32,9 +28,6 @@ import static org.mockito.Mockito.*;
 class JobServiceTest {
 
     @Mock
-    private JobProvider jobProvider;
-
-    @Mock
     private SavedJobRepository savedJobRepository;
 
     @Mock
@@ -44,48 +37,29 @@ class JobServiceTest {
 
     @BeforeEach
     void setUp() {
-        jobService = new JobService(jobProvider, savedJobRepository, applicationService);
+        jobService = new JobService(savedJobRepository, applicationService);
     }
 
     @Test
-    void testSearchJobs_SuccessAndEnrichSaved() {
-        JobDTO job = JobDTO.builder()
-                .externalJobId("job-123")
-                .title("Software Engineer Intern")
-                .company("Google")
-                .location("Bangalore")
-                .applyUrl("https://careers.google.com/jobs/123")
-                .build();
-
-        JobSearchResult mockResult = JobSearchResult.builder()
-                .content(List.of(job))
-                .totalElements(1)
-                .totalPages(1)
-                .currentPage(0)
-                .size(10)
-                .source("Adzuna")
-                .build();
-
-        when(jobProvider.searchJobs(any())).thenReturn(mockResult);
-
+    void testGetSavedJobs() {
         SavedJob savedJob = SavedJob.builder()
-                .id(99L)
-                .userId(1L)
-                .externalJobId("job-123")
-                .build();
-        when(savedJobRepository.findByUserId(1L)).thenReturn(List.of(savedJob));
-
-        JobSearchCriteria criteria = JobSearchCriteria.builder()
-                .keyword("java")
-                .location("Bangalore")
+                .id(1L)
+                .userId(10L)
+                .externalJobId("job-101")
+                .title("React Developer")
+                .company("Concentrix")
+                .applyUrl("https://www.jobvetta.com/jobs/job-101")
                 .build();
 
-        JobSearchResult result = jobService.searchJobs(criteria, 1L);
+        when(savedJobRepository.findByUserIdOrderByCreatedAtDesc(eq(10L), any()))
+                .thenReturn(new PageImpl<>(List.of(savedJob)));
+
+        Page<JobDTO> result = jobService.getSavedJobs(10L, PageRequest.of(0, 10));
 
         assertNotNull(result);
         assertEquals(1, result.getContent().size());
+        assertEquals("React Developer", result.getContent().get(0).getTitle());
         assertTrue(result.getContent().get(0).isSaved());
-        assertEquals(99L, result.getContent().get(0).getSavedJobId());
     }
 
     @Test
@@ -94,8 +68,8 @@ class JobServiceTest {
                 .externalJobId("job-456")
                 .title("Backend Engineer")
                 .company("Microsoft")
-                .applyUrl("https://careers.microsoft.com/456")
-                .source("Adzuna")
+                .applyUrl("https://www.jobvetta.com/jobs/456")
+                .source("Jobvetta")
                 .build();
 
         when(savedJobRepository.findByUserIdAndExternalJobId(1L, "job-456")).thenReturn(Optional.empty());
@@ -119,7 +93,7 @@ class JobServiceTest {
                 .externalJobId("job-456")
                 .title("Backend Engineer")
                 .company("Microsoft")
-                .applyUrl("https://careers.microsoft.com/456")
+                .applyUrl("https://www.jobvetta.com/jobs/456")
                 .build();
 
         SavedJob existing = SavedJob.builder()
@@ -167,8 +141,8 @@ class JobServiceTest {
                 .company("Amazon")
                 .location("Hyderabad")
                 .jobType("Internship")
-                .applyUrl("https://amazon.jobs/789")
-                .source("Adzuna")
+                .applyUrl("https://www.jobvetta.com/jobs/789")
+                .source("Jobvetta")
                 .build();
 
         Application mockApp = new Application();
@@ -185,7 +159,7 @@ class JobServiceTest {
         verify(applicationService).createApplication(eq(1L), argThat(appDTO ->
                 appDTO.getEventName().equals("Amazon - Frontend Developer") &&
                 appDTO.getEventType().equals("Internship") &&
-                appDTO.getUrl().equals("https://amazon.jobs/789")
+                appDTO.getUrl().equals("https://www.jobvetta.com/jobs/789")
         ));
     }
 }

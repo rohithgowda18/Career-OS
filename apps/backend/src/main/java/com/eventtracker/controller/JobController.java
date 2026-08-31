@@ -1,8 +1,6 @@
 package com.eventtracker.controller;
 
 import com.eventtracker.dto.JobDTO;
-import com.eventtracker.dto.JobSearchCriteria;
-import com.eventtracker.dto.JobSearchResult;
 import com.eventtracker.entity.Application;
 import com.eventtracker.entity.SavedJob;
 import com.eventtracker.security.UserPrincipal;
@@ -20,18 +18,17 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
-import java.util.Optional;
 
 @Slf4j
 @RestController
 @RequestMapping("/api/jobs")
 @RequiredArgsConstructor
-@Tag(name = "Jobs", description = "Job discovery, saved jobs, and application tracking")
+@Tag(name = "Saved Jobs & Application Tracking", description = "Endpoints for saved jobs persistence and application tracking")
 public class JobController {
 
     private final JobService jobService;
 
-    private Long getCurrentUserIdOrNull() {
+    private Long getRequiredUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication.isAuthenticated()) {
             Object principal = authentication.getPrincipal();
@@ -39,72 +36,7 @@ public class JobController {
                 return ((UserPrincipal) principal).getId();
             }
         }
-        return null;
-    }
-
-    private Long getRequiredUserId() {
-        Long userId = getCurrentUserIdOrNull();
-        if (userId == null) {
-            throw new RuntimeException("User not authenticated");
-        }
-        return userId;
-    }
-
-    @GetMapping
-    @Operation(summary = "Search live external jobs", description = "Query real external job opportunities with filters and pagination")
-    public ResponseEntity<?> searchJobs(
-            @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) String location,
-            @RequestParam(required = false) String jobType,
-            @RequestParam(required = false) String experienceLevel,
-            @RequestParam(required = false) String workMode,
-            @RequestParam(required = false) String company,
-            @RequestParam(required = false) String sortBy,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        try {
-            Long userId = getCurrentUserIdOrNull();
-            JobSearchCriteria criteria = JobSearchCriteria.builder()
-                    .keyword(keyword)
-                    .location(location)
-                    .jobType(jobType)
-                    .experienceLevel(experienceLevel)
-                    .workMode(workMode)
-                    .company(company)
-                    .sortBy(sortBy)
-                    .page(page)
-                    .size(size)
-                    .build();
-
-            JobSearchResult result = jobService.searchJobs(criteria, userId);
-            return ResponseEntity.ok(result);
-        } catch (IllegalStateException e) {
-            log.warn("Job provider configuration error: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
-                    .body(Map.of("error", "SERVICE_UNAVAILABLE", "message", e.getMessage()));
-        } catch (Exception e) {
-            log.error("Failed to fetch jobs from provider", e);
-            return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
-                    .body(Map.of("error", "PROVIDER_ERROR", "message", "Unable to load jobs right now. " + e.getMessage()));
-        }
-    }
-
-    @GetMapping("/{id}")
-    @Operation(summary = "Get job details by external ID")
-    public ResponseEntity<?> getJobDetails(@PathVariable String id) {
-        try {
-            Long userId = getCurrentUserIdOrNull();
-            Optional<JobDTO> job = jobService.getJobById(id, userId);
-            if (job.isEmpty()) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(Map.of("error", "NOT_FOUND", "message", "Job opportunity not found or no longer available"));
-            }
-            return ResponseEntity.ok(job.get());
-        } catch (Exception e) {
-            log.error("Error retrieving job details", e);
-            return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
-                    .body(Map.of("error", "PROVIDER_ERROR", "message", "Unable to fetch job details: " + e.getMessage()));
-        }
+        throw new RuntimeException("User not authenticated");
     }
 
     @GetMapping("/saved")

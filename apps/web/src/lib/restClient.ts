@@ -24,6 +24,10 @@ const configuredAuthUrl = import.meta.env.VITE_AUTH_API_URL?.trim();
 const authBaseUrl = configuredAuthUrl || (import.meta.env.DEV ? 'http://localhost:8081' : normalizedUrl);
 const normalizedAuthUrl = authBaseUrl.replace(/\/+$/, '').replace(/\/api\/?$/, '');
 
+const configuredJobUrl = import.meta.env.VITE_JOB_API_URL?.trim();
+const jobBaseUrl = configuredJobUrl || (import.meta.env.DEV ? 'http://localhost:8083' : normalizedUrl);
+const normalizedJobUrl = jobBaseUrl.replace(/\/+$/, '').replace(/\/api\/?$/, '');
+
 const restClient = axios.create({
   baseURL: normalizedUrl,
   timeout: 60000,
@@ -36,9 +40,13 @@ const restClient = axios.create({
 // Add a request interceptor to include the JWT token
 restClient.interceptors.request.use(
   (config) => {
-    // Dynamic routing to Auth Service in Phase 1
+    // Dynamic routing to Auth Service (:8081)
     if (config.url && (config.url.startsWith('/api/auth') || config.url.startsWith('/api/profile') || config.url.startsWith('/login/oauth2'))) {
       config.baseURL = normalizedAuthUrl;
+    }
+    // Dynamic routing to Job Discovery Service (:8083)
+    else if (config.url && config.url.startsWith('/api/jobs') && !config.url.startsWith('/api/jobs/saved') && !config.url.startsWith('/api/jobs/track')) {
+      config.baseURL = normalizedJobUrl;
     }
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('token');
