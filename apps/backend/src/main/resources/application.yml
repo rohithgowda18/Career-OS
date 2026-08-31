@@ -60,6 +60,14 @@ app:
   ai-extraction-service:
     url: ${AI_EXTRACTION_SERVICE_URL:http://localhost:8082}
 
+  jobs:
+    provider: ${JOB_PROVIDER:adzuna}
+    adzuna:
+      app-id: ${ADZUNA_APP_ID:}
+      app-key: ${ADZUNA_APP_KEY:}
+      country: ${ADZUNA_COUNTRY:in}
+      base-url: ${ADZUNA_BASE_URL:https://api.adzuna.com/v1/api/jobs}
+
 
 logging:
   level:

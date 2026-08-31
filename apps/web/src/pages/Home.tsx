@@ -9,6 +9,7 @@ const AnalyticsDashboard = React.lazy(() => import("@/components/AnalyticsDashbo
 const ApplicationProfileForm = React.lazy(() => import("@/components/ApplicationProfileForm"));
 const SkillsPage = React.lazy(() => import("./SkillsPage"));
 const RoutineView = React.lazy(() => import("@/components/views/RoutineView"));
+const JobsPage = React.lazy(() => import("./JobsPage"));
 import DashboardLayout from "@/components/DashboardLayout";
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
@@ -74,7 +75,20 @@ export default function Home() {
     | "analytics"
     | "skills"
     | "routine"
+    | "jobs"
     | "profile";
+
+  if (currentView === "jobs") {
+    return (
+      <Suspense fallback={
+        <div className="min-h-screen flex items-center justify-center bg-bg-main">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      }>
+        <JobsPage />
+      </Suspense>
+    );
+  }
 
   return (
     <DashboardLayout activeTab={currentView}>

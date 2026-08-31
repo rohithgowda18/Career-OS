@@ -107,9 +107,24 @@ CREATE TABLE IF NOT EXISTS routine_completion (
     completed BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT uq_routine_completion UNIQUE (routine_task_id, completion_date)
+-- SAVED JOBS (Jobs discovery & tracking)
+CREATE TABLE IF NOT EXISTS saved_jobs (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    external_job_id VARCHAR(255) NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    company VARCHAR(255) NOT NULL,
+    location VARCHAR(255),
+    job_type VARCHAR(100),
+    experience VARCHAR(100),
+    work_mode VARCHAR(50),
+    source VARCHAR(100),
+    apply_url TEXT NOT NULL,
+    description TEXT,
+    skills TEXT,
+    posted_at VARCHAR(100),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
-
-
-
+CREATE UNIQUE INDEX IF NOT EXISTS idx_saved_jobs_user_ext_id ON saved_jobs(user_id, external_job_id);
+CREATE INDEX IF NOT EXISTS idx_saved_jobs_user_id ON saved_jobs(user_id);

@@ -23,7 +23,8 @@ import {
   Plus,
   RefreshCw,
   Award,
-  ListTodo
+  ListTodo,
+  Compass
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -44,7 +45,8 @@ import InstallAppDialog from "@/components/InstallAppDialog";
 import ThemeSelector from "@/components/ThemeSelector";
 
 interface DashboardLayoutProps {
-  activeTab: "dashboard" | "kanban" | "placements" | "skills" | "routine" | "calendar" | "analytics" | "profile";
+  activeTab: "dashboard" | "kanban" | "placements" | "jobs" | "skills" | "routine" | "calendar" | "analytics" | "profile";
+  activeTabName?: string;
   children: React.ReactNode;
 }
 
@@ -237,11 +239,12 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
     return null;
   }
 
-  // Primary Desktop sidebar navigation structure (7 items)
+  // Primary Desktop sidebar navigation structure (8 items)
   const desktopTabs = [
     { id: "dashboard", label: "Home", icon: LayoutDashboard, path: "/dashboard?view=dashboard" },
     { id: "kanban", label: "Applications", icon: Layers, path: "/dashboard?view=kanban" },
     { id: "placements", label: "Placements", icon: Briefcase, path: "/placements" },
+    { id: "jobs", label: "Jobs", icon: Compass, path: "/jobs" },
     { id: "skills", label: "My Skills", icon: Award, path: "/dashboard?view=skills" },
     { id: "routine", label: "Daily Routine", icon: ListTodo, path: "/dashboard?view=routine" },
     { id: "calendar", label: "Calendar", icon: CalendarIcon, path: "/dashboard?view=calendar" },
@@ -426,6 +429,15 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
             </Avatar>
           </button>
 
+          {/* Mobile Compass Button (Navigates directly to Jobs) */}
+          <button 
+            onClick={() => setLocation("/jobs")}
+            title="Jobs & Opportunities"
+            className="p-1.5 rounded-lg border border-border text-text-muted hover:text-text-main bg-bg-elevated/40 cursor-pointer"
+          >
+            <Compass className="w-4 h-4 text-primary" />
+          </button>
+
           {!isInstalled && (
             <button 
               onClick={() => setShowInstallDialog(true)}
@@ -445,7 +457,9 @@ export default function DashboardLayout({ activeTab, children }: DashboardLayout
           <div className="flex items-center gap-3">
             <span className="text-xs font-medium text-text-dim uppercase tracking-wider">Workspace</span>
             <ChevronRight className="w-3 h-3 text-text-dim" />
-            <span className="text-xs font-semibold text-text-main capitalize">{activeTab === "kanban" ? "Applications" : activeTab}</span>
+            <span className="text-xs font-semibold text-text-main capitalize">
+              {activeTabName || (activeTab === "kanban" ? "Applications" : activeTab === "jobs" ? "Jobs" : activeTab)}
+            </span>
           </div>
 
 <div className="flex items-center gap-3">
