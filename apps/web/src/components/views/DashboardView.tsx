@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import AddApplicationModal from "@/components/AddApplicationModal";
 import AddPlacementModal from "@/components/AddPlacementModal";
+import CodingProfileCard from "@/components/CodingProfileCard";
 const AnalyticsDashboard = lazy(() => import("@/components/AnalyticsDashboard"));
 import {
   Loader2,
@@ -356,6 +357,9 @@ export default function DashboardView() {
               </div>
             )}
           </section>
+
+          {/* Coding Profile Card (LeetCode) */}
+          <CodingProfileCard />
         </div>
 
         {/* Right Hand Sidebar (Context and Actions) */}
