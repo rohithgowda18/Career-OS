@@ -17,7 +17,9 @@ import {
   ExternalLink,
   Plus,
   Loader2,
-  Award
+  Award,
+  Calendar,
+  AlertCircle
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -30,6 +32,33 @@ import {
 } from "recharts";
 import { cn } from "@/lib/utils";
 
+// Custom Tooltip for Multi-point Chart
+function CustomChartTooltip({ active, payload }: any) {
+  if (!active || !payload || !payload.length) return null;
+  const data = payload[0].payload;
+
+  return (
+    <div className="bg-bg-card border border-border shadow-xl rounded-xl p-3 text-xs space-y-1.5 z-50">
+      <div className="font-semibold text-text-main flex items-center gap-1.5 border-b border-border/50 pb-1">
+        <Calendar className="w-3.5 h-3.5 text-primary" />
+        {data.fullDate}
+      </div>
+      <div className="font-bold text-primary text-sm">
+        {data.solved} problems solved
+      </div>
+      {(data.easy > 0 || data.medium > 0 || data.hard > 0) && (
+        <div className="flex items-center gap-2 pt-1 text-[11px] text-text-dim">
+          <span className="text-success font-medium">Easy: {data.easy}</span>
+          <span>•</span>
+          <span className="text-warning font-medium">Med: {data.medium}</span>
+          <span>•</span>
+          <span className="text-danger font-medium">Hard: {data.hard}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function CodingProfileCard() {
   const queryClient = useQueryClient();
   const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
@@ -41,7 +70,12 @@ export default function CodingProfileCard() {
     queryFn: codingApi.getCurrentStats,
   });
 
-  const { data: historyData, isLoading: isLoadingHistory } = useQuery({
+  const {
+    data: historyData,
+    isLoading: isLoadingHistory,
+    isError: isErrorHistory,
+    refetch: refetchHistory
+  } = useQuery({
     queryKey: ["coding", "history"],
     queryFn: codingApi.getStatsHistory,
   });
@@ -85,17 +119,21 @@ export default function CodingProfileCard() {
     }
   };
 
-  const formattedHistory = (historyData || []).map((item) => ({
-    date: new Date(item.recordedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-    solved: item.totalSolved,
-    easy: item.easy,
-    medium: item.medium,
-    hard: item.hard,
-  }));
+  const formattedHistory = (historyData || []).map((item) => {
+    const d = new Date(item.recordedAt);
+    return {
+      date: d.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      fullDate: d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+      solved: item.totalSolved,
+      easy: item.easy,
+      medium: item.medium,
+      hard: item.hard,
+    };
+  });
 
   if (isLoadingStats) {
     return (
-      <Card className="bg-bg-card border-border/80">
+      <Card className="bg-bg-card border-border/80 rounded-2xl">
         <CardContent className="p-6">
           <div className="flex items-center justify-center py-8">
             <Loader2 className="w-6 h-6 animate-spin text-primary" />
@@ -159,7 +197,7 @@ export default function CodingProfileCard() {
                   setPendingAccountToVerify(null);
                   setIsConnectModalOpen(true);
                 }}
-                className="mt-2 bg-primary hover:bg-primary-hover text-white text-xs font-semibold"
+                className="mt-2 bg-primary hover:bg-primary-hover text-white text-xs font-semibold cursor-pointer"
               >
                 Connect LeetCode
               </Button>
@@ -188,7 +226,7 @@ export default function CodingProfileCard() {
                     setPendingAccountToVerify(leetcodeAccount);
                     setIsConnectModalOpen(true);
                   }}
-                  className="bg-primary hover:bg-primary-hover text-white text-xs font-semibold h-8"
+                  className="bg-primary hover:bg-primary-hover text-white text-xs font-semibold h-8 cursor-pointer"
                 >
                   Verify Ownership
                 </Button>
@@ -196,7 +234,7 @@ export default function CodingProfileCard() {
                   variant="ghost"
                   size="sm"
                   onClick={() => handleDisconnect(leetcodeAccount.accountId)}
-                  className="text-xs text-danger hover:bg-danger/10 h-8"
+                  className="text-xs text-danger hover:bg-danger/10 h-8 cursor-pointer"
                 >
                   Cancel
                 </Button>
@@ -299,8 +337,8 @@ export default function CodingProfileCard() {
                 </div>
               )}
 
-              {/* Historical Analytics Chart */}
-              <div className="space-y-2 pt-2 border-t border-border/40">
+              {/* Historical Analytics Chart Section */}
+              <div className="space-y-3 pt-2 border-t border-border/40">
                 <div className="flex items-center justify-between text-xs">
                   <span className="font-semibold text-text-main flex items-center gap-1.5">
                     <TrendingUp className="w-3.5 h-3.5 text-primary" />
@@ -309,7 +347,77 @@ export default function CodingProfileCard() {
                   <span className="text-[11px] text-text-dim">Based on sync history</span>
                 </div>
 
-                {formattedHistory.length >= 2 ? (
+                {/* State: Loading */}
+                {isLoadingHistory && (
+                  <div className="h-40 w-full flex flex-col items-center justify-center bg-bg-elevated/20 border border-border/60 rounded-xl space-y-2">
+                    <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                    <span className="text-xs text-text-dim">Loading progress history...</span>
+                  </div>
+                )}
+
+                {/* State: Error */}
+                {!isLoadingHistory && isErrorHistory && (
+                  <div className="py-6 px-4 text-center bg-danger/5 border border-danger/20 rounded-xl space-y-2">
+                    <div className="flex items-center justify-center gap-1.5 text-xs font-semibold text-danger">
+                      <AlertCircle className="w-4 h-4" />
+                      Unable to load progress history.
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => refetchHistory()}
+                      className="h-7 px-3 text-xs font-semibold border-border hover:border-danger/40 cursor-pointer"
+                    >
+                      Try again
+                    </Button>
+                  </div>
+                )}
+
+                {/* State: Zero Records */}
+                {!isLoadingHistory && !isErrorHistory && formattedHistory.length === 0 && (
+                  <div className="py-7 px-4 text-center bg-bg-elevated/20 border border-dashed border-border rounded-xl space-y-1.5">
+                    <h5 className="text-xs font-bold text-text-main">No progress history yet</h5>
+                    <p className="text-[11px] text-text-dim max-w-sm mx-auto leading-relaxed">
+                      Your progress will appear here after your first successful profile sync.
+                    </p>
+                  </div>
+                )}
+
+                {/* State: Single Snapshot (1 Record) */}
+                {!isLoadingHistory && !isErrorHistory && formattedHistory.length === 1 && (
+                  <div className="p-4 bg-bg-elevated/30 border border-border/80 rounded-xl space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/40 pb-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse" />
+                        <span className="text-xs font-bold text-text-main">Initial Snapshot Recorded</span>
+                      </div>
+                      <span className="text-xs font-mono font-bold text-primary px-2.5 py-0.5 rounded-md bg-primary/10 border border-primary/20 self-start sm:self-auto">
+                        {formattedHistory[0].solved} Solved • {formattedHistory[0].fullDate}
+                      </span>
+                    </div>
+
+                    {(formattedHistory[0].easy > 0 || formattedHistory[0].medium > 0 || formattedHistory[0].hard > 0) && (
+                      <div className="flex items-center gap-3 text-xs text-text-muted">
+                        <span className="flex items-center gap-1 font-medium">
+                          <span className="w-2 h-2 rounded-full bg-success inline-block" /> Easy: <strong className="text-text-main">{formattedHistory[0].easy}</strong>
+                        </span>
+                        <span className="flex items-center gap-1 font-medium">
+                          <span className="w-2 h-2 rounded-full bg-warning inline-block" /> Medium: <strong className="text-text-main">{formattedHistory[0].medium}</strong>
+                        </span>
+                        <span className="flex items-center gap-1 font-medium">
+                          <span className="w-2 h-2 rounded-full bg-danger inline-block" /> Hard: <strong className="text-text-main">{formattedHistory[0].hard}</strong>
+                        </span>
+                      </div>
+                    )}
+
+                    <p className="text-[11px] text-text-dim leading-relaxed">
+                      Your first progress snapshot is recorded. Sync again after solving more problems to see your progress over time.
+                    </p>
+                  </div>
+                )}
+
+                {/* State: Multiple Records (2+ Snapshots) */}
+                {!isLoadingHistory && !isErrorHistory && formattedHistory.length >= 2 && (
                   <div className="h-44 w-full pt-2">
                     <ResponsiveContainer width="100%" height="100%">
                       <AreaChart data={formattedHistory} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
@@ -322,14 +430,7 @@ export default function CodingProfileCard() {
                         <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
                         <XAxis dataKey="date" stroke="#888888" fontSize={10} tickLine={false} />
                         <YAxis stroke="#888888" fontSize={10} tickLine={false} />
-                        <Tooltip
-                          contentStyle={{
-                            backgroundColor: "var(--color-bg-card, #1e1e2d)",
-                            borderColor: "var(--color-border, #333)",
-                            borderRadius: "8px",
-                            fontSize: "11px",
-                          }}
-                        />
+                        <Tooltip content={<CustomChartTooltip />} />
                         <Area
                           type="monotone"
                           dataKey="solved"
@@ -341,10 +442,6 @@ export default function CodingProfileCard() {
                         />
                       </AreaChart>
                     </ResponsiveContainer>
-                  </div>
-                ) : (
-                  <div className="py-6 text-center text-xs text-text-dim bg-bg-elevated/20 border border-dashed border-border rounded-xl">
-                    History will appear after your account is synchronized over time.
                   </div>
                 )}
               </div>
