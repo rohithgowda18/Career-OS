@@ -2,12 +2,14 @@ server:
   port: ${PORT:8084}
 
 spring:
+  config:
+    import: optional:file:.env[.properties], optional:file:../../.env[.properties]
   application:
     name: career-os-coding-service
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/career_os_coding_db}
-    username: ${SPRING_DATASOURCE_USERNAME:postgres}
-    password: ${SPRING_DATASOURCE_PASSWORD:postgres}
+    url: ${CODING_DB_URL:${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/career_os_coding_db}}
+    username: ${DB_USERNAME:${SPRING_DATASOURCE_USERNAME:postgres}}
+    password: ${DB_PASSWORD:${SPRING_DATASOURCE_PASSWORD:Rohk_1265}}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -24,7 +26,7 @@ spring:
 
 app:
   jwt:
-    secret: ${JWT_SECRET:your-super-secret-jwt-key-with-at-least-64-bytes-for-hs512-signing-career-os-2026}
+    secret: ${JWT_SECRET:this-is-a-very-long-secret-key-that-is-at-least-64-characters-long-to-satisfy-hs512-requirements}
   coding:
     leetcode:
       graphql-url: ${LEETCODE_GRAPHQL_URL:https://leetcode.com/graphql}
