@@ -1,5 +1,5 @@
 server:
-  port: ${PORT:8084}
+  port: ${CODING_SERVICE_PORT:${PORT_CODING:8084}}
 
 spring:
   config:

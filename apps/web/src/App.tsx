@@ -17,6 +17,7 @@ const OAuthSuccessPage = React.lazy(() => import("./pages/OAuthSuccessPage"));
 const Home = React.lazy(() => import("./pages/Home"));
 const PlacementsPage = React.lazy(() => import("./pages/PlacementsPage"));
 const JobsPage = React.lazy(() => import("./pages/JobsPage"));
+const CodingProfilePage = React.lazy(() => import("./pages/CodingProfilePage"));
 const AddEventPage = React.lazy(() => import("./pages/AddEventPage"));
 const PrivacyPage = React.lazy(() => import("./pages/PrivacyPage"));
 const NotFound = React.lazy(() => import("./pages/NotFound"));
@@ -44,7 +45,7 @@ function Router() {
         setLocation("/dashboard");
       }
     } else {
-      if (location === "/dashboard" || location === "/placements" || location === "/jobs" || location === "/add") {
+      if (location === "/dashboard" || location === "/placements" || location === "/jobs" || location === "/coding" || location === "/add") {
         setLocation("/login");
       }
     }
@@ -145,6 +146,7 @@ function Router() {
         <Route path="/dashboard" component={Home} />
         <Route path="/placements" component={PlacementsPage} />
         <Route path="/jobs" component={JobsPage} />
+        <Route path="/coding" component={CodingProfilePage} />
         <Route path="/add" component={AddEventPage} />
         <Route path="/privacy" component={PrivacyPage} />
         <Route path="/404" component={NotFound} />

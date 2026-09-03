@@ -119,6 +119,19 @@ public class CodingProfileController {
         }
     }
 
+    @GetMapping("/daily")
+    @Operation(summary = "Get daily coding challenges across supported platforms", description = "Aggregates live daily coding challenges (POTD) from supported platforms")
+    public ResponseEntity<?> getDailyChallenges() {
+        try {
+            List<DailyChallengeDTO> challenges = codingProfileService.getDailyChallenges();
+            return ResponseEntity.ok(challenges);
+        } catch (Exception e) {
+            log.error("Error retrieving daily challenges", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "SERVER_ERROR", "message", e.getMessage()));
+        }
+    }
+
     @GetMapping("/accounts")
     @Operation(summary = "List connected coding accounts for authenticated user")
     public ResponseEntity<?> getAccounts() {

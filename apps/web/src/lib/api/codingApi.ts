@@ -1,6 +1,6 @@
 import restClient from '../restClient';
 
-export type Platform = 'LEETCODE';
+export type Platform = 'LEETCODE' | 'CODEFORCES' | 'CODECHEF' | 'HACKERRANK' | 'GEEKSFORGEEKS';
 export type VerificationStatus = 'PENDING' | 'VERIFIED' | 'FAILED';
 
 export interface ConnectAccountRequest {
@@ -43,6 +43,17 @@ export interface CodingStatsHistoryDTO {
   recordedAt: string;
 }
 
+export interface DailyChallengeDTO {
+  platform: Platform;
+  platformName: string;
+  title: string;
+  problemUrl: string;
+  difficulty?: string;
+  date?: string;
+  available: boolean;
+  note?: string;
+}
+
 export const codingApi = {
   connectAccount: async (data: ConnectAccountRequest): Promise<ConnectAccountResponse> => {
     const res = await restClient.post('/api/coding/accounts', data);
@@ -71,6 +82,11 @@ export const codingApi = {
 
   getAccounts: async (): Promise<ConnectAccountResponse[]> => {
     const res = await restClient.get('/api/coding/accounts');
+    return res.data;
+  },
+
+  getDailyChallenges: async (): Promise<DailyChallengeDTO[]> => {
+    const res = await restClient.get('/api/coding/daily');
     return res.data;
   },
 

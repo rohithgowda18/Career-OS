@@ -24,7 +24,8 @@ import {
   RefreshCw,
   Award,
   ListTodo,
-  Compass
+  Compass,
+  Code2
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -45,7 +46,7 @@ import InstallAppDialog from "@/components/InstallAppDialog";
 import ThemeSelector from "@/components/ThemeSelector";
 
 interface DashboardLayoutProps {
-  activeTab: "dashboard" | "kanban" | "placements" | "jobs" | "skills" | "routine" | "calendar" | "analytics" | "profile";
+  activeTab: "dashboard" | "kanban" | "placements" | "jobs" | "skills" | "routine" | "calendar" | "analytics" | "profile" | "coding";
   activeTabName?: string;
   children: React.ReactNode;
 }
@@ -245,6 +246,7 @@ export default function DashboardLayout({ activeTab, activeTabName, children }: 
     { id: "kanban", label: "Applications", icon: Layers, path: "/dashboard?view=kanban" },
     { id: "placements", label: "Placements", icon: Briefcase, path: "/placements" },
     { id: "jobs", label: "Jobs", icon: Compass, path: "/jobs" },
+    { id: "coding", label: "Coding Profile", icon: Code2, path: "/coding" },
     { id: "skills", label: "My Skills", icon: Award, path: "/dashboard?view=skills" },
     { id: "routine", label: "Daily Routine", icon: ListTodo, path: "/dashboard?view=routine" },
     { id: "calendar", label: "Calendar", icon: CalendarIcon, path: "/dashboard?view=calendar" },

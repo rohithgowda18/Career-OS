@@ -1,9 +1,11 @@
+server:
+  port: ${AI_SERVICE_PORT:${PORT_AI:8082}}
+
 spring:
   config:
     import: optional:file:.env[.properties], optional:file:../../.env[.properties], optional:file:../backend/.env[.properties]
-
-server:
-  port: ${PORT:8082}
+  application:
+    name: career-os-ai-service
 
 gemini:
   api:

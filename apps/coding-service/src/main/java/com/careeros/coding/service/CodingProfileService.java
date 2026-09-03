@@ -222,6 +222,18 @@ public class CodingProfileService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
+    public List<DailyChallengeDTO> getDailyChallenges() {
+        List<DailyChallengeDTO> challenges = new ArrayList<>();
+        for (Platform platform : Platform.values()) {
+            CodingPlatformClient client = clients.get(platform);
+            if (client != null) {
+                client.getDailyChallenge().ifPresent(challenges::add);
+            }
+        }
+        return challenges;
+    }
+
     public void disconnectAccount(Long userId, Long accountId) {
         CodingAccount account = getAccountOwnedByUser(userId, accountId);
         log.info("Disconnecting {} account for user {} (accountId={})", account.getPlatform(), userId, accountId);

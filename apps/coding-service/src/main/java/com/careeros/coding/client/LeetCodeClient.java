@@ -174,6 +174,50 @@ public class LeetCodeClient implements CodingPlatformClient {
         }
     }
 
+    @Override
+    public Optional<com.careeros.coding.dto.DailyChallengeDTO> getDailyChallenge() {
+        try {
+            String query = """
+                query questionOfToday {
+                  activeDailyCodingChallengeQuestion {
+                    date
+                    link
+                    question {
+                      title
+                      titleSlug
+                      difficulty
+                    }
+                  }
+                }
+                """;
+
+            JsonNode data = executeGraphQL(query, Map.of());
+            if (data == null || data.path("activeDailyCodingChallengeQuestion").isNull()) {
+                return Optional.empty();
+            }
+
+            JsonNode challenge = data.path("activeDailyCodingChallengeQuestion");
+            JsonNode question = challenge.path("question");
+            String link = challenge.path("link").asText("");
+            String problemUrl = link.startsWith("http") ? link : "https://leetcode.com" + link;
+
+            com.careeros.coding.dto.DailyChallengeDTO dto = com.careeros.coding.dto.DailyChallengeDTO.builder()
+                    .platform(Platform.LEETCODE)
+                    .platformName("LeetCode")
+                    .title(question.path("title").asText("Daily Coding Challenge"))
+                    .difficulty(question.path("difficulty").asText("Medium"))
+                    .problemUrl(problemUrl)
+                    .date(java.time.LocalDate.now())
+                    .available(true)
+                    .build();
+
+            return Optional.of(dto);
+        } catch (Exception e) {
+            log.error("Failed to fetch LeetCode daily challenge: {}", e.getMessage());
+            return Optional.empty();
+        }
+    }
+
     private JsonNode executeGraphQL(String query, Map<String, Object> variables) throws Exception {
         Map<String, Object> bodyMap = Map.of(
                 "query", query,
