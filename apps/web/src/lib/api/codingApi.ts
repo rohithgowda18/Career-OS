@@ -33,14 +33,10 @@ export interface CodingStatsResponse {
   verifiedAt?: string;
 }
 
-export interface CodingStatsHistoryDTO {
-  id: number;
+export interface DailyActivityDTO {
+  date: string; // YYYY-MM-DD
   totalSolved: number;
-  easy: number;
-  medium: number;
-  hard: number;
-  rating?: number;
-  recordedAt: string;
+  breakdown: Record<string, number>;
 }
 
 export interface DailyChallengeDTO {
@@ -52,21 +48,6 @@ export interface DailyChallengeDTO {
   date?: string;
   available: boolean;
   note?: string;
-}
-
-export interface DailyActivityDTO {
-  date: string; // YYYY-MM-DD
-  totalSolved: number;
-  breakdown: Record<string, number>;
-}
-
-export interface ActivitySummaryDTO {
-  year: number;
-  totalSolvedInYear: number;
-  totalActiveDays: number;
-  currentStreak: number;
-  maxStreak: number;
-  dailyActivities: DailyActivityDTO[];
 }
 
 export const codingApi = {
@@ -90,8 +71,11 @@ export const codingApi = {
     return res.data;
   },
 
-  getStatsHistory: async (): Promise<CodingStatsHistoryDTO[]> => {
-    const res = await restClient.get('/api/coding/stats/history');
+  getDailyActivities: async (year?: number, platform?: Platform): Promise<DailyActivityDTO[]> => {
+    const params: Record<string, any> = {};
+    if (year) params.year = year;
+    if (platform) params.platform = platform;
+    const res = await restClient.get('/api/coding/activity', { params });
     return res.data;
   },
 
@@ -102,14 +86,6 @@ export const codingApi = {
 
   getDailyChallenges: async (): Promise<DailyChallengeDTO[]> => {
     const res = await restClient.get('/api/coding/daily');
-    return res.data;
-  },
-
-  getActivitySummary: async (year?: number, platform?: Platform): Promise<ActivitySummaryDTO> => {
-    const params: Record<string, any> = {};
-    if (year) params.year = year;
-    if (platform) params.platform = platform;
-    const res = await restClient.get('/api/coding/activity', { params });
     return res.data;
   },
 

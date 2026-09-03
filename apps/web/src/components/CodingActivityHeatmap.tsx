@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { codingApi, Platform, ActivitySummaryDTO, DailyActivityDTO } from "@/lib/api/codingApi";
+import { codingApi, Platform, DailyActivityDTO } from "@/lib/api/codingApi";
 import {
   Select,
   SelectContent,
@@ -13,8 +13,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Badge } from "@/components/ui/badge";
-import { Calendar, Flame, Trophy, Activity, Loader2, Sparkles, Filter } from "lucide-react";
+import { Activity, Flame, Trophy, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface CodingActivityHeatmapProps {
@@ -30,7 +29,6 @@ const PLATFORM_LABELS: Record<string, string> = {
 };
 
 const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 function getIntensityClass(count: number): string {
   if (count === 0) return "bg-bg-elevated/40 border border-white/5";
@@ -47,24 +45,87 @@ export default function CodingActivityHeatmap({ className }: CodingActivityHeatm
 
   const filterPlatformParam = selectedPlatform === "ALL" ? undefined : (selectedPlatform as Platform);
 
-  const { data: activityData, isLoading, isError } = useQuery({
+  const { data: activities = [], isLoading } = useQuery({
     queryKey: ["coding", "activity", selectedYear, selectedPlatform],
-    queryFn: () => codingApi.getActivitySummary(selectedYear, filterPlatformParam),
+    queryFn: () => codingApi.getDailyActivities(selectedYear, filterPlatformParam),
   });
 
   // Map activities by date string "YYYY-MM-DD"
   const activityMap = useMemo(() => {
     const map = new Map<string, DailyActivityDTO>();
-    if (activityData?.dailyActivities) {
-      activityData.dailyActivities.forEach((act) => {
-        map.set(act.date, act);
-      });
-    }
+    activities.forEach((act) => {
+      map.set(act.date, act);
+    });
     return map;
-  }, [activityData]);
+  }, [activities]);
+
+  // Compute total solved in year, active days, and streak stats directly from daily activities
+  const summaryStats = useMemo(() => {
+    let totalSolved = 0;
+    let activeDays = 0;
+
+    const sortedActivities = [...activities].sort((a, b) => a.date.localeCompare(b.date));
+
+    let maxStreak = 0;
+    let runningStreak = 0;
+    let prevDate: Date | null = null;
+
+    sortedActivities.forEach((act) => {
+      totalSolved += act.totalSolved;
+      if (act.totalSolved > 0) {
+        activeDays++;
+
+        const curDate = new Date(act.date);
+        if (prevDate) {
+          const diffDays = Math.round((curDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24));
+          if (diffDays === 1) {
+            runningStreak++;
+          } else {
+            runningStreak = 1;
+          }
+        } else {
+          runningStreak = 1;
+        }
+
+        prevDate = curDate;
+        if (runningStreak > maxStreak) {
+          maxStreak = runningStreak;
+        }
+      }
+    });
+
+    // Calculate current streak
+    let currentStreak = 0;
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, "0")}-${String(yesterday.getDate()).padStart(2, "0")}`;
+
+    let checkDate = activityMap.has(todayStr) ? new Date(now) : (activityMap.has(yesterdayStr) ? new Date(yesterday) : null);
+
+    if (checkDate) {
+      while (true) {
+        const dStr = `${checkDate.getFullYear()}-${String(checkDate.getMonth() + 1).padStart(2, "0")}-${String(checkDate.getDate()).padStart(2, "0")}`;
+        if (activityMap.has(dStr) && (activityMap.get(dStr)?.totalSolved || 0) > 0) {
+          currentStreak++;
+          checkDate.setDate(checkDate.getDate() - 1);
+        } else {
+          break;
+        }
+      }
+    }
+
+    return {
+      totalSolved,
+      activeDays,
+      currentStreak,
+      maxStreak,
+    };
+  }, [activities, activityMap]);
 
   // Generate 52/53 weeks calendar matrix for selected year
-  const { weeks, monthLabels } = useMemo(() => {
+  const { weeks } = useMemo(() => {
     const startDate = new Date(selectedYear, 0, 1);
     const endDate = new Date(selectedYear, 11, 31);
 
@@ -80,11 +141,8 @@ export default function CodingActivityHeatmap({ className }: CodingActivityHeatm
 
     const weeksList: { date: Date; dateStr: string; inYear: boolean }[][] = [];
     let currentWeek: { date: Date; dateStr: string; inYear: boolean }[] = [];
-    const monthsPos: { month: string; weekIndex: number }[] = [];
-    let lastSeenMonth = -1;
 
     const curr = new Date(calendarStart);
-    let weekIdx = 0;
 
     while (curr <= calendarEnd) {
       const year = curr.getFullYear();
@@ -95,11 +153,6 @@ export default function CodingActivityHeatmap({ className }: CodingActivityHeatm
 
       const inYear = year === selectedYear;
 
-      if (inYear && month !== lastSeenMonth && currentWeek.length === 0) {
-        monthsPos.push({ month: MONTH_NAMES[month], weekIndex: weekIdx });
-        lastSeenMonth = month;
-      }
-
       currentWeek.push({
         date: new Date(curr),
         dateStr,
@@ -109,7 +162,6 @@ export default function CodingActivityHeatmap({ className }: CodingActivityHeatm
       if (currentWeek.length === 7) {
         weeksList.push(currentWeek);
         currentWeek = [];
-        weekIdx++;
       }
 
       curr.setDate(curr.getDate() + 1);
@@ -119,7 +171,7 @@ export default function CodingActivityHeatmap({ className }: CodingActivityHeatm
       weeksList.push(currentWeek);
     }
 
-    return { weeks: weeksList, monthLabels: monthsPos };
+    return { weeks: weeksList };
   }, [selectedYear]);
 
   const yearOptions = [currentYear, currentYear - 1, currentYear - 2];
@@ -186,7 +238,7 @@ export default function CodingActivityHeatmap({ className }: CodingActivityHeatm
             Solved in {selectedYear}
           </span>
           <div className="text-xl font-black text-text-main mt-0.5">
-            {(activityData?.totalSolvedInYear || 0).toLocaleString()}
+            {summaryStats.totalSolved.toLocaleString()}
           </div>
         </div>
 
@@ -195,7 +247,7 @@ export default function CodingActivityHeatmap({ className }: CodingActivityHeatm
             Active Days
           </span>
           <div className="text-xl font-black text-primary mt-0.5">
-            {activityData?.totalActiveDays || 0}
+            {summaryStats.activeDays}
           </div>
         </div>
 
@@ -204,7 +256,7 @@ export default function CodingActivityHeatmap({ className }: CodingActivityHeatm
             <Flame className="w-3 h-3 text-warning" /> Current Streak
           </span>
           <div className="text-xl font-black text-warning mt-0.5">
-            {activityData?.currentStreak || 0} <span className="text-xs font-medium text-text-dim">days</span>
+            {summaryStats.currentStreak} <span className="text-xs font-medium text-text-dim">days</span>
           </div>
         </div>
 
@@ -213,7 +265,7 @@ export default function CodingActivityHeatmap({ className }: CodingActivityHeatm
             <Trophy className="w-3 h-3 text-success" /> Max Streak
           </span>
           <div className="text-xl font-black text-success mt-0.5">
-            {activityData?.maxStreak || 0} <span className="text-xs font-medium text-text-dim">days</span>
+            {summaryStats.maxStreak} <span className="text-xs font-medium text-text-dim">days</span>
           </div>
         </div>
       </div>

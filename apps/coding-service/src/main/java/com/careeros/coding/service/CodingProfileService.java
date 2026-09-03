@@ -1,158 +1,149 @@
 package com.careeros.coding.service;
 
 import com.careeros.coding.client.CodingPlatformClient;
+import com.careeros.coding.client.dto.PlatformProfileData;
 import com.careeros.coding.client.dto.PlatformStatsData;
 import com.careeros.coding.dto.*;
-import com.careeros.coding.entity.*;
+import com.careeros.coding.entity.CodingAccount;
+import com.careeros.coding.entity.CodingActivity;
+import com.careeros.coding.entity.CodingStats;
 import com.careeros.coding.model.Platform;
 import com.careeros.coding.model.VerificationStatus;
 import com.careeros.coding.repository.CodingAccountRepository;
-import com.careeros.coding.repository.CodingStatsHistoryRepository;
+import com.careeros.coding.repository.CodingActivityRepository;
 import com.careeros.coding.repository.CodingStatsRepository;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
 @Service
-@Transactional
+@RequiredArgsConstructor
 public class CodingProfileService {
 
     private final CodingAccountRepository accountRepository;
     private final CodingStatsRepository statsRepository;
-    private final CodingStatsHistoryRepository historyRepository;
+    private final CodingActivityRepository activityRepository;
     private final Map<Platform, CodingPlatformClient> clients;
-    private final int expirationMinutes;
-    private final SecureRandom secureRandom = new SecureRandom();
 
-    public CodingProfileService(
-            CodingAccountRepository accountRepository,
-            CodingStatsRepository statsRepository,
-            CodingStatsHistoryRepository historyRepository,
-            List<CodingPlatformClient> clientList,
-            @Value("${app.coding.verification-expiration-minutes:15}") int expirationMinutes) {
-        this.accountRepository = accountRepository;
-        this.statsRepository = statsRepository;
-        this.historyRepository = historyRepository;
-        this.expirationMinutes = expirationMinutes;
-        this.clients = clientList.stream()
-                .collect(Collectors.toMap(CodingPlatformClient::getPlatform, c -> c));
-    }
+    @Value("${app.coding.verification-expiration-minutes:15}")
+    private int verificationExpirationMinutes;
+
+    private static final String CODE_PREFIX = "CAREER-";
+    private static final String CODE_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    private static final int CODE_LENGTH = 6;
+    private final SecureRandom random = new SecureRandom();
 
     public ConnectAccountResponse connectAccount(Long userId, ConnectAccountRequest request) {
         if (userId == null) {
-            throw new IllegalArgumentException("User is not authenticated");
+            throw new IllegalArgumentException("User ID cannot be null");
         }
-        if (request.getUsername() == null || request.getUsername().isBlank()) {
-            throw new IllegalArgumentException("Username is required");
+        if (request.getPlatform() == null || request.getUsername() == null || request.getUsername().isBlank()) {
+            throw new IllegalArgumentException("Platform and username are required");
         }
 
-        String username = request.getUsername().trim();
         Platform platform = request.getPlatform();
+        String username = request.getUsername().trim();
 
         CodingPlatformClient client = getClient(platform);
-        if (client.getProfile(username).isEmpty()) {
-            throw new IllegalArgumentException("LeetCode user '" + username + "' does not exist on the platform.");
+        Optional<PlatformProfileData> profile = client.getProfile(username);
+        if (profile.isEmpty()) {
+            throw new IllegalArgumentException(platform + " user '" + username + "' not found. Verify your username.");
         }
+
+        String verificationCode = generateVerificationCode();
+        LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(verificationExpirationMinutes);
 
         Optional<CodingAccount> existingOpt = accountRepository.findByUserIdAndPlatform(userId, platform);
         CodingAccount account;
-
-        String code = generateVerificationCode();
-        LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(expirationMinutes);
-
         if (existingOpt.isPresent()) {
             account = existingOpt.get();
-            if (account.getVerificationStatus() == VerificationStatus.VERIFIED && account.getUsername().equalsIgnoreCase(username)) {
-                throw new IllegalStateException("Your " + platform + " account ('" + username + "') is already connected and verified.");
-            }
-            // Update existing pending/reconnecting account
             account.setUsername(username);
-            account.setVerificationCode(code);
+            account.setVerificationCode(verificationCode);
             account.setVerificationStatus(VerificationStatus.PENDING);
             account.setVerificationExpiresAt(expiresAt);
-            account.setVerifiedAt(null);
         } else {
             account = CodingAccount.builder()
                     .userId(userId)
                     .platform(platform)
                     .username(username)
-                    .verificationCode(code)
+                    .verificationCode(verificationCode)
                     .verificationStatus(VerificationStatus.PENDING)
                     .verificationExpiresAt(expiresAt)
                     .build();
         }
 
-        account = accountRepository.save(account);
-
-        String instructions = "Please paste the verification code '" + code + "' anywhere inside your LeetCode profile 'aboutMe' (Bio) section, then click 'Verify Ownership'.";
+        CodingAccount saved = accountRepository.save(account);
 
         return ConnectAccountResponse.builder()
-                .accountId(account.getId())
-                .platform(account.getPlatform())
-                .username(account.getUsername())
-                .verificationCode(code)
-                .verificationStatus(account.getVerificationStatus())
-                .verificationExpiresAt(account.getVerificationExpiresAt())
-                .instructions(instructions)
+                .accountId(saved.getId())
+                .platform(saved.getPlatform())
+                .username(saved.getUsername())
+                .verificationCode(saved.getVerificationCode())
+                .verificationStatus(saved.getVerificationStatus())
+                .verificationExpiresAt(saved.getVerificationExpiresAt())
+                .instructions("Add the code '" + verificationCode + "' to your " + platform + " bio/profile. Code expires in "
+                        + verificationExpirationMinutes + " minutes.")
                 .build();
     }
 
+    @Transactional
     public CodingStatsResponse verifyOwnership(Long userId, Long accountId) {
         CodingAccount account = getAccountOwnedByUser(userId, accountId);
-
-        if (account.getVerificationStatus() == VerificationStatus.VERIFIED) {
-            return mapToStatsResponse(account, statsRepository.findByAccountId(account.getId()).orElse(null));
-        }
 
         if (account.getVerificationExpiresAt() != null && account.getVerificationExpiresAt().isBefore(LocalDateTime.now())) {
             account.setVerificationStatus(VerificationStatus.FAILED);
             accountRepository.save(account);
-            throw new IllegalStateException("Verification code has expired. Please reconnect your account to receive a new code.");
+            throw new IllegalStateException("Verification code has expired. Please connect again to generate a new code.");
         }
 
         CodingPlatformClient client = getClient(account.getPlatform());
-        boolean isVerified = client.verifyOwnership(account.getUsername(), account.getVerificationCode());
+        boolean verified = client.verifyOwnership(account.getUsername(), account.getVerificationCode());
 
-        if (!isVerified) {
-            throw new IllegalArgumentException("Verification code was not found in @" + account.getUsername() + "'s LeetCode profile bio (aboutMe). Please update your bio on LeetCode and try again.");
+        if (!verified) {
+            throw new IllegalArgumentException("Verification code '" + account.getVerificationCode()
+                    + "' was not found in your " + account.getPlatform() + " bio/profile.");
         }
 
         account.setVerificationStatus(VerificationStatus.VERIFIED);
         account.setVerifiedAt(LocalDateTime.now());
-        account.setVerificationCode(null); // Clear secret once verified
         accountRepository.save(account);
 
         log.info("Successfully verified {} account for user {} (@{})", account.getPlatform(), userId, account.getUsername());
 
-        // Perform initial stats sync immediately
-        return syncStats(userId, accountId);
+        return syncStatsInternal(account, client);
     }
 
+    @Transactional
     public CodingStatsResponse syncStats(Long userId, Long accountId) {
         CodingAccount account = getAccountOwnedByUser(userId, accountId);
 
         if (account.getVerificationStatus() != VerificationStatus.VERIFIED) {
-            throw new IllegalStateException("Cannot sync stats for an unverified account. Please complete ownership verification first.");
+            throw new IllegalStateException("Cannot sync an unverified coding account.");
         }
 
         CodingPlatformClient client = getClient(account.getPlatform());
-        Optional<PlatformStatsData> statsDataOpt = client.getStats(account.getUsername());
+        return syncStatsInternal(account, client);
+    }
 
+    private CodingStatsResponse syncStatsInternal(CodingAccount account, CodingPlatformClient client) {
+        Optional<PlatformStatsData> statsDataOpt = client.getStats(account.getUsername());
         if (statsDataOpt.isEmpty()) {
-            throw new IllegalStateException("Failed to retrieve current stats from " + account.getPlatform() + " for user @" + account.getUsername());
+            throw new IllegalStateException("Could not retrieve stats for " + account.getPlatform() + " user '" + account.getUsername() + "'");
         }
 
         PlatformStatsData data = statsDataOpt.get();
 
         CodingStats stats = statsRepository.findByAccountId(account.getId())
-                .orElseGet(() -> CodingStats.builder().account(account).build());
+                .orElse(CodingStats.builder().account(account).build());
 
         stats.setTotalSolved(data.getTotalSolved());
         stats.setEasySolved(data.getEasySolved());
@@ -160,52 +151,82 @@ public class CodingProfileService {
         stats.setHardSolved(data.getHardSolved());
         stats.setRating(data.getRating());
         stats.setCurrentStreak(data.getCurrentStreak());
-        stats = statsRepository.save(stats);
+        stats.setSyncedAt(LocalDateTime.now());
 
-        // Record history snapshot
-        CodingStatsHistory history = CodingStatsHistory.builder()
-                .account(account)
-                .totalSolved(data.getTotalSolved())
-                .easySolved(data.getEasySolved())
-                .mediumSolved(data.getMediumSolved())
-                .hardSolved(data.getHardSolved())
-                .rating(data.getRating())
-                .build();
-        historyRepository.save(history);
+        CodingStats savedStats = statsRepository.save(stats);
+
+        // Fetch and persist daily activity into coding_activity
+        try {
+            int currentYear = LocalDate.now().getYear();
+            Map<LocalDate, Integer> dailyActivity = client.getDailyActivity(account.getUsername(), currentYear);
+            for (Map.Entry<LocalDate, Integer> entry : dailyActivity.entrySet()) {
+                if (entry.getValue() > 0) {
+                    CodingActivity activity = activityRepository.findByAccountIdAndActivityDate(account.getId(), entry.getKey())
+                            .orElse(CodingActivity.builder()
+                                    .account(account)
+                                    .activityDate(entry.getKey())
+                                    .build());
+                    activity.setProblemsSolved(entry.getValue());
+                    activityRepository.save(activity);
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Failed to sync calendar activity for account {}: {}", account.getId(), e.getMessage());
+        }
 
         log.info("Synced stats for user {} (@{}): total={}, easy={}, medium={}, hard={}",
-                userId, account.getUsername(), data.getTotalSolved(), data.getEasySolved(), data.getMediumSolved(), data.getHardSolved());
+                account.getUserId(), account.getUsername(), data.getTotalSolved(), data.getEasySolved(), data.getMediumSolved(), data.getHardSolved());
 
-        return mapToStatsResponse(account, stats);
+        return mapToResponse(account, savedStats);
     }
 
     @Transactional(readOnly = true)
     public Map<String, CodingStatsResponse> getCurrentStats(Long userId) {
         List<CodingAccount> accounts = accountRepository.findByUserId(userId);
-        Map<String, CodingStatsResponse> result = new LinkedHashMap<>();
+        Map<String, CodingStatsResponse> result = new HashMap<>();
 
         for (CodingAccount acc : accounts) {
-            CodingStats stats = statsRepository.findByAccountId(acc.getId()).orElse(null);
-            result.put(acc.getPlatform().name().toLowerCase(), mapToStatsResponse(acc, stats));
+            statsRepository.findByAccountId(acc.getId()).ifPresent(stats ->
+                    result.put(acc.getPlatform().name().toLowerCase(), mapToResponse(acc, stats))
+            );
         }
 
         return result;
     }
 
     @Transactional(readOnly = true)
-    public List<CodingStatsHistoryDTO> getStatsHistory(Long userId) {
-        List<CodingStatsHistory> historyList = historyRepository.findByAccountUserIdOrderByRecordedAtAsc(userId);
-        return historyList.stream()
-                .map(h -> CodingStatsHistoryDTO.builder()
-                        .id(h.getId())
-                        .totalSolved(h.getTotalSolved())
-                        .easy(h.getEasySolved())
-                        .medium(h.getMediumSolved())
-                        .hard(h.getHardSolved())
-                        .rating(h.getRating())
-                        .recordedAt(h.getRecordedAt())
-                        .build())
-                .collect(Collectors.toList());
+    public List<DailyActivityDTO> getDailyActivities(Long userId, Integer yearParam, Platform filterPlatform) {
+        int year = (yearParam != null && yearParam > 2000) ? yearParam : LocalDate.now().getYear();
+        LocalDate startDate = LocalDate.of(year, 1, 1);
+        LocalDate endDate = LocalDate.of(year, 12, 31);
+
+        List<CodingActivity> activities = activityRepository.findByUserIdAndDateRange(userId, startDate, endDate);
+
+        Map<LocalDate, Map<Platform, Integer>> dailyMap = new TreeMap<>();
+
+        for (CodingActivity act : activities) {
+            CodingAccount acc = act.getAccount();
+            if (acc.getVerificationStatus() != VerificationStatus.VERIFIED) {
+                continue;
+            }
+            if (filterPlatform != null && acc.getPlatform() != filterPlatform) {
+                continue;
+            }
+            dailyMap.computeIfAbsent(act.getActivityDate(), d -> new EnumMap<>(Platform.class))
+                    .put(acc.getPlatform(), act.getProblemsSolved());
+        }
+
+        List<DailyActivityDTO> result = new ArrayList<>();
+        for (Map.Entry<LocalDate, Map<Platform, Integer>> entry : dailyMap.entrySet()) {
+            int total = entry.getValue().values().stream().mapToInt(Integer::intValue).sum();
+            result.add(DailyActivityDTO.builder()
+                    .date(entry.getKey())
+                    .totalSolved(total)
+                    .breakdown(entry.getValue())
+                    .build());
+        }
+
+        return result;
     }
 
     @Transactional(readOnly = true)
@@ -215,8 +236,8 @@ public class CodingProfileService {
                         .accountId(acc.getId())
                         .platform(acc.getPlatform())
                         .username(acc.getUsername())
-                        .verificationCode(acc.getVerificationCode())
                         .verificationStatus(acc.getVerificationStatus())
+                        .verificationCode(acc.getVerificationStatus() == VerificationStatus.PENDING ? acc.getVerificationCode() : null)
                         .verificationExpiresAt(acc.getVerificationExpiresAt())
                         .build())
                 .collect(Collectors.toList());
@@ -234,93 +255,12 @@ public class CodingProfileService {
         return challenges;
     }
 
-    @Transactional(readOnly = true)
-    public ActivitySummaryDTO getActivitySummary(Long userId, Integer yearParam, Platform filterPlatform) {
-        int year = (yearParam != null && yearParam > 2000) ? yearParam : java.time.LocalDate.now().getYear();
-        List<CodingAccount> accounts = accountRepository.findByUserId(userId);
-
-        Map<java.time.LocalDate, Map<Platform, Integer>> dailyMap = new java.util.TreeMap<>();
-
-        for (CodingAccount acc : accounts) {
-            if (acc.getVerificationStatus() != VerificationStatus.VERIFIED) {
-                continue;
-            }
-            if (filterPlatform != null && acc.getPlatform() != filterPlatform) {
-                continue;
-            }
-
-            CodingPlatformClient client = clients.get(acc.getPlatform());
-            if (client != null) {
-                Map<java.time.LocalDate, Integer> clientActivity = client.getDailyActivity(acc.getUsername(), year);
-                clientActivity.forEach((date, count) -> {
-                    if (count > 0 && (date.getYear() == year)) {
-                        dailyMap.computeIfAbsent(date, d -> new java.util.EnumMap<>(Platform.class))
-                                .put(acc.getPlatform(), count);
-                    }
-                });
-            }
-        }
-
-        List<DailyActivityDTO> activities = new ArrayList<>();
-        int totalSolvedInYear = 0;
-        int activeDays = 0;
-
-        for (Map.Entry<java.time.LocalDate, Map<Platform, Integer>> entry : dailyMap.entrySet()) {
-            int dayTotal = entry.getValue().values().stream().mapToInt(Integer::intValue).sum();
-            totalSolvedInYear += dayTotal;
-            if (dayTotal > 0) {
-                activeDays++;
-            }
-            activities.add(DailyActivityDTO.builder()
-                    .date(entry.getKey())
-                    .totalSolved(dayTotal)
-                    .breakdown(entry.getValue())
-                    .build());
-        }
-
-        // Calculate streaks
-        int maxStreak = 0;
-        int runningStreak = 0;
-        java.time.LocalDate prevDate = null;
-
-        for (DailyActivityDTO act : activities) {
-            if (prevDate != null && act.getDate().equals(prevDate.plusDays(1))) {
-                runningStreak++;
-            } else {
-                runningStreak = 1;
-            }
-            prevDate = act.getDate();
-            if (runningStreak > maxStreak) {
-                maxStreak = runningStreak;
-            }
-        }
-
-        int currentStreak = 0;
-        java.time.LocalDate today = java.time.LocalDate.now();
-        java.time.LocalDate checkDate = today;
-        if (!dailyMap.containsKey(today)) {
-            checkDate = today.minusDays(1);
-        }
-        while (dailyMap.containsKey(checkDate)) {
-            currentStreak++;
-            checkDate = checkDate.minusDays(1);
-        }
-
-        return ActivitySummaryDTO.builder()
-                .year(year)
-                .totalSolvedInYear(totalSolvedInYear)
-                .totalActiveDays(activeDays)
-                .currentStreak(currentStreak)
-                .maxStreak(maxStreak)
-                .dailyActivities(activities)
-                .build();
-    }
-
+    @Transactional
     public void disconnectAccount(Long userId, Long accountId) {
         CodingAccount account = getAccountOwnedByUser(userId, accountId);
         log.info("Disconnecting {} account for user {} (accountId={})", account.getPlatform(), userId, accountId);
 
-        historyRepository.deleteByAccountId(accountId);
+        activityRepository.deleteByAccountId(accountId);
         statsRepository.deleteByAccountId(accountId);
         accountRepository.delete(account);
     }
@@ -341,25 +281,28 @@ public class CodingProfileService {
         return client;
     }
 
-    private String generateVerificationCode() {
-        int randomInt = secureRandom.nextInt(0xFFFFFF);
-        return String.format("CAREER-%06X", randomInt);
-    }
-
-    private CodingStatsResponse mapToStatsResponse(CodingAccount account, CodingStats stats) {
+    private CodingStatsResponse mapToResponse(CodingAccount account, CodingStats stats) {
         return CodingStatsResponse.builder()
                 .accountId(account.getId())
                 .platform(account.getPlatform())
                 .username(account.getUsername())
                 .verificationStatus(account.getVerificationStatus())
-                .totalSolved(stats != null ? stats.getTotalSolved() : 0)
-                .easy(stats != null ? stats.getEasySolved() : 0)
-                .medium(stats != null ? stats.getMediumSolved() : 0)
-                .hard(stats != null ? stats.getHardSolved() : 0)
-                .rating(stats != null ? stats.getRating() : null)
-                .currentStreak(stats != null ? stats.getCurrentStreak() : null)
-                .syncedAt(stats != null ? stats.getSyncedAt() : null)
+                .totalSolved(stats.getTotalSolved())
+                .easy(stats.getEasySolved())
+                .medium(stats.getMediumSolved())
+                .hard(stats.getHardSolved())
+                .rating(stats.getRating())
+                .currentStreak(stats.getCurrentStreak())
+                .syncedAt(stats.getSyncedAt())
                 .verifiedAt(account.getVerifiedAt())
                 .build();
+    }
+
+    private String generateVerificationCode() {
+        StringBuilder sb = new StringBuilder(CODE_PREFIX);
+        for (int i = 0; i < CODE_LENGTH; i++) {
+            sb.append(CODE_CHARS.charAt(random.nextInt(CODE_CHARS.length())));
+        }
+        return sb.toString();
     }
 }

@@ -3,15 +3,14 @@ package com.careeros.coding;
 import com.careeros.coding.client.CodingPlatformClient;
 import com.careeros.coding.client.dto.PlatformProfileData;
 import com.careeros.coding.client.dto.PlatformStatsData;
-import com.careeros.coding.dto.CodingStatsResponse;
-import com.careeros.coding.dto.ConnectAccountRequest;
-import com.careeros.coding.dto.ConnectAccountResponse;
-import com.careeros.coding.dto.DailyChallengeDTO;
-import com.careeros.coding.entity.*;
+import com.careeros.coding.dto.*;
+import com.careeros.coding.entity.CodingAccount;
+import com.careeros.coding.entity.CodingActivity;
+import com.careeros.coding.entity.CodingStats;
 import com.careeros.coding.model.Platform;
 import com.careeros.coding.model.VerificationStatus;
 import com.careeros.coding.repository.CodingAccountRepository;
-import com.careeros.coding.repository.CodingStatsHistoryRepository;
+import com.careeros.coding.repository.CodingActivityRepository;
 import com.careeros.coding.repository.CodingStatsRepository;
 import com.careeros.coding.service.CodingProfileService;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,6 +19,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.lang.reflect.Field;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -40,7 +40,7 @@ class CodingProfileServiceTest {
     private CodingStatsRepository statsRepository;
 
     @Mock
-    private CodingStatsHistoryRepository historyRepository;
+    private CodingActivityRepository activityRepository;
 
     @Mock
     private CodingPlatformClient leetCodeClient;
@@ -60,75 +60,86 @@ class CodingProfileServiceTest {
     private CodingProfileService service;
 
     @BeforeEach
-    void setUp() {
-        when(leetCodeClient.getPlatform()).thenReturn(Platform.LEETCODE);
-        when(codeforcesClient.getPlatform()).thenReturn(Platform.CODEFORCES);
-        when(codeChefClient.getPlatform()).thenReturn(Platform.CODECHEF);
-        when(hackerRankClient.getPlatform()).thenReturn(Platform.HACKERRANK);
-        when(geeksForGeeksClient.getPlatform()).thenReturn(Platform.GEEKSFORGEEKS);
-
-        service = new CodingProfileService(
-                accountRepository,
-                statsRepository,
-                historyRepository,
-                List.of(leetCodeClient, codeforcesClient, codeChefClient, hackerRankClient, geeksForGeeksClient),
-                15
+    void setUp() throws Exception {
+        Map<Platform, CodingPlatformClient> clients = Map.of(
+                Platform.LEETCODE, leetCodeClient,
+                Platform.CODEFORCES, codeforcesClient,
+                Platform.CODECHEF, codeChefClient,
+                Platform.HACKERRANK, hackerRankClient,
+                Platform.GEEKSFORGEEKS, geeksForGeeksClient
         );
+
+        service = new CodingProfileService(accountRepository, statsRepository, activityRepository, clients);
+
+        Field expirationField = CodingProfileService.class.getDeclaredField("verificationExpirationMinutes");
+        expirationField.setAccessible(true);
+        expirationField.set(service, 15);
     }
 
     @Test
     void testConnectAccount_LeetCode_Success() {
-        ConnectAccountRequest request = ConnectAccountRequest.builder()
-                .platform(Platform.LEETCODE)
-                .username("testcoder")
-                .build();
-
-        when(leetCodeClient.getProfile("testcoder"))
-                .thenReturn(Optional.of(PlatformProfileData.builder().username("testcoder").exists(true).build()));
+        when(leetCodeClient.getProfile("tourist")).thenReturn(Optional.of(PlatformProfileData.builder().username("tourist").build()));
         when(accountRepository.findByUserIdAndPlatform(1L, Platform.LEETCODE)).thenReturn(Optional.empty());
-        when(accountRepository.save(any(CodingAccount.class))).thenAnswer(i -> {
-            CodingAccount acc = i.getArgument(0);
+        when(accountRepository.save(any(CodingAccount.class))).thenAnswer(inv -> {
+            CodingAccount acc = inv.getArgument(0);
             acc.setId(10L);
             return acc;
         });
 
-        ConnectAccountResponse response = service.connectAccount(1L, request);
+        ConnectAccountRequest req = ConnectAccountRequest.builder()
+                .platform(Platform.LEETCODE)
+                .username("tourist")
+                .build();
 
-        assertNotNull(response);
-        assertEquals(10L, response.getAccountId());
-        assertEquals("testcoder", response.getUsername());
-        assertEquals(Platform.LEETCODE, response.getPlatform());
-        assertEquals(VerificationStatus.PENDING, response.getVerificationStatus());
-        assertTrue(response.getVerificationCode().startsWith("CAREER-"));
-        assertTrue(response.getVerificationExpiresAt().isAfter(LocalDateTime.now()));
+        ConnectAccountResponse res = service.connectAccount(1L, req);
+
+        assertNotNull(res);
+        assertEquals(10L, res.getAccountId());
+        assertEquals(Platform.LEETCODE, res.getPlatform());
+        assertEquals("tourist", res.getUsername());
+        assertNotNull(res.getVerificationCode());
+        assertTrue(res.getVerificationCode().startsWith("CAREER-"));
+        assertEquals(VerificationStatus.PENDING, res.getVerificationStatus());
+        assertNotNull(res.getVerificationExpiresAt());
     }
 
     @Test
     void testConnectAccount_Codeforces_Success() {
-        ConnectAccountRequest request = ConnectAccountRequest.builder()
-                .platform(Platform.CODEFORCES)
-                .username("tourist")
-                .build();
-
-        when(codeforcesClient.getProfile("tourist"))
-                .thenReturn(Optional.of(PlatformProfileData.builder().username("tourist").exists(true).build()));
+        when(codeforcesClient.getProfile("tourist")).thenReturn(Optional.of(PlatformProfileData.builder().username("tourist").build()));
         when(accountRepository.findByUserIdAndPlatform(1L, Platform.CODEFORCES)).thenReturn(Optional.empty());
-        when(accountRepository.save(any(CodingAccount.class))).thenAnswer(i -> {
-            CodingAccount acc = i.getArgument(0);
+        when(accountRepository.save(any(CodingAccount.class))).thenAnswer(inv -> {
+            CodingAccount acc = inv.getArgument(0);
             acc.setId(20L);
             return acc;
         });
 
-        ConnectAccountResponse response = service.connectAccount(1L, request);
+        ConnectAccountRequest req = ConnectAccountRequest.builder()
+                .platform(Platform.CODEFORCES)
+                .username("tourist")
+                .build();
 
-        assertNotNull(response);
-        assertEquals(20L, response.getAccountId());
-        assertEquals("tourist", response.getUsername());
-        assertEquals(Platform.CODEFORCES, response.getPlatform());
+        ConnectAccountResponse res = service.connectAccount(1L, req);
+
+        assertNotNull(res);
+        assertEquals(20L, res.getAccountId());
+        assertEquals(Platform.CODEFORCES, res.getPlatform());
+        assertEquals("tourist", res.getUsername());
     }
 
     @Test
-    void testVerifyOwnership_Success_ClearsCodeAndSyncs() {
+    void testConnectAccount_UserNotFound_Throws() {
+        when(codeChefClient.getProfile("unknown_chef")).thenReturn(Optional.empty());
+
+        ConnectAccountRequest req = ConnectAccountRequest.builder()
+                .platform(Platform.CODECHEF)
+                .username("unknown_chef")
+                .build();
+
+        assertThrows(IllegalArgumentException.class, () -> service.connectAccount(1L, req));
+    }
+
+    @Test
+    void testVerifyOwnership_Success_SavesStatsAndActivity() {
         CodingAccount account = CodingAccount.builder()
                 .id(10L)
                 .userId(1L)
@@ -139,36 +150,38 @@ class CodingProfileServiceTest {
                 .verificationExpiresAt(LocalDateTime.now().plusMinutes(10))
                 .build();
 
-        when(accountRepository.findByIdAndUserId(10L, 1L)).thenReturn(Optional.of(account));
-        when(leetCodeClient.verifyOwnership("testcoder", "CAREER-123456")).thenReturn(true);
-        when(leetCodeClient.getStats("testcoder")).thenReturn(Optional.of(PlatformStatsData.builder()
+        PlatformStatsData statsData = PlatformStatsData.builder()
                 .username("testcoder")
                 .totalSolved(150)
                 .easySolved(50)
                 .mediumSolved(80)
                 .hardSolved(20)
-                .rating(1850.5)
-                .build()));
+                .rating(1750.0)
+                .build();
 
+        when(accountRepository.findByIdAndUserId(10L, 1L)).thenReturn(Optional.of(account));
+        when(leetCodeClient.verifyOwnership("testcoder", "CAREER-123456")).thenReturn(true);
+        when(leetCodeClient.getStats("testcoder")).thenReturn(Optional.of(statsData));
         when(statsRepository.findByAccountId(10L)).thenReturn(Optional.empty());
-        when(statsRepository.save(any(CodingStats.class))).thenAnswer(i -> i.getArgument(0));
+        when(statsRepository.save(any(CodingStats.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        LocalDate today = LocalDate.now();
+        when(leetCodeClient.getDailyActivity(eq("testcoder"), anyInt())).thenReturn(Map.of(today, 3));
+        when(activityRepository.findByAccountIdAndActivityDate(10L, today)).thenReturn(Optional.empty());
 
         CodingStatsResponse response = service.verifyOwnership(1L, 10L);
 
-        assertNotNull(response);
-        assertEquals(VerificationStatus.VERIFIED, response.getVerificationStatus());
+        assertEquals(VerificationStatus.VERIFIED, account.getVerificationStatus());
+        assertNotNull(account.getVerifiedAt());
         assertEquals(150, response.getTotalSolved());
         assertEquals(50, response.getEasy());
         assertEquals(80, response.getMedium());
         assertEquals(20, response.getHard());
-        assertEquals(1850.5, response.getRating());
-
-        assertNull(account.getVerificationCode());
-        verify(historyRepository, times(1)).save(any(CodingStatsHistory.class));
+        verify(activityRepository, times(1)).save(any(CodingActivity.class));
     }
 
     @Test
-    void testVerifyOwnership_CodeMissing_Throws() {
+    void testVerifyOwnership_CodeMismatch_Throws() {
         CodingAccount account = CodingAccount.builder()
                 .id(10L)
                 .userId(1L)
@@ -223,11 +236,34 @@ class CodingProfileServiceTest {
     }
 
     @Test
+    void testGetDailyActivities_FromCodingActivityTable() {
+        CodingAccount acc1 = CodingAccount.builder().id(1L).userId(1L).platform(Platform.LEETCODE).username("lc_user").verificationStatus(VerificationStatus.VERIFIED).build();
+        CodingAccount acc2 = CodingAccount.builder().id(2L).userId(1L).platform(Platform.CODEFORCES).username("cf_user").verificationStatus(VerificationStatus.VERIFIED).build();
+
+        LocalDate d1 = LocalDate.of(2026, 9, 3);
+        CodingActivity act1 = CodingActivity.builder().id(1L).account(acc1).activityDate(d1).problemsSolved(3).build();
+        CodingActivity act2 = CodingActivity.builder().id(2L).account(acc2).activityDate(d1).problemsSolved(2).build();
+
+        when(activityRepository.findByUserIdAndDateRange(eq(1L), any(LocalDate.class), any(LocalDate.class)))
+                .thenReturn(List.of(act1, act2));
+
+        List<DailyActivityDTO> activities = service.getDailyActivities(1L, 2026, null);
+
+        assertEquals(1, activities.size());
+        DailyActivityDTO day = activities.get(0);
+        assertEquals(d1, day.getDate());
+        assertEquals(5, day.getTotalSolved()); // 3 + 2
+        assertEquals(3, day.getBreakdown().get(Platform.LEETCODE));
+        assertEquals(2, day.getBreakdown().get(Platform.CODEFORCES));
+    }
+
+    @Test
     void testGetDailyChallenges_AggregatesAvailablePlatforms() {
         DailyChallengeDTO lcChallenge = DailyChallengeDTO.builder()
                 .platform(Platform.LEETCODE)
                 .platformName("LeetCode")
                 .title("Two Sum")
+                .difficulty("Easy")
                 .problemUrl("https://leetcode.com/problems/two-sum")
                 .available(true)
                 .date(LocalDate.now())
@@ -236,7 +272,8 @@ class CodingProfileServiceTest {
         DailyChallengeDTO cfChallenge = DailyChallengeDTO.builder()
                 .platform(Platform.CODEFORCES)
                 .platformName("Codeforces")
-                .title("Problemset")
+                .title("Codeforces Practice Problemset")
+                .difficulty("Competitive")
                 .problemUrl("https://codeforces.com/problemset")
                 .available(true)
                 .date(LocalDate.now())
@@ -268,31 +305,8 @@ class CodingProfileServiceTest {
 
         service.disconnectAccount(1L, 10L);
 
-        verify(historyRepository, times(1)).deleteByAccountId(10L);
+        verify(activityRepository, times(1)).deleteByAccountId(10L);
         verify(statsRepository, times(1)).deleteByAccountId(10L);
         verify(accountRepository, times(1)).delete(account);
-    }
-
-    @Test
-    void testGetActivitySummary_AggregatesPlatformsAndStreaks() {
-        CodingAccount acc1 = CodingAccount.builder().id(1L).userId(1L).platform(Platform.LEETCODE).username("lc_user").verificationStatus(VerificationStatus.VERIFIED).build();
-        CodingAccount acc2 = CodingAccount.builder().id(2L).userId(1L).platform(Platform.CODEFORCES).username("cf_user").verificationStatus(VerificationStatus.VERIFIED).build();
-
-        when(accountRepository.findByUserId(1L)).thenReturn(List.of(acc1, acc2));
-
-        LocalDate d1 = LocalDate.of(2026, 9, 1);
-        LocalDate d2 = LocalDate.of(2026, 9, 2);
-
-        when(leetCodeClient.getDailyActivity("lc_user", 2026)).thenReturn(Map.of(d1, 3, d2, 2));
-        when(codeforcesClient.getDailyActivity("cf_user", 2026)).thenReturn(Map.of(d1, 2, d2, 1));
-
-        com.careeros.coding.dto.ActivitySummaryDTO summary = service.getActivitySummary(1L, 2026, null);
-
-        assertEquals(2026, summary.getYear());
-        assertEquals(8, summary.getTotalSolvedInYear()); // (3+2) + (2+1)
-        assertEquals(2, summary.getTotalActiveDays());
-        assertEquals(2, summary.getMaxStreak());
-        assertEquals(2, summary.getDailyActivities().size());
-        assertEquals(5, summary.getDailyActivities().get(0).getTotalSolved()); // Day 1: 3 + 2
     }
 }

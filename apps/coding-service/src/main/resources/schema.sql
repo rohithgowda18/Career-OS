@@ -29,15 +29,13 @@ CREATE TABLE IF NOT EXISTS coding_stats (
 
 CREATE INDEX IF NOT EXISTS idx_coding_stats_account_id ON coding_stats(coding_account_id);
 
-CREATE TABLE IF NOT EXISTS coding_stats_history (
+CREATE TABLE IF NOT EXISTS coding_activity (
     id BIGSERIAL PRIMARY KEY,
     coding_account_id BIGINT NOT NULL REFERENCES coding_accounts(id) ON DELETE CASCADE,
-    total_solved INT NOT NULL DEFAULT 0,
-    easy_solved INT NOT NULL DEFAULT 0,
-    medium_solved INT NOT NULL DEFAULT 0,
-    hard_solved INT NOT NULL DEFAULT 0,
-    rating DOUBLE PRECISION,
-    recorded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+    activity_date DATE NOT NULL,
+    problems_solved INT NOT NULL DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CONSTRAINT uq_account_activity_date UNIQUE (coding_account_id, activity_date)
 );
 
-CREATE INDEX IF NOT EXISTS idx_coding_stats_history_account_id ON coding_stats_history(coding_account_id);
+CREATE INDEX IF NOT EXISTS idx_coding_activity_account_date ON coding_activity(coding_account_id, activity_date);

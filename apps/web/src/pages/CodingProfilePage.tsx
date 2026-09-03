@@ -4,7 +4,7 @@ import { codingApi, CodingStatsResponse, ConnectAccountResponse, Platform, Daily
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -13,12 +13,6 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import ConnectCodingModal from "@/components/ConnectCodingModal";
 import CodingActivityHeatmap from "@/components/CodingActivityHeatmap";
 import { toast } from "sonner";
@@ -34,10 +28,6 @@ import {
   Plus,
   Loader2,
   Award,
-  Calendar,
-  AlertCircle,
-  MoreVertical,
-  Flame,
   Globe,
   Sparkles,
   ArrowUpRight
@@ -51,7 +41,6 @@ import {
   Tooltip,
   CartesianGrid
 } from "recharts";
-import { cn } from "@/lib/utils";
 
 const ALL_PLATFORMS: { key: Platform; name: string; url: string; color: string }[] = [
   { key: "LEETCODE", name: "LeetCode", url: "https://leetcode.com/u/", color: "text-amber-500" },
@@ -82,14 +71,14 @@ export default function CodingProfilePage() {
   const [accountToDisconnect, setAccountToDisconnect] = useState<{ id: number; name: string } | null>(null);
 
   // Queries
-  const { data: statsMap, isLoading: isLoadingStats, isError: isErrorStats, refetch: refetchStats } = useQuery({
+  const { data: statsMap, isLoading: isLoadingStats } = useQuery({
     queryKey: ["coding", "stats"],
     queryFn: codingApi.getCurrentStats,
   });
 
-  const { data: historyData, isLoading: isLoadingHistory, isError: isErrorHistory, refetch: refetchHistory } = useQuery({
-    queryKey: ["coding", "history"],
-    queryFn: codingApi.getStatsHistory,
+  const { data: activitiesData = [], isLoading: isLoadingHistory } = useQuery({
+    queryKey: ["coding", "activity", "cumulative"],
+    queryFn: () => codingApi.getDailyActivities(),
   });
 
   const { data: accounts } = useQuery({
@@ -97,7 +86,7 @@ export default function CodingProfilePage() {
     queryFn: codingApi.getAccounts,
   });
 
-  const { data: dailyChallenges, isLoading: isLoadingDaily } = useQuery({
+  const { data: dailyChallenges } = useQuery({
     queryKey: ["coding", "daily"],
     queryFn: codingApi.getDailyChallenges,
   });
@@ -149,19 +138,21 @@ export default function CodingProfilePage() {
     return { totalSolved: sum, breakdown };
   }, [statsMap]);
 
+  // Derive Progress Over Time directly from CodingActivity (cumulative problems solved)
   const formattedHistory = useMemo(() => {
-    return (historyData || []).map((item) => {
-      const d = new Date(item.recordedAt);
+    let runningTotal = 0;
+    const sorted = [...activitiesData].sort((a, b) => a.date.localeCompare(b.date));
+    return sorted.map((item) => {
+      runningTotal += item.totalSolved;
+      const d = new Date(item.date);
       return {
         date: d.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
         fullDate: d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
-        solved: item.totalSolved,
-        easy: item.easy,
-        medium: item.medium,
-        hard: item.hard,
+        solved: runningTotal,
+        daySolved: item.totalSolved,
       };
     });
-  }, [historyData]);
+  }, [activitiesData]);
 
   const handleOpenConnect = (plat: Platform = "LEETCODE") => {
     setSelectedPlatformToConnect(plat);
@@ -175,7 +166,7 @@ export default function CodingProfilePage() {
   };
 
   return (
-    <DashboardLayout activeTab="skills" activeTabName="Coding Profile">
+    <DashboardLayout activeTab="coding" activeTabName="Coding Profile">
       <div className="max-w-6xl mx-auto space-y-6 pb-12">
         {/* Top Header Banner */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-bg-card border border-border/80 rounded-2xl p-6 shadow-sm">
@@ -255,7 +246,7 @@ export default function CodingProfilePage() {
         {/* Unified Coding Activity Heatmap */}
         <CodingActivityHeatmap />
 
-        {/* 6. Platform Grid Section */}
+        {/* Platform Grid Section */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-bold text-text-main flex items-center gap-2">
@@ -426,7 +417,7 @@ export default function CodingProfilePage() {
           </div>
         </div>
 
-        {/* 8. Daily Coding Challenges Section */}
+        {/* Today's Coding Challenges Section */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-bold text-text-main flex items-center gap-2">
@@ -470,14 +461,14 @@ export default function CodingProfilePage() {
           </div>
         </div>
 
-        {/* 10. Historical Analytics Section */}
+        {/* Cumulative Problems Solved Over Time (derived from CodingActivity) */}
         <div className="space-y-3 pt-2">
           <div className="flex items-center justify-between text-xs">
             <span className="font-semibold text-text-main flex items-center gap-1.5">
               <TrendingUp className="w-4 h-4 text-primary" />
               Problems Solved Over Time
             </span>
-            <span className="text-[11px] text-text-dim">Based on recorded sync history</span>
+            <span className="text-[11px] text-text-dim">Derived from cumulative daily solves</span>
           </div>
 
           {isLoadingHistory && (
@@ -501,14 +492,14 @@ export default function CodingProfilePage() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/40 pb-3">
                 <div className="flex items-center gap-2">
                   <div className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse" />
-                  <span className="text-xs font-bold text-text-main">Initial Snapshot Recorded</span>
+                  <span className="text-xs font-bold text-text-main">Initial Activity Recorded</span>
                 </div>
                 <span className="text-xs font-mono font-bold text-primary px-2.5 py-0.5 rounded-md bg-primary/10 border border-primary/20">
                   {formattedHistory[0].solved} Solved • {formattedHistory[0].fullDate}
                 </span>
               </div>
               <p className="text-[11px] text-text-dim leading-relaxed">
-                Your first progress snapshot is recorded. Sync again after solving more problems to see your progress over time.
+                Your first progress milestone is recorded. Sync again after solving more problems to see your progression line over time.
               </p>
             </div>
           )}
@@ -537,7 +528,7 @@ export default function CodingProfilePage() {
                   <Area
                     type="monotone"
                     dataKey="solved"
-                    name="Total Solved"
+                    name="Cumulative Solved"
                     stroke="var(--color-primary, #6366f1)"
                     strokeWidth={2}
                     fillOpacity={1}
@@ -574,7 +565,7 @@ export default function CodingProfilePage() {
               </DialogTitle>
             </div>
             <DialogDescription className="text-xs text-text-dim leading-relaxed">
-              Disconnecting will remove your connected {accountToDisconnect?.name} handle, saved statistics, and historical progress snapshots. You can reconnect anytime.
+              Disconnecting will remove your connected {accountToDisconnect?.name} handle, saved statistics, and activity entries. You can reconnect anytime.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 pt-2">
