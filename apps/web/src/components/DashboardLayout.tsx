@@ -50,7 +50,7 @@ interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
-export default function DashboardLayout({ activeTab, children }: DashboardLayoutProps) {
+export default function DashboardLayout({ activeTab, activeTabName, children }: DashboardLayoutProps) {
   const { currentTheme, setTheme, themeTokens, toggleDarkMode } = useTheme();
   const { user, loading, logout } = useAuth();
   const [, setLocation] = useLocation();
