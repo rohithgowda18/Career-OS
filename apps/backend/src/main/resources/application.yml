@@ -1,3 +1,6 @@
+server:
+  port: ${CAREER_SERVICE_PORT:${PORT_CAREER:8080}}
+
 spring:
   config:
     import: optional:file:.env[.properties]
@@ -46,9 +49,6 @@ spring:
           auth: true
           starttls:
             enable: true
-
-server:
-  port: ${PORT:8080}
 
 app:
   jwt:

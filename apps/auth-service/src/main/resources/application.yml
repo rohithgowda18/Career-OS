@@ -1,3 +1,6 @@
+server:
+  port: ${AUTH_SERVICE_PORT:${PORT_AUTH:8081}}
+
 spring:
   config:
     import: optional:file:.env[.properties], optional:file:../backend/.env[.properties]
@@ -41,9 +44,6 @@ spring:
           github:
             user-info-uri: https://api.github.com/user
             user-name-attribute: name
-
-server:
-  port: ${AUTH_PORT:8081}
 
 app:
   jwt:
