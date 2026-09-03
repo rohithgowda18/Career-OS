@@ -1,9 +1,23 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { codingApi, CodingStatsResponse, CodingStatsHistoryDTO, ConnectAccountResponse } from "@/lib/api/codingApi";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import ConnectCodingModal from "./ConnectCodingModal";
 import { toast } from "sonner";
 import {
@@ -19,7 +33,11 @@ import {
   Loader2,
   Award,
   Calendar,
-  AlertCircle
+  AlertCircle,
+  MoreVertical,
+  ChevronRight,
+  Flame,
+  ArrowUpRight
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -31,6 +49,19 @@ import {
   CartesianGrid
 } from "recharts";
 import { cn } from "@/lib/utils";
+
+// Format helper for last synced timestamp
+function formatSyncTime(dateStr?: string | null): string {
+  if (!dateStr) return "";
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffSec = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+  if (diffSec < 60) return "Synced just now";
+  if (diffSec < 3600) return `Synced ${Math.floor(diffSec / 60)}m ago`;
+  if (diffSec < 86400) return `Synced ${Math.floor(diffSec / 3600)}h ago`;
+  return `Synced on ${date.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
+}
 
 // Custom Tooltip for Multi-point Chart
 function CustomChartTooltip({ active, payload }: any) {
@@ -63,9 +94,16 @@ export default function CodingProfileCard() {
   const queryClient = useQueryClient();
   const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
   const [pendingAccountToVerify, setPendingAccountToVerify] = useState<ConnectAccountResponse | null>(null);
+  const [showDisconnectConfirm, setShowDisconnectConfirm] = useState(false);
+  const [accountToDisconnect, setAccountToDisconnect] = useState<number | null>(null);
 
   // Queries
-  const { data: statsMap, isLoading: isLoadingStats } = useQuery({
+  const {
+    data: statsMap,
+    isLoading: isLoadingStats,
+    isError: isErrorStats,
+    refetch: refetchStats
+  } = useQuery({
     queryKey: ["coding", "stats"],
     queryFn: codingApi.getCurrentStats,
   });
@@ -106,6 +144,8 @@ export default function CodingProfileCard() {
     mutationFn: (accountId: number) => codingApi.disconnectAccount(accountId),
     onSuccess: () => {
       toast.success("LeetCode account disconnected");
+      setShowDisconnectConfirm(false);
+      setAccountToDisconnect(null);
       queryClient.invalidateQueries({ queryKey: ["coding"] });
     },
     onError: (err: any) => {
@@ -113,30 +153,83 @@ export default function CodingProfileCard() {
     },
   });
 
-  const handleDisconnect = (accountId: number) => {
-    if (window.confirm("Are you sure you want to disconnect your LeetCode profile? Your stats history will be removed.")) {
-      disconnectMutation.mutate(accountId);
-    }
+  const confirmDisconnect = (accountId: number) => {
+    setAccountToDisconnect(accountId);
+    setShowDisconnectConfirm(true);
   };
 
-  const formattedHistory = (historyData || []).map((item) => {
-    const d = new Date(item.recordedAt);
-    return {
-      date: d.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-      fullDate: d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
-      solved: item.totalSolved,
-      easy: item.easy,
-      medium: item.medium,
-      hard: item.hard,
-    };
-  });
+  const formattedHistory = useMemo(() => {
+    return (historyData || []).map((item) => {
+      const d = new Date(item.recordedAt);
+      return {
+        date: d.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+        fullDate: d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+        solved: item.totalSolved,
+        easy: item.easy,
+        medium: item.medium,
+        hard: item.hard,
+      };
+    });
+  }, [historyData]);
 
+  // Real Progress Delta (only if 2+ records exist)
+  const progressDelta = useMemo(() => {
+    if (formattedHistory.length < 2) return null;
+    const latest = formattedHistory[formattedHistory.length - 1].solved;
+    const previous = formattedHistory[formattedHistory.length - 2].solved;
+    const diff = latest - previous;
+    return {
+      diff,
+      isPositive: diff >= 0,
+    };
+  }, [formattedHistory]);
+
+  // Loading State Skeleton
   if (isLoadingStats) {
     return (
-      <Card className="bg-bg-card border-border/80 rounded-2xl">
+      <Card className="bg-bg-card border-border/80 rounded-2xl overflow-hidden shadow-sm">
+        <CardHeader className="pb-3 border-b border-border/40">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-bg-elevated animate-pulse" />
+              <div className="space-y-1">
+                <div className="w-28 h-4 bg-bg-elevated animate-pulse rounded" />
+                <div className="w-48 h-3 bg-bg-elevated animate-pulse rounded" />
+              </div>
+            </div>
+            <div className="w-24 h-8 bg-bg-elevated animate-pulse rounded-lg" />
+          </div>
+        </CardHeader>
         <CardContent className="p-6">
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="w-6 h-6 animate-spin text-primary" />
+          <div className="flex flex-col items-center justify-center py-10 space-y-3">
+            <Loader2 className="w-7 h-7 animate-spin text-primary" />
+            <p className="text-xs text-text-dim">Loading coding profile...</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Error State
+  if (isErrorStats) {
+    return (
+      <Card className="bg-bg-card border-border/80 rounded-2xl overflow-hidden shadow-sm">
+        <CardContent className="p-6">
+          <div className="py-8 text-center space-y-3">
+            <div className="w-12 h-12 rounded-full bg-danger/10 text-danger flex items-center justify-center mx-auto">
+              <AlertCircle className="w-6 h-6" />
+            </div>
+            <h4 className="text-sm font-semibold text-text-main">Unable to load coding profile</h4>
+            <p className="text-xs text-text-dim max-w-sm mx-auto">
+              There was an issue communicating with the coding service. Please check your connection and try again.
+            </p>
+            <Button
+              size="sm"
+              onClick={() => refetchStats()}
+              className="mt-2 bg-primary hover:bg-primary-hover text-white text-xs font-semibold cursor-pointer"
+            >
+              Retry
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -146,17 +239,18 @@ export default function CodingProfileCard() {
   return (
     <div className="space-y-4">
       <Card className="bg-bg-card border-border/80 rounded-2xl overflow-hidden shadow-sm">
+        {/* 1. Header */}
         <CardHeader className="pb-3 border-b border-border/40">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-warning/10 border border-warning/20 flex items-center justify-center text-warning">
+              <div className="w-8 h-8 rounded-lg bg-warning/10 border border-warning/20 flex items-center justify-center text-warning shrink-0">
                 <Code2 className="w-4 h-4" />
               </div>
               <div>
                 <CardTitle className="text-base font-bold text-text-main flex items-center gap-2">
-                  Coding Profiles
+                  Coding Profile
                   <Badge variant="outline" className="text-[10px] font-semibold bg-bg-elevated text-text-dim border-border">
-                    Phase 1: LeetCode
+                    LeetCode
                   </Badge>
                 </CardTitle>
                 <CardDescription className="text-xs text-text-dim">
@@ -165,7 +259,8 @@ export default function CodingProfileCard() {
               </div>
             </div>
 
-            {!leetcodeStats && (
+            {/* Unconnected Action */}
+            {!leetcodeStats && !leetcodeAccount && (
               <Button
                 size="sm"
                 onClick={() => {
@@ -178,17 +273,51 @@ export default function CodingProfileCard() {
                 Connect LeetCode
               </Button>
             )}
+
+            {/* Manage Action Dropdown for Connected Accounts */}
+            {leetcodeStats?.accountId && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0 text-text-dim hover:text-text-main hover:bg-bg-elevated cursor-pointer"
+                    title="Manage Account"
+                  >
+                    <MoreVertical className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-44 bg-bg-card border-border text-text-main">
+                  <DropdownMenuItem
+                    onClick={() => leetcodeStats?.accountId && syncMutation.mutate(leetcodeStats.accountId)}
+                    disabled={syncMutation.isPending}
+                    className="text-xs cursor-pointer hover:bg-bg-elevated"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5 mr-2 text-primary" />
+                    Sync Now
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => leetcodeStats?.accountId && confirmDisconnect(leetcodeStats.accountId)}
+                    className="text-xs text-danger hover:bg-danger/10 cursor-pointer"
+                  >
+                    <Unlink className="w-3.5 h-3.5 mr-2 text-danger" />
+                    Disconnect
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         </CardHeader>
 
         <CardContent className="p-5">
+          {/* 9. Unconnected State */}
           {!leetcodeStats && !leetcodeAccount ? (
             <div className="py-8 text-center space-y-3">
               <div className="w-12 h-12 rounded-full bg-bg-elevated text-text-dim flex items-center justify-center mx-auto">
                 <Code2 className="w-6 h-6" />
               </div>
               <h4 className="text-sm font-semibold text-text-main">No Coding Account Connected</h4>
-              <p className="text-xs text-text-dim max-w-sm mx-auto">
+              <p className="text-xs text-text-dim max-w-sm mx-auto leading-relaxed">
                 Connect your public LeetCode profile to automatically showcase solved problems, difficulty breakdowns, and contest ratings.
               </p>
               <Button
@@ -233,7 +362,7 @@ export default function CodingProfileCard() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => handleDisconnect(leetcodeAccount.accountId)}
+                  onClick={() => confirmDisconnect(leetcodeAccount.accountId)}
                   className="text-xs text-danger hover:bg-danger/10 h-8 cursor-pointer"
                 >
                   Cancel
@@ -241,8 +370,9 @@ export default function CodingProfileCard() {
               </div>
             </div>
           ) : (
-            /* Verified LeetCode Profile Display */
+            /* Verified Profile Display */
             <div className="space-y-6">
+              {/* LeetCode Identity Bar & Primary Sync Action */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-bg-elevated/40 border border-border/60">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
@@ -263,81 +393,115 @@ export default function CodingProfileCard() {
                   {leetcodeStats?.syncedAt && (
                     <p className="text-[11px] text-text-dim flex items-center gap-1">
                       <Clock className="w-3 h-3" />
-                      Last synced: {new Date(leetcodeStats.syncedAt).toLocaleString()}
+                      {formatSyncTime(leetcodeStats.syncedAt)}
                     </p>
                   )}
                 </div>
 
                 <div className="flex items-center gap-2 self-start sm:self-auto">
+                  {/* 6. Primary Sync Button */}
                   <Button
-                    variant="outline"
                     size="sm"
                     onClick={() => leetcodeStats?.accountId && syncMutation.mutate(leetcodeStats.accountId)}
                     disabled={syncMutation.isPending}
-                    className="h-8 px-3 text-xs font-semibold border-border hover:border-primary/40 cursor-pointer"
+                    className="h-8 px-3.5 bg-primary hover:bg-primary-hover text-white text-xs font-semibold cursor-pointer shadow-sm"
                   >
                     {syncMutation.isPending ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin mr-1 text-primary" />
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
+                        Syncing...
+                      </>
                     ) : (
-                      <RefreshCw className="w-3.5 h-3.5 mr-1 text-primary" />
+                      <>
+                        <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
+                        Sync Now
+                      </>
                     )}
-                    Sync Now
                   </Button>
 
+                  {/* 7. Subtle Disconnect Button */}
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => leetcodeStats?.accountId && handleDisconnect(leetcodeStats.accountId)}
+                    onClick={() => leetcodeStats?.accountId && confirmDisconnect(leetcodeStats.accountId)}
                     disabled={disconnectMutation.isPending}
                     className="h-8 px-2.5 text-xs text-text-dim hover:text-danger hover:bg-danger/10 cursor-pointer"
-                    title="Disconnect Account"
+                    title="Disconnect Profile"
                   >
                     <Unlink className="w-3.5 h-3.5" />
                   </Button>
                 </div>
               </div>
 
-              {/* Solved Stats Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="bg-bg-elevated/30 border border-border/80 rounded-xl p-3.5 text-center space-y-1">
-                  <span className="text-[11px] font-semibold text-text-dim uppercase tracking-wider">Total Solved</span>
-                  <div className="text-2xl font-black text-text-main">{leetcodeStats?.totalSolved || 0}</div>
-                  <span className="text-[10px] text-text-dim">Problems</span>
+              {/* 2. Stats: Hero Metric (Total Problems Solved) + Secondary Breakdowns */}
+              <div className="space-y-3">
+                {/* Hero Total Metric */}
+                <div className="p-4 rounded-xl bg-primary/5 border border-primary/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="space-y-1">
+                    <span className="text-xs font-semibold text-text-dim uppercase tracking-wider flex items-center gap-1.5">
+                      <Award className="w-3.5 h-3.5 text-primary" />
+                      Total Problems Solved
+                    </span>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-3xl sm:text-4xl font-black text-text-main tracking-tight">
+                        {leetcodeStats?.totalSolved || 0}
+                      </span>
+                      <span className="text-xs text-text-dim font-medium">solved problems</span>
+                    </div>
+                  </div>
+
+                  {/* 4. Progress summary delta (only if 2+ records) */}
+                  {progressDelta && (
+                    <div className={cn(
+                      "self-start sm:self-auto px-3 py-1.5 rounded-lg border text-xs font-semibold flex items-center gap-1",
+                      progressDelta.isPositive 
+                        ? "bg-success/10 text-success border-success/20" 
+                        : "bg-warning/10 text-warning border-warning/20"
+                    )}>
+                      <TrendingUp className="w-3.5 h-3.5" />
+                      <span>
+                        {progressDelta.isPositive ? `+${progressDelta.diff}` : progressDelta.diff} since previous sync
+                      </span>
+                    </div>
+                  )}
                 </div>
 
-                <div className="bg-success/5 border border-success/20 rounded-xl p-3.5 text-center space-y-1">
-                  <span className="text-[11px] font-semibold text-success uppercase tracking-wider">Easy</span>
-                  <div className="text-2xl font-black text-success">{leetcodeStats?.easy || 0}</div>
-                  <span className="text-[10px] text-text-dim">Solved</span>
+                {/* Secondary Difficulty Cards */}
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="bg-success/5 border border-success/20 rounded-xl p-3 text-center space-y-1">
+                    <span className="text-[11px] font-semibold text-success uppercase tracking-wider">Easy</span>
+                    <div className="text-xl sm:text-2xl font-black text-success">{leetcodeStats?.easy || 0}</div>
+                    <span className="text-[10px] text-text-dim">Problems</span>
+                  </div>
+
+                  <div className="bg-warning/5 border border-warning/20 rounded-xl p-3 text-center space-y-1">
+                    <span className="text-[11px] font-semibold text-warning uppercase tracking-wider">Medium</span>
+                    <div className="text-xl sm:text-2xl font-black text-warning">{leetcodeStats?.medium || 0}</div>
+                    <span className="text-[10px] text-text-dim">Problems</span>
+                  </div>
+
+                  <div className="bg-danger/5 border border-danger/20 rounded-xl p-3 text-center space-y-1">
+                    <span className="text-[11px] font-semibold text-danger uppercase tracking-wider">Hard</span>
+                    <div className="text-xl sm:text-2xl font-black text-danger">{leetcodeStats?.hard || 0}</div>
+                    <span className="text-[10px] text-text-dim">Problems</span>
+                  </div>
                 </div>
 
-                <div className="bg-warning/5 border border-warning/20 rounded-xl p-3.5 text-center space-y-1">
-                  <span className="text-[11px] font-semibold text-warning uppercase tracking-wider">Medium</span>
-                  <div className="text-2xl font-black text-warning">{leetcodeStats?.medium || 0}</div>
-                  <span className="text-[10px] text-text-dim">Solved</span>
-                </div>
-
-                <div className="bg-danger/5 border border-danger/20 rounded-xl p-3.5 text-center space-y-1">
-                  <span className="text-[11px] font-semibold text-danger uppercase tracking-wider">Hard</span>
-                  <div className="text-2xl font-black text-danger">{leetcodeStats?.hard || 0}</div>
-                  <span className="text-[10px] text-text-dim">Solved</span>
-                </div>
+                {/* 5. Contest Rating (Secondary Metric) */}
+                {leetcodeStats?.rating && (
+                  <div className="flex items-center justify-between p-3 rounded-xl bg-bg-elevated/30 border border-border/60 text-xs">
+                    <span className="font-semibold text-text-dim flex items-center gap-1.5">
+                      <Award className="w-4 h-4 text-warning" />
+                      Contest Rating
+                    </span>
+                    <span className="font-bold text-text-main font-mono text-sm">
+                      {Math.round(leetcodeStats.rating)}
+                    </span>
+                  </div>
+                )}
               </div>
 
-              {/* Rating if present */}
-              {leetcodeStats?.rating && (
-                <div className="flex items-center justify-between p-3 rounded-xl bg-bg-elevated/30 border border-border/60 text-xs">
-                  <span className="font-semibold text-text-dim flex items-center gap-1.5">
-                    <Award className="w-4 h-4 text-warning" />
-                    Contest Rating
-                  </span>
-                  <span className="font-bold text-text-main font-mono text-sm">
-                    {Math.round(leetcodeStats.rating)}
-                  </span>
-                </div>
-              )}
-
-              {/* Historical Analytics Chart Section */}
+              {/* 3. Progress Section: Problems Solved Over Time */}
               <div className="space-y-3 pt-2 border-t border-border/40">
                 <div className="flex items-center justify-between text-xs">
                   <span className="font-semibold text-text-main flex items-center gap-1.5">
@@ -347,17 +511,17 @@ export default function CodingProfileCard() {
                   <span className="text-[11px] text-text-dim">Based on sync history</span>
                 </div>
 
-                {/* State: Loading */}
+                {/* Loading State */}
                 {isLoadingHistory && (
-                  <div className="h-40 w-full flex flex-col items-center justify-center bg-bg-elevated/20 border border-border/60 rounded-xl space-y-2">
+                  <div className="h-36 w-full flex flex-col items-center justify-center bg-bg-elevated/20 border border-border/60 rounded-xl space-y-2">
                     <Loader2 className="w-5 h-5 animate-spin text-primary" />
                     <span className="text-xs text-text-dim">Loading progress history...</span>
                   </div>
                 )}
 
-                {/* State: Error */}
+                {/* Error State */}
                 {!isLoadingHistory && isErrorHistory && (
-                  <div className="py-6 px-4 text-center bg-danger/5 border border-danger/20 rounded-xl space-y-2">
+                  <div className="py-5 px-4 text-center bg-danger/5 border border-danger/20 rounded-xl space-y-2">
                     <div className="flex items-center justify-center gap-1.5 text-xs font-semibold text-danger">
                       <AlertCircle className="w-4 h-4" />
                       Unable to load progress history.
@@ -373,7 +537,7 @@ export default function CodingProfileCard() {
                   </div>
                 )}
 
-                {/* State: Zero Records */}
+                {/* Case 1: Zero Records */}
                 {!isLoadingHistory && !isErrorHistory && formattedHistory.length === 0 && (
                   <div className="py-7 px-4 text-center bg-bg-elevated/20 border border-dashed border-border rounded-xl space-y-1.5">
                     <h5 className="text-xs font-bold text-text-main">No progress history yet</h5>
@@ -383,7 +547,7 @@ export default function CodingProfileCard() {
                   </div>
                 )}
 
-                {/* State: Single Snapshot (1 Record) */}
+                {/* Case 2: Single Snapshot (1 Record) */}
                 {!isLoadingHistory && !isErrorHistory && formattedHistory.length === 1 && (
                   <div className="p-4 bg-bg-elevated/30 border border-border/80 rounded-xl space-y-3">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/40 pb-3">
@@ -416,7 +580,7 @@ export default function CodingProfileCard() {
                   </div>
                 )}
 
-                {/* State: Multiple Records (2+ Snapshots) */}
+                {/* Case 3: Multiple Records (2+ Snapshots) */}
                 {!isLoadingHistory && !isErrorHistory && formattedHistory.length >= 2 && (
                   <div className="h-44 w-full pt-2">
                     <ResponsiveContainer width="100%" height="100%">
@@ -450,6 +614,7 @@ export default function CodingProfileCard() {
         </CardContent>
       </Card>
 
+      {/* Connect Modal */}
       <ConnectCodingModal
         open={isConnectModalOpen}
         onOpenChange={setIsConnectModalOpen}
@@ -458,6 +623,50 @@ export default function CodingProfileCard() {
           queryClient.invalidateQueries({ queryKey: ["coding"] });
         }}
       />
+
+      {/* Disconnect Confirmation Dialog */}
+      <Dialog open={showDisconnectConfirm} onOpenChange={setShowDisconnectConfirm}>
+        <DialogContent className="sm:max-w-md bg-bg-card border-border text-text-main">
+          <DialogHeader>
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-8 h-8 rounded-lg bg-danger/10 border border-danger/20 flex items-center justify-center text-danger">
+                <AlertTriangle className="w-4 h-4" />
+              </div>
+              <DialogTitle className="text-base font-bold text-text-main">
+                Disconnect LeetCode Profile?
+              </DialogTitle>
+            </div>
+            <DialogDescription className="text-xs text-text-dim leading-relaxed">
+              Disconnecting will remove your connected LeetCode handle, saved statistics, and historical progress snapshots from Career OS. You can reconnect anytime.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 pt-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowDisconnectConfirm(false)}
+              className="text-xs text-text-dim cursor-pointer"
+            >
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => accountToDisconnect && disconnectMutation.mutate(accountToDisconnect)}
+              disabled={disconnectMutation.isPending}
+              className="bg-danger hover:bg-danger/90 text-white text-xs font-semibold cursor-pointer h-9 px-4"
+            >
+              {disconnectMutation.isPending ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
+                  Disconnecting...
+                </>
+              ) : (
+                "Disconnect Profile"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

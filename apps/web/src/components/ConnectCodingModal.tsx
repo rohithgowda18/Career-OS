@@ -172,6 +172,10 @@ export default function ConnectCodingModal({
                     {copied ? <Check className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4 text-text-dim" />}
                   </Button>
                 </div>
+                <div className="flex items-center gap-1 text-[11px] text-text-dim">
+                  <span className="w-1.5 h-1.5 rounded-full bg-warning inline-block" />
+                  <span>Code expires in <strong>15 minutes</strong></span>
+                </div>
               </div>
             </div>
 
