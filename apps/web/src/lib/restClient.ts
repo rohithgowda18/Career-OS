@@ -28,6 +28,10 @@ const configuredJobUrl = import.meta.env.VITE_JOB_API_URL?.trim();
 const jobBaseUrl = configuredJobUrl || (import.meta.env.DEV ? 'http://localhost:8083' : normalizedUrl);
 const normalizedJobUrl = jobBaseUrl.replace(/\/+$/, '').replace(/\/api\/?$/, '');
 
+const configuredCodingUrl = import.meta.env.VITE_CODING_API_URL?.trim();
+const codingBaseUrl = configuredCodingUrl || (import.meta.env.DEV ? 'http://localhost:8084' : normalizedUrl);
+const normalizedCodingUrl = codingBaseUrl.replace(/\/+$/, '').replace(/\/api\/?$/, '');
+
 const restClient = axios.create({
   baseURL: normalizedUrl,
   timeout: 60000,
@@ -47,6 +51,10 @@ restClient.interceptors.request.use(
     // Dynamic routing to Job Discovery Service (:8083)
     else if (config.url && config.url.startsWith('/api/jobs') && !config.url.startsWith('/api/jobs/saved') && !config.url.startsWith('/api/jobs/track')) {
       config.baseURL = normalizedJobUrl;
+    }
+    // Dynamic routing to Coding Service (:8084)
+    else if (config.url && config.url.startsWith('/api/coding')) {
+      config.baseURL = normalizedCodingUrl;
     }
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('token');

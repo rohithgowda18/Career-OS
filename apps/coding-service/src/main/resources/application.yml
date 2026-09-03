@@ -1,0 +1,46 @@
+server:
+  port: ${PORT:8084}
+
+spring:
+  application:
+    name: career-os-coding-service
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/career_os_coding_db}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+    defer-datasource-initialization: true
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:your-super-secret-jwt-key-with-at-least-64-bytes-for-hs512-signing-career-os-2026}
+  coding:
+    leetcode:
+      graphql-url: ${LEETCODE_GRAPHQL_URL:https://leetcode.com/graphql}
+    verification-expiration-minutes: ${VERIFICATION_EXPIRATION_MINUTES:15}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when_authorized
+
+logging:
+  level:
+    com.careeros.coding: INFO
+    org.springframework.web: INFO
+    org.springframework.security: WARN
