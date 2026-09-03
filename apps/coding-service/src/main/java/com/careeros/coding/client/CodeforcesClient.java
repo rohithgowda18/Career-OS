@@ -174,6 +174,46 @@ public class CodeforcesClient implements CodingPlatformClient {
         return Optional.of(challenge);
     }
 
+    @Override
+    public java.util.Map<LocalDate, Integer> getDailyActivity(String username, int year) {
+        if (username == null || username.isBlank()) {
+            return java.util.Collections.emptyMap();
+        }
+
+        try {
+            String statusUrl = baseUrl + "/user.status?handle=" + username.trim() + "&from=1&count=10000";
+            JsonNode submissions = executeGet(statusUrl);
+
+            java.util.Map<LocalDate, Integer> activityMap = new java.util.HashMap<>();
+            Set<String> solvedProblems = new HashSet<>();
+
+            if (submissions != null && submissions.isArray()) {
+                for (JsonNode sub : submissions) {
+                    if ("OK".equalsIgnoreCase(sub.path("verdict").asText())) {
+                        JsonNode prob = sub.path("problem");
+                        String probId = prob.path("contestId").asText() + prob.path("index").asText();
+                        if (solvedProblems.add(probId)) {
+                            long creationTime = sub.path("creationTimeSeconds").asLong(0);
+                            if (creationTime > 0) {
+                                LocalDate date = java.time.Instant.ofEpochSecond(creationTime)
+                                        .atZone(java.time.ZoneId.of("UTC"))
+                                        .toLocalDate();
+                                if (date.getYear() == year || year == 0) {
+                                    activityMap.put(date, activityMap.getOrDefault(date, 0) + 1);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            return activityMap;
+        } catch (Exception e) {
+            log.error("Failed to fetch Codeforces calendar activity for '{}': {}", username, e.getMessage());
+            return java.util.Collections.emptyMap();
+        }
+    }
+
     private JsonNode executeGet(String url) throws Exception {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(url))

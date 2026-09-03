@@ -272,4 +272,27 @@ class CodingProfileServiceTest {
         verify(statsRepository, times(1)).deleteByAccountId(10L);
         verify(accountRepository, times(1)).delete(account);
     }
+
+    @Test
+    void testGetActivitySummary_AggregatesPlatformsAndStreaks() {
+        CodingAccount acc1 = CodingAccount.builder().id(1L).userId(1L).platform(Platform.LEETCODE).username("lc_user").verificationStatus(VerificationStatus.VERIFIED).build();
+        CodingAccount acc2 = CodingAccount.builder().id(2L).userId(1L).platform(Platform.CODEFORCES).username("cf_user").verificationStatus(VerificationStatus.VERIFIED).build();
+
+        when(accountRepository.findByUserId(1L)).thenReturn(List.of(acc1, acc2));
+
+        LocalDate d1 = LocalDate.of(2026, 9, 1);
+        LocalDate d2 = LocalDate.of(2026, 9, 2);
+
+        when(leetCodeClient.getDailyActivity("lc_user", 2026)).thenReturn(Map.of(d1, 3, d2, 2));
+        when(codeforcesClient.getDailyActivity("cf_user", 2026)).thenReturn(Map.of(d1, 2, d2, 1));
+
+        com.careeros.coding.dto.ActivitySummaryDTO summary = service.getActivitySummary(1L, 2026, null);
+
+        assertEquals(2026, summary.getYear());
+        assertEquals(8, summary.getTotalSolvedInYear()); // (3+2) + (2+1)
+        assertEquals(2, summary.getTotalActiveDays());
+        assertEquals(2, summary.getMaxStreak());
+        assertEquals(2, summary.getDailyActivities().size());
+        assertEquals(5, summary.getDailyActivities().get(0).getTotalSolved()); // Day 1: 3 + 2
+    }
 }

@@ -132,6 +132,22 @@ public class CodingProfileController {
         }
     }
 
+    @GetMapping("/activity")
+    @Operation(summary = "Get unified coding activity calendar heatmap", description = "Aggregates daily unique solved problems across connected platforms")
+    public ResponseEntity<?> getActivitySummary(
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) com.careeros.coding.model.Platform platform) {
+        try {
+            Long userId = getRequiredUserId();
+            ActivitySummaryDTO summary = codingProfileService.getActivitySummary(userId, year, platform);
+            return ResponseEntity.ok(summary);
+        } catch (Exception e) {
+            log.error("Error retrieving coding activity summary", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "SERVER_ERROR", "message", e.getMessage()));
+        }
+    }
+
     @GetMapping("/accounts")
     @Operation(summary = "List connected coding accounts for authenticated user")
     public ResponseEntity<?> getAccounts() {

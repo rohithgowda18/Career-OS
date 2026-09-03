@@ -234,6 +234,88 @@ public class CodingProfileService {
         return challenges;
     }
 
+    @Transactional(readOnly = true)
+    public ActivitySummaryDTO getActivitySummary(Long userId, Integer yearParam, Platform filterPlatform) {
+        int year = (yearParam != null && yearParam > 2000) ? yearParam : java.time.LocalDate.now().getYear();
+        List<CodingAccount> accounts = accountRepository.findByUserId(userId);
+
+        Map<java.time.LocalDate, Map<Platform, Integer>> dailyMap = new java.util.TreeMap<>();
+
+        for (CodingAccount acc : accounts) {
+            if (acc.getVerificationStatus() != VerificationStatus.VERIFIED) {
+                continue;
+            }
+            if (filterPlatform != null && acc.getPlatform() != filterPlatform) {
+                continue;
+            }
+
+            CodingPlatformClient client = clients.get(acc.getPlatform());
+            if (client != null) {
+                Map<java.time.LocalDate, Integer> clientActivity = client.getDailyActivity(acc.getUsername(), year);
+                clientActivity.forEach((date, count) -> {
+                    if (count > 0 && (date.getYear() == year)) {
+                        dailyMap.computeIfAbsent(date, d -> new java.util.EnumMap<>(Platform.class))
+                                .put(acc.getPlatform(), count);
+                    }
+                });
+            }
+        }
+
+        List<DailyActivityDTO> activities = new ArrayList<>();
+        int totalSolvedInYear = 0;
+        int activeDays = 0;
+
+        for (Map.Entry<java.time.LocalDate, Map<Platform, Integer>> entry : dailyMap.entrySet()) {
+            int dayTotal = entry.getValue().values().stream().mapToInt(Integer::intValue).sum();
+            totalSolvedInYear += dayTotal;
+            if (dayTotal > 0) {
+                activeDays++;
+            }
+            activities.add(DailyActivityDTO.builder()
+                    .date(entry.getKey())
+                    .totalSolved(dayTotal)
+                    .breakdown(entry.getValue())
+                    .build());
+        }
+
+        // Calculate streaks
+        int maxStreak = 0;
+        int runningStreak = 0;
+        java.time.LocalDate prevDate = null;
+
+        for (DailyActivityDTO act : activities) {
+            if (prevDate != null && act.getDate().equals(prevDate.plusDays(1))) {
+                runningStreak++;
+            } else {
+                runningStreak = 1;
+            }
+            prevDate = act.getDate();
+            if (runningStreak > maxStreak) {
+                maxStreak = runningStreak;
+            }
+        }
+
+        int currentStreak = 0;
+        java.time.LocalDate today = java.time.LocalDate.now();
+        java.time.LocalDate checkDate = today;
+        if (!dailyMap.containsKey(today)) {
+            checkDate = today.minusDays(1);
+        }
+        while (dailyMap.containsKey(checkDate)) {
+            currentStreak++;
+            checkDate = checkDate.minusDays(1);
+        }
+
+        return ActivitySummaryDTO.builder()
+                .year(year)
+                .totalSolvedInYear(totalSolvedInYear)
+                .totalActiveDays(activeDays)
+                .currentStreak(currentStreak)
+                .maxStreak(maxStreak)
+                .dailyActivities(activities)
+                .build();
+    }
+
     public void disconnectAccount(Long userId, Long accountId) {
         CodingAccount account = getAccountOwnedByUser(userId, accountId);
         log.info("Disconnecting {} account for user {} (accountId={})", account.getPlatform(), userId, accountId);

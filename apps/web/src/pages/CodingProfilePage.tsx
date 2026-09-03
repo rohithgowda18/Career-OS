@@ -20,6 +20,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import ConnectCodingModal from "@/components/ConnectCodingModal";
+import CodingActivityHeatmap from "@/components/CodingActivityHeatmap";
 import { toast } from "sonner";
 import {
   Code2,
@@ -250,6 +251,9 @@ export default function CodingProfilePage() {
             </p>
           </div>
         </div>
+
+        {/* Unified Coding Activity Heatmap */}
+        <CodingActivityHeatmap />
 
         {/* 6. Platform Grid Section */}
         <div className="space-y-3">

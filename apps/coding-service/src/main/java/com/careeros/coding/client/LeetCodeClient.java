@@ -14,6 +14,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 
@@ -215,6 +216,57 @@ public class LeetCodeClient implements CodingPlatformClient {
         } catch (Exception e) {
             log.error("Failed to fetch LeetCode daily challenge: {}", e.getMessage());
             return Optional.empty();
+        }
+    }
+
+    @Override
+    public Map<java.time.LocalDate, Integer> getDailyActivity(String username, int year) {
+        if (username == null || username.isBlank()) {
+            return Collections.emptyMap();
+        }
+
+        try {
+            String query = """
+                query userProfileCalendar($username: String!, $year: Int) {
+                  matchedUser(username: $username) {
+                    userCalendar(year: $year) {
+                      submissionCalendar
+                    }
+                  }
+                }
+                """;
+
+            JsonNode data = executeGraphQL(query, Map.of("username", username.trim(), "year", year));
+            if (data == null || data.path("matchedUser").isNull()) {
+                return Collections.emptyMap();
+            }
+
+            JsonNode calendar = data.path("matchedUser").path("userCalendar");
+            String subCalJson = calendar.path("submissionCalendar").asText("");
+            if (subCalJson.isBlank()) {
+                return Collections.emptyMap();
+            }
+
+            JsonNode subCalMap = objectMapper.readTree(subCalJson);
+            Map<java.time.LocalDate, Integer> result = new java.util.HashMap<>();
+
+            subCalMap.fields().forEachRemaining(entry -> {
+                try {
+                    long epoch = Long.parseLong(entry.getKey());
+                    int count = entry.getValue().asInt(0);
+                    java.time.LocalDate date = java.time.Instant.ofEpochSecond(epoch)
+                            .atZone(java.time.ZoneId.of("UTC"))
+                            .toLocalDate();
+                    if (date.getYear() == year || year == 0) {
+                        result.put(date, count);
+                    }
+                } catch (Exception ignored) {}
+            });
+
+            return result;
+        } catch (Exception e) {
+            log.error("Failed to fetch LeetCode calendar activity for '{}': {}", username, e.getMessage());
+            return Collections.emptyMap();
         }
     }
 

@@ -54,6 +54,21 @@ export interface DailyChallengeDTO {
   note?: string;
 }
 
+export interface DailyActivityDTO {
+  date: string; // YYYY-MM-DD
+  totalSolved: number;
+  breakdown: Record<string, number>;
+}
+
+export interface ActivitySummaryDTO {
+  year: number;
+  totalSolvedInYear: number;
+  totalActiveDays: number;
+  currentStreak: number;
+  maxStreak: number;
+  dailyActivities: DailyActivityDTO[];
+}
+
 export const codingApi = {
   connectAccount: async (data: ConnectAccountRequest): Promise<ConnectAccountResponse> => {
     const res = await restClient.post('/api/coding/accounts', data);
@@ -87,6 +102,14 @@ export const codingApi = {
 
   getDailyChallenges: async (): Promise<DailyChallengeDTO[]> => {
     const res = await restClient.get('/api/coding/daily');
+    return res.data;
+  },
+
+  getActivitySummary: async (year?: number, platform?: Platform): Promise<ActivitySummaryDTO> => {
+    const params: Record<string, any> = {};
+    if (year) params.year = year;
+    if (platform) params.platform = platform;
+    const res = await restClient.get('/api/coding/activity', { params });
     return res.data;
   },
 
