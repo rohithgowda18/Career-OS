@@ -45,6 +45,18 @@ spring:
 server:
   port: ${AUTH_PORT:8081}
 
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    registry-fetch-interval-seconds: 5
+    service-url:
+      defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka/}
+  instance:
+    prefer-ip-address: true
+    lease-renewal-interval-in-seconds: 5
+    lease-expiration-duration-in-seconds: 10
+
 app:
   jwt:
     secret: ${APP_JWT_SECRET:${JWT_SECRET}}

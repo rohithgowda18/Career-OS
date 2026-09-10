@@ -4,7 +4,6 @@ import com.careeros.auth.dto.UserProfileDTO;
 import com.careeros.auth.entity.User;
 import com.careeros.auth.service.ProfileService;
 import com.careeros.auth.security.UserPrincipal;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;

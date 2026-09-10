@@ -12,7 +12,6 @@ import com.eventtracker.dto.ApplicationDTO;
 import com.eventtracker.dto.PlacementDTO;
 
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -218,7 +217,6 @@ public class AnalyticsService {
         List<Placement> placements = placementRepository.findByUserId(userId);
         long total = placements.size();
 
-        long saved = 0;
         long applied = placements.stream().filter(p -> p.getStatus() == PlacementStatus.APPLIED).count();
         long assessmentScheduled = placements.stream().filter(p -> p.getStatus() == PlacementStatus.ASSESSMENT_SCHEDULED).count();
         long assessmentCompleted = placements.stream().filter(p -> p.getStatus() == PlacementStatus.ASSESSMENT_COMPLETED).count();

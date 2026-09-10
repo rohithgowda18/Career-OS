@@ -64,23 +64,21 @@ export default function KanbanView() {
 
   // Sync URL with filter state
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    let changed = false;
+    const params = new URLSearchParams();
+    params.set("view", "kanban");
     if (status !== "ALL") {
       params.set("status", status);
-    } else {
-      params.delete("status");
     }
     if (eventType !== "ALL") {
       params.set("eventType", eventType);
-    } else {
-      params.delete("eventType");
     }
-    params.set("page", page.toString());
+    if (page > 0) {
+      params.set("page", page.toString());
+    }
     const newSearch = params.toString();
-    const currentSearch = window.location.search.slice(1);
+    const currentSearch = window.location.search.replace(/^\?/, "");
     if (newSearch !== currentSearch) {
-      setLocation(`/dashboard?view=kanban${newSearch ? `?${newSearch}` : ""}`, { replace: true });
+      setLocation(`/dashboard?${newSearch}`, { replace: true });
     }
   }, [status, eventType, page, setLocation]);
 

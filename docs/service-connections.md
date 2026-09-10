@@ -7,22 +7,19 @@ This document details the communication patterns, data flow, and exact code impl
 ## 1. Inter-Service Communication Flow
 
 ```
-                      [ React Client (Vite :5173) ]
-                                   │
-              ┌────────────────────┴────────────────────┐
-              │                                         │
-        (Auth / Profile)                          (Career Domain)
-              ▼                                         ▼
-   [ Auth Service :8081 ]                    [ Career Service :8080 ]
-   (Issues & signs JWTs)                      (Verifies JWT locally)
-              │                                         │
-              ▼                                         ▼
-   [(career_os_auth_db)]                                │ (Delegation via HTTP)
-                                                        ▼
-                                             [ AI Extraction Service :8082 ]
-                                                        │
-                                                        ▼
-                                              [ Google Gemini API ]
+                      [ Netflix Eureka Server :8761 ]
+                                     ▲
+        ┌────────────────────────────┼────────────────────────────┐
+        │ Heartbeat & Register       │ Heartbeat & Register       │ Heartbeat & Register
+        ▼                            ▼                            ▼
+[ Auth Service :8081 ]      [ Career Service :8080 ]     [ AI Extraction Service :8082 ]
+ (Issues & signs JWTs)       (Verifies JWT locally)       (Gemini AI Extractor)
+        │                            │
+        ▼                            ▼ (Dynamic OpenFeign Discovery)
+[(career_os_auth_db)]       [ AI Extraction Service ]
+                                     │
+                                     ▼
+                           [ Google Gemini API ]
 ```
 
 ---

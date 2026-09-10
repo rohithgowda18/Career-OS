@@ -100,16 +100,18 @@ export default function DashboardView() {
   // Fetch baseline dashboard overview (returns total counts, status distribution, immediate event deadlines, and recent activity)
   const dashboardQuery = useQuery({
     queryKey: ["analytics", "dashboard"],
-    queryFn: () => analyticsApi.dashboard(),
+    queryFn: async () => {
+      const startTime = performance.now();
+      const data = await analyticsApi.dashboard();
+      if (import.meta.env.DEV) {
+        const duration = Math.round(performance.now() - startTime);
+        console.log(`[Performance] Dashboard data ready: ${duration}ms`);
+      }
+      return data;
+    },
   });
 
   const isLoading = dashboardQuery.isLoading;
-
-  useEffect(() => {
-    if (!isLoading && import.meta.env.DEV) {
-      console.log(`[Performance] Dashboard data ready: ${Math.round(performance.now())}ms`);
-    }
-  }, [isLoading]);
 
   const dashboardData = dashboardQuery.data as DashboardData || {
     totalApplications: 0,

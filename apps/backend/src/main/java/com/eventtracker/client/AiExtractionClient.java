@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 @FeignClient(
         name = "ai-extraction-service",
-        url = "${AI_EXTRACTION_SERVICE_URL:http://localhost:8082}"
+        url = "${AI_EXTRACTION_SERVICE_URL:}"
 )
 public interface AiExtractionClient {
 

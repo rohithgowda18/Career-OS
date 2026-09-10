@@ -1,7 +1,5 @@
 .git
 .gitignore
-.mvn/wrapper/maven-wrapper.jar
-target
 *.log
 .env
 .env.*

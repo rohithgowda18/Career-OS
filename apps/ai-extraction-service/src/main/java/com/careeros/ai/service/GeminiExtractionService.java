@@ -94,7 +94,6 @@ public class GeminiExtractionService {
 
                 Map<String, Object> textPart = Map.of("text", prompt);
                 Map<String, Object> parts = Map.of("parts", List.of(textPart));
-                Map<String, Object> contents = Map.of("contents", List.of(parts));
                 Map<String, Object> generationConfig = Map.of("responseMimeType", "application/json");
 
                 Map<String, Object> requestBodyMap = new HashMap<>();
@@ -122,13 +121,17 @@ public class GeminiExtractionService {
                     throw new RuntimeException("Gemini API returned status code " + response.statusCode() + ": " + response.body());
                 }
 
+                @SuppressWarnings("unchecked")
                 Map<String, Object> responseMap = objectMapper.readValue(response.body(), Map.class);
+                @SuppressWarnings("unchecked")
                 List<Map<String, Object>> candidates = (List<Map<String, Object>>) responseMap.get("candidates");
                 if (candidates == null || candidates.isEmpty()) {
                     throw new RuntimeException("No candidates returned from Gemini API");
                 }
 
+                @SuppressWarnings("unchecked")
                 Map<String, Object> contentMap = (Map<String, Object>) candidates.get(0).get("content");
+                @SuppressWarnings("unchecked")
                 List<Map<String, Object>> resParts = (List<Map<String, Object>>) contentMap.get("parts");
                 if (resParts == null || resParts.isEmpty()) {
                     throw new RuntimeException("No parts returned in candidate content");
@@ -295,9 +298,13 @@ public class GeminiExtractionService {
                     throw new RuntimeException("Gemini API returned status code " + response.statusCode());
                 }
 
+                @SuppressWarnings("unchecked")
                 Map<String, Object> responseMap = objectMapper.readValue(response.body(), Map.class);
+                @SuppressWarnings("unchecked")
                 List<Map<String, Object>> candidates = (List<Map<String, Object>>) responseMap.get("candidates");
+                @SuppressWarnings("unchecked")
                 Map<String, Object> contentMap = (Map<String, Object>) candidates.get(0).get("content");
+                @SuppressWarnings("unchecked")
                 List<Map<String, Object>> resParts = (List<Map<String, Object>>) contentMap.get("parts");
                 String extractedJson = (String) resParts.get(0).get("text");
 

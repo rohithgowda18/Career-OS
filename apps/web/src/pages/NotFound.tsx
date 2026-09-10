@@ -1,52 +1,51 @@
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { AlertCircle, Home } from "lucide-react";
+import { Terminal, Home, ArrowLeft, Search } from "lucide-react";
 import { useLocation } from "wouter";
 
 export default function NotFound() {
   const [, setLocation] = useLocation();
 
-  const handleGoHome = () => {
-    setLocation("/");
-  };
-
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
-      <Card className="w-full max-w-lg mx-4 shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-        <CardContent className="pt-8 pb-8 text-center">
-          <div className="flex justify-center mb-6">
-            <div className="relative">
-              <div className="absolute inset-0 bg-red-100 rounded-full animate-pulse" />
-              <AlertCircle className="relative h-16 w-16 text-red-500" />
-            </div>
+    <div className="min-h-screen w-full flex flex-col items-center justify-center bg-bg-main text-text-main px-4 selection:bg-primary/30">
+      <div className="max-w-md w-full text-center space-y-6 p-8 rounded-2xl bg-bg-card border border-border/80 shadow-xl animate-in fade-in zoom-in-95 duration-200">
+        <div className="flex justify-center">
+          <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+            <Terminal className="w-7 h-7" />
           </div>
+        </div>
 
-          <h1 className="text-4xl font-bold text-slate-900 mb-2">404</h1>
-
-          <h2 className="text-xl font-semibold text-slate-700 mb-4">
+        <div className="space-y-2">
+          <span className="text-xs font-bold uppercase tracking-widest text-primary">404 Error</span>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-text-main">
             Page Not Found
-          </h2>
-
-          <p className="text-slate-600 mb-8 leading-relaxed">
-            Sorry, the page you are looking for doesn't exist.
-            <br />
-            It may have been moved or deleted.
+          </h1>
+          <p className="text-xs sm:text-sm text-text-muted leading-relaxed">
+            The workspace route you are trying to access doesn't exist or may have been moved.
           </p>
+        </div>
 
-          <div
-            id="not-found-button-group"
-            className="flex flex-col sm:flex-row gap-3 justify-center"
+        <div className="pt-2 flex flex-col sm:flex-row gap-3 justify-center">
+          <Button
+            onClick={() => window.history.length > 1 ? window.history.back() : setLocation("/")}
+            variant="outline"
+            className="border-border bg-bg-elevated hover:bg-bg-elevated/80 text-text-main text-xs font-semibold h-10 px-4 flex items-center justify-center gap-2 cursor-pointer"
           >
-            <Button
-              onClick={handleGoHome}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg"
-            >
-              <Home className="w-4 h-4 mr-2" />
-              Go Home
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span>Go Back</span>
+          </Button>
+          <Button
+            onClick={() => setLocation("/")}
+            className="bg-primary hover:bg-primary-hover text-white text-xs font-semibold h-10 px-5 flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+          >
+            <Home className="w-3.5 h-3.5" />
+            <span>Return to Dashboard</span>
+          </Button>
+        </div>
+      </div>
+
+      <footer className="mt-8 text-xs text-text-dim">
+        <span>© 2026 Career OS. All rights reserved.</span>
+      </footer>
     </div>
   );
 }

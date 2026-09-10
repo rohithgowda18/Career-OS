@@ -67,7 +67,9 @@ export default function Home() {
     return null;
   }
 
-  const currentView = (searchParams.get("view") || "dashboard") as
+  const rawView = (searchParams.get("view") || "dashboard").toLowerCase().split("?")[0];
+  const validViews = ["dashboard", "kanban", "calendar", "analytics", "skills", "routine", "profile"];
+  const currentView = (validViews.includes(rawView) ? rawView : "dashboard") as
     | "dashboard"
     | "kanban"
     | "calendar"

@@ -33,7 +33,14 @@ export default defineConfig({
     exclude: [],
   },
   server: {
+    host: true,
     port: 5173,
     strictPort: false,
+    watch: {
+      usePolling: true,
+    },
+    hmr: {
+      clientPort: 5173,
+    },
   },
 });

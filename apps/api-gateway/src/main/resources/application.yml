@@ -1,0 +1,93 @@
+server:
+  port: ${PORT:8080}
+
+spring:
+  application:
+    name: api-gateway
+
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins:
+              - "http://localhost:5173"
+              - "http://localhost:3000"
+              - "https://career-os.rohith.app"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - PATCH
+              - OPTIONS
+            allowedHeaders: "*"
+            allowCredentials: true
+            maxAge: 3600
+
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_FIRST
+
+      routes:
+        # 1. Auth Service Routes (Port 8081 via Eureka: career-os-auth-service)
+        - id: auth-service-api
+          uri: lb://career-os-auth-service
+          predicates:
+            - Path=/api/auth/**, /api/profile/**, /login/oauth2/**, /oauth2/**
+          metadata:
+            connect-timeout: 5000
+            response-timeout: 15000
+
+        # 2. AI Extraction Service Routes (Port 8082 via Eureka: ai-extraction-service)
+        - id: ai-extraction-api
+          uri: lb://ai-extraction-service
+          predicates:
+            - Path=/api/extraction/**
+          metadata:
+            connect-timeout: 5000
+            response-timeout: 60000
+
+        # 3. Core Career Backend Service Routes (Port 8085 via Eureka: career-os)
+        - id: core-backend-service
+          uri: lb://career-os
+          predicates:
+            - Path=/api/**
+          metadata:
+            connect-timeout: 5000
+            response-timeout: 30000
+
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    registry-fetch-interval-seconds: 5
+    service-url:
+      defaultZone: ${EUREKA_SERVER_URL:http://localhost:8761/eureka/}
+  instance:
+    prefer-ip-address: true
+    lease-renewal-interval-in-seconds: 5
+    lease-expiration-duration-in-seconds: 10
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,info,gateway"
+      cors:
+        allowed-origins:
+          - "http://localhost:5173"
+          - "http://localhost:3000"
+          - "https://career-os.rohith.app"
+        allowed-methods:
+          - GET
+          - OPTIONS
+        allowed-headers: "*"
+        allow-credentials: true
+  endpoint:
+    health:
+      show-details: always

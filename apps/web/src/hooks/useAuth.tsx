@@ -183,7 +183,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     retryAuth
   ]);
 
-  return React.createElement(AuthContext.Provider, { value }, children);
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
 export function useAuth() {

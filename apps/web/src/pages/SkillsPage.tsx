@@ -107,31 +107,31 @@ export default function SkillsPage() {
         />
       </div>
 
-      {/* Optional Insights Section */}
+      {/* Skill Progression & Intelligence Overview */}
       <div className="bg-bg-card border border-border rounded-xl p-5 shadow-xs">
         <h3 className="text-sm font-semibold text-text-main flex items-center gap-1.5 mb-2">
           <Sparkles className="w-4 h-4 text-primary" />
-          <span>Coming Soon</span>
+          <span>Technical Competency Insights</span>
         </h3>
         <p className="text-xs text-text-dim leading-relaxed mb-3">
-          This is an informational placeholder card. Future updates will utilize your registered skills to offer:
+          Your registered technical skills are analyzed to support your recruitment readiness and interview prep:
         </p>
-        <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-text-muted">
+        <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs text-text-muted">
           <li className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-            <span>Skill Gap Analysis</span>
+            <span>Skill gap identification against target job roles</span>
           </li>
           <li className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-            <span>Learning Recommendations</span>
+            <span>Curated problem recommendations based on proficiency</span>
           </li>
           <li className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-            <span>Interview Questions</span>
+            <span>Targeted technical interview question prompts</span>
           </li>
           <li className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-            <span>Placement Readiness</span>
+            <span>Comprehensive placement readiness scorecard</span>
           </li>
         </ul>
       </div>

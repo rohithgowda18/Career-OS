@@ -1,7 +1,6 @@
 package com.eventtracker.controller;
 
 import com.eventtracker.dto.CreateSkillRequest;
-import com.eventtracker.dto.SkillDTO;
 import com.eventtracker.dto.UpdateSkillRequest;
 import com.eventtracker.entity.Skill;
 import com.eventtracker.service.SkillService;
