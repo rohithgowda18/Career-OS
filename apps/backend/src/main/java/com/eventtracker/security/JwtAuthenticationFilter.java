@@ -29,12 +29,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String jwt = getJwtFromRequest(request);
 
             if (StringUtils.hasText(jwt)) {
-                io.jsonwebtoken.Claims claims = tokenProvider.parseToken(jwt);
+                Claims claims = tokenProvider.parseToken(jwt);
                 if (claims != null) {
                     Long userId = claims.get("userId", Long.class);
                     String email = claims.get("email", String.class);
 
-                    // Lightweight principal constructed directly from JWT claims without database queries
+                    // Lightweight principal constructed directly from JWT claims without database
+                    // queries
                     UserPrincipal principal = new UserPrincipal(userId, email);
                     UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                             principal, null, principal.getAuthorities());
