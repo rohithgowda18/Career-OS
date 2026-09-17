@@ -10,8 +10,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
-
 @Slf4j
 @RestController
 @RequestMapping("/api/extraction")
@@ -21,26 +19,16 @@ public class ExtractionController {
     private final GeminiExtractionService geminiExtractionService;
 
     @PostMapping("/placement")
-    public ResponseEntity<?> extractPlacement(@Valid @RequestBody ExtractionRequest request) {
+    public ResponseEntity<PlacementDTO> extractPlacement(@Valid @RequestBody ExtractionRequest request) {
         log.info("Request to extract placement details");
-        try {
-            PlacementDTO dto = geminiExtractionService.extractPlacementDetails(request.getEmailContent());
-            return ResponseEntity.ok(dto);
-        } catch (Exception e) {
-            log.error("Placement extraction failed", e);
-            return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
-        }
+        PlacementDTO dto = geminiExtractionService.extractPlacementDetails(request.getEmailContent());
+        return ResponseEntity.ok(dto);
     }
 
     @PostMapping("/application")
-    public ResponseEntity<?> extractApplication(@Valid @RequestBody ExtractionRequest request) {
+    public ResponseEntity<ApplicationDTO> extractApplication(@Valid @RequestBody ExtractionRequest request) {
         log.info("Request to extract application details");
-        try {
-            ApplicationDTO dto = geminiExtractionService.extractApplicationDetails(request.getEmailContent());
-            return ResponseEntity.ok(dto);
-        } catch (Exception e) {
-            log.error("Application extraction failed", e);
-            return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
-        }
+        ApplicationDTO dto = geminiExtractionService.extractApplicationDetails(request.getEmailContent());
+        return ResponseEntity.ok(dto);
     }
 }

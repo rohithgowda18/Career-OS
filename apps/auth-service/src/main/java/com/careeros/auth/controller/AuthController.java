@@ -4,7 +4,6 @@ import com.careeros.auth.dto.AuthDTO.LoginRequest;
 import com.careeros.auth.dto.AuthDTO.RegisterRequest;
 import com.careeros.auth.dto.AuthDTO.AuthResponse;
 import com.careeros.auth.entity.User;
-import com.careeros.auth.exception.DuplicateUserException;
 import com.careeros.auth.security.JwtTokenProvider;
 import com.careeros.auth.security.UserPrincipal;
 import com.careeros.auth.service.UserService;
@@ -17,8 +16,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.validation.FieldError;
-import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -37,27 +34,19 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request) {
-        try {
-            User user = userService.createUser(
-                    request.getEmail(),
-                    request.getPassword(),
-                    request.getDisplayName()
-            );
+        User user = userService.createUser(
+                request.getEmail(),
+                request.getPassword(),
+                request.getDisplayName()
+        );
 
-            String token = tokenProvider.generateToken(user.getId(), user.getEmail());
+        String token = tokenProvider.generateToken(user.getId(), user.getEmail());
 
-            return ResponseEntity.status(HttpStatus.CREATED).body(new AuthResponse(
-                    token,
-                    tokenProvider.getJwtExpirationMillis(),
-                    userService.convertToDTO(user)
-            ));
-        } catch (DuplicateUserException e) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(errorBody(HttpStatus.CONFLICT, e.getMessage()));
-        } catch (Exception e) {
-            log.error("Registration error", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(errorBody(HttpStatus.INTERNAL_SERVER_ERROR, "Registration failed"));
-        }
+        return ResponseEntity.status(HttpStatus.CREATED).body(new AuthResponse(
+                token,
+                tokenProvider.getJwtExpirationMillis(),
+                userService.convertToDTO(user)
+        ));
     }
 
     @PutMapping("/me/display-name")
@@ -85,26 +74,20 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
-        try {
-            Optional<User> user = userService.findByEmail(request.getEmail());
-            if (user.isEmpty() || !passwordEncoder.matches(request.getPassword(), user.get().getPassword())) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(errorBody(HttpStatus.UNAUTHORIZED, "Invalid email or password"));
-            }
-
-            User authenticatedUser = user.get();
-            String token = tokenProvider.generateToken(authenticatedUser.getId(), authenticatedUser.getEmail());
-
-            return ResponseEntity.ok(new AuthResponse(
-                    token,
-                    tokenProvider.getJwtExpirationMillis(),
-                    userService.convertToDTO(authenticatedUser)
-            ));
-        } catch (Exception e) {
-            log.error("Login error", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(errorBody(HttpStatus.INTERNAL_SERVER_ERROR, "Login failed"));
+        Optional<User> user = userService.findByEmail(request.getEmail());
+        if (user.isEmpty() || !passwordEncoder.matches(request.getPassword(), user.get().getPassword())) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(errorBody(HttpStatus.UNAUTHORIZED, "Invalid email or password"));
         }
+
+        User authenticatedUser = user.get();
+        String token = tokenProvider.generateToken(authenticatedUser.getId(), authenticatedUser.getEmail());
+
+        return ResponseEntity.ok(new AuthResponse(
+                token,
+                tokenProvider.getJwtExpirationMillis(),
+                userService.convertToDTO(authenticatedUser)
+        ));
     }
 
     @GetMapping("/me")
@@ -131,22 +114,6 @@ public class AuthController {
     public ResponseEntity<?> logout(HttpServletRequest request) {
         SecurityContextHolder.clearContext();
         return ResponseEntity.ok("Logout successful");
-    }
-
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, Object>> handleValidationErrors(MethodArgumentNotValidException ex) {
-        Map<String, Object> errors = new HashMap<>();
-        String firstMessage = "Validation failed";
-        for (FieldError error : ex.getBindingResult().getFieldErrors()) {
-            errors.put(error.getField(), error.getDefaultMessage());
-            if ("Validation failed".equals(firstMessage)) {
-                firstMessage = error.getDefaultMessage();
-            }
-        }
-        errors.put("status", HttpStatus.BAD_REQUEST.value());
-        errors.put("error", HttpStatus.BAD_REQUEST.getReasonPhrase());
-        errors.put("message", firstMessage);
-        return ResponseEntity.badRequest().body(errors);
     }
 
     private Map<String, Object> errorBody(HttpStatus status, String message) {

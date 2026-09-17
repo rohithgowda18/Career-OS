@@ -38,15 +38,10 @@ public class SkillController {
 
     @PostMapping
     public ResponseEntity<?> create(@Valid @RequestBody CreateSkillRequest request) {
-        try {
-            Long userId = getCurrentUserId();
-            Skill skill = skillService.createSkill(userId, request);
-            return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(skillService.convertToDTO(skill));
-        } catch (Exception e) {
-            log.error("Error creating skill", e);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
-        }
+        Long userId = getCurrentUserId();
+        Skill skill = skillService.createSkill(userId, request);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(skillService.convertToDTO(skill));
     }
 
     @GetMapping
@@ -54,58 +49,34 @@ public class SkillController {
     public ResponseEntity<?> list(
             @RequestParam(required = false) String search,
             Pageable pageable) {
-        try {
-            Long userId = getCurrentUserId();
-            return ResponseEntity.ok(skillService.getUserSkills(userId, search, pageable));
-        } catch (Exception e) {
-            log.error("Error listing skills", e);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
-        }
+        Long userId = getCurrentUserId();
+        return ResponseEntity.ok(skillService.getUserSkills(userId, search, pageable));
     }
 
     @GetMapping("/{id}")
     @Operation(operationId = "getSkill", summary = "Get a skill by ID")
     public ResponseEntity<?> get(@PathVariable Long id) {
-        try {
-            Long userId = getCurrentUserId();
-            Optional<Skill> skill = skillService.getSkillById(id, userId);
-            if (skill.isEmpty()) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Skill not found");
-            }
-            return ResponseEntity.ok(skillService.convertToDTO(skill.get()));
-        } catch (Exception e) {
-            log.error("Error fetching skill", e);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        Long userId = getCurrentUserId();
+        Optional<Skill> skill = skillService.getSkillById(id, userId);
+        if (skill.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Skill not found");
         }
+        return ResponseEntity.ok(skillService.convertToDTO(skill.get()));
     }
 
     @PutMapping("/{id}")
     @Operation(operationId = "updateSkill", summary = "Update an existing skill")
     public ResponseEntity<?> update(@PathVariable Long id, @Valid @RequestBody UpdateSkillRequest request) {
-        try {
-            Long userId = getCurrentUserId();
-            Skill skill = skillService.updateSkill(id, userId, request);
-            return ResponseEntity.ok(skillService.convertToDTO(skill));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-        } catch (Exception e) {
-            log.error("Error updating skill", e);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
-        }
+        Long userId = getCurrentUserId();
+        Skill skill = skillService.updateSkill(id, userId, request);
+        return ResponseEntity.ok(skillService.convertToDTO(skill));
     }
 
     @DeleteMapping("/{id}")
     @Operation(operationId = "deleteSkill", summary = "Delete a skill")
     public ResponseEntity<?> delete(@PathVariable Long id) {
-        try {
-            Long userId = getCurrentUserId();
-            skillService.deleteSkill(id, userId);
-            return ResponseEntity.ok("Skill deleted successfully");
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-        } catch (Exception e) {
-            log.error("Error deleting skill", e);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
-        }
+        Long userId = getCurrentUserId();
+        skillService.deleteSkill(id, userId);
+        return ResponseEntity.ok("Skill deleted successfully");
     }
 }

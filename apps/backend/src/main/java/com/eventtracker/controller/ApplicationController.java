@@ -39,14 +39,8 @@ public class ApplicationController {
         if (emailContent.length() > 10000) {
             return ResponseEntity.badRequest().body("emailContent length exceeds limit of 10000 characters");
         }
-        try {
-            ApplicationDTO result = aiExtractionService.extractApplicationDetails(emailContent);
-            return ResponseEntity.ok(result);
-        } catch (Exception e) {
-            log.error("AI Extraction failed for application", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Failed to extract application details: " + e.getMessage());
-        }
+        ApplicationDTO result = aiExtractionService.extractApplicationDetails(emailContent);
+        return ResponseEntity.ok(result);
     }
 
     private Long getCurrentUserId() {
@@ -84,44 +78,25 @@ public class ApplicationController {
     @PostMapping
     @Operation(operationId = "createApplication", summary = "Create a new event application")
     public ResponseEntity<?> create(@Valid @RequestBody ApplicationDTO dto) {
-        try {
-            Long userId = getCurrentUserId();
-            Application application = applicationService.createApplication(userId, dto);
-            return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(applicationService.convertToDTO(application));
-        } catch (Exception e) {
-            log.error("Error creating application", e);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
-        }
+        Long userId = getCurrentUserId();
+        Application application = applicationService.createApplication(userId, dto);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(applicationService.convertToDTO(application));
     }
 
     @PutMapping("/{id}")
     @Operation(operationId = "updateApplication", summary = "Update an existing event application")
     public ResponseEntity<?> update(@PathVariable Long id, @Valid @RequestBody ApplicationDTO dto) {
-        try {
-            Long userId = getCurrentUserId();
-            Application application = applicationService.updateApplication(id, userId, dto);
-            return ResponseEntity.ok(applicationService.convertToDTO(application));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-        } catch (Exception e) {
-            log.error("Error updating application", e);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
-        }
+        Long userId = getCurrentUserId();
+        Application application = applicationService.updateApplication(id, userId, dto);
+        return ResponseEntity.ok(applicationService.convertToDTO(application));
     }
 
     @DeleteMapping("/{id}")
     @Operation(operationId = "deleteApplication", summary = "Delete an event application")
     public ResponseEntity<?> delete(@PathVariable Long id) {
-        try {
-            Long userId = getCurrentUserId();
-            applicationService.deleteApplication(id, userId);
-            return ResponseEntity.ok("Application deleted successfully");
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-        } catch (Exception e) {
-            log.error("Error deleting application", e);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
-        }
+        Long userId = getCurrentUserId();
+        applicationService.deleteApplication(id, userId);
+        return ResponseEntity.ok("Application deleted successfully");
     }
 }

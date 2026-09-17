@@ -38,14 +38,8 @@ public class PlacementController {
         if (emailContent.length() > 10000) {
             return ResponseEntity.badRequest().body("emailContent length exceeds limit of 10000 characters");
         }
-        try {
-            PlacementDTO result = aiExtractionService.extractPlacementDetails(emailContent);
-            return ResponseEntity.ok(result);
-        } catch (Exception e) {
-            log.error("AI Extraction failed", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Failed to extract placement details: " + e.getMessage());
-        }
+        PlacementDTO result = aiExtractionService.extractPlacementDetails(emailContent);
+        return ResponseEntity.ok(result);
     }
 
     private Long getCurrentUserId() {
@@ -82,44 +76,25 @@ public class PlacementController {
     @PostMapping
     @Operation(operationId = "createPlacement", summary = "Create a new placement record")
     public ResponseEntity<?> create(@Valid @RequestBody PlacementDTO request) {
-        try {
-            Long userId = getCurrentUserId();
-            Placement placement = placementService.createPlacement(userId, request);
-            return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(placementService.convertToDTO(placement));
-        } catch (Exception e) {
-            log.error("Error creating placement", e);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
-        }
+        Long userId = getCurrentUserId();
+        Placement placement = placementService.createPlacement(userId, request);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(placementService.convertToDTO(placement));
     }
 
     @PutMapping("/{id}")
     @Operation(operationId = "updatePlacement", summary = "Update an existing placement record")
     public ResponseEntity<?> update(@PathVariable Long id, @Valid @RequestBody PlacementDTO request) {
-        try {
-            Long userId = getCurrentUserId();
-            Placement placement = placementService.updatePlacement(id, userId, request);
-            return ResponseEntity.ok(placementService.convertToDTO(placement));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-        } catch (Exception e) {
-            log.error("Error updating placement", e);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
-        }
+        Long userId = getCurrentUserId();
+        Placement placement = placementService.updatePlacement(id, userId, request);
+        return ResponseEntity.ok(placementService.convertToDTO(placement));
     }
 
     @DeleteMapping("/{id}")
     @Operation(operationId = "deletePlacement", summary = "Delete a placement record")
     public ResponseEntity<?> delete(@PathVariable Long id) {
-        try {
-            Long userId = getCurrentUserId();
-            placementService.deletePlacement(id, userId);
-            return ResponseEntity.ok("Placement deleted successfully");
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-        } catch (Exception e) {
-            log.error("Error deleting placement", e);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
-        }
+        Long userId = getCurrentUserId();
+        placementService.deletePlacement(id, userId);
+        return ResponseEntity.ok("Placement deleted successfully");
     }
 }

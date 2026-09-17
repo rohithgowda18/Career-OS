@@ -1,100 +1,154 @@
-# DEPENDENCY GRAPH & CRITICAL FILE MATRIX — CAREER OS
+# Career OS — Complete Dependency Graph & System Criticality Analysis
 
-## 1. FRONTEND DEPENDENCY GRAPH
+> **File:** `dependency-graph.md`  
+> **Status:** Ground Truth System Specification  
+> **Version:** 2.0 (Microservices Architecture)  
 
-```
-App.tsx
- ├── contexts/ThemeContext.tsx
- ├── hooks/useAuth.ts
- │    └── lib/api/authApi.ts ──> lib/restClient.ts
- ├── components/ErrorBoundary.tsx
- ├── pages/LandingPage.tsx
- ├── pages/LoginPage.tsx
- ├── pages/OAuthSuccessPage.tsx
- └── pages/Home.tsx (Dashboard View)
-      ├── components/DashboardLayout.tsx
-      │    ├── components/views/DashboardView.tsx
-      │    │    ├── components/ApplicationCard.tsx
-      │    │    └── components/AnalyticsDashboard.tsx
-      │    │         └── lib/api/analyticsApi.ts
-      │    ├── components/views/CalendarView.tsx
-      │    ├── components/views/KanbanView.tsx
-      │    │    └── lib/api/applicationsApi.ts
-      │    ├── components/views/RoutineView.tsx
-      │    │    └── lib/api/routineApi.ts
-      │    └── pages/SkillsPage.tsx
-      │         ├── components/SkillTable.tsx
-      │         └── components/AddSkillModal.tsx
-      └── components/AddApplicationModal.tsx
-           └── lib/api/importApi.ts
+---
+
+## 1. Microservice Dependency Graph & Call Chains
+
+```mermaid
+flowchart TD
+    subgraph Clients
+        WebClient["apps/web (React 19 Frontend)"]
+    end
+
+    subgraph GatewayEdge
+        Gateway["apps/api-gateway (Spring Cloud Gateway :8080)"]
+    end
+
+    subgraph ServiceRegistry
+        Eureka["apps/service-discovery (Netflix Eureka :8761)"]
+    end
+
+    subgraph Services
+        AuthSvc["apps/auth-service (:8081)"]
+        BackendSvc["apps/backend (:8085)"]
+        AISvc["apps/ai-extraction-service (:8082)"]
+    end
+
+    subgraph Databases
+        AuthDB[("career_os_auth_db")]
+        CoreDB[("event_tracker_db")]
+    end
+
+    subgraph ThirdParty
+        GoogleGemini["Google Gemini LLM API"]
+        OAuthProviders["Google & GitHub OAuth"]
+    end
+
+    %% Edge Ingress
+    WebClient -->|All API traffic| Gateway
+
+    %% Discovery
+    Gateway <-.->|Dynamic Route Lookup| Eureka
+    AuthSvc -.->|Heartbeat Registration| Eureka
+    BackendSvc -.->|Heartbeat Registration| Eureka
+    AISvc -.->|Heartbeat Registration| Eureka
+
+    %% Gateway to Downstream
+    Gateway -->|/api/auth/**, /api/profile/**| AuthSvc
+    Gateway -->|/api/extraction/**| AISvc
+    Gateway -->|/api/** (Core)| BackendSvc
+
+    %% Internal Feign Calls
+    BackendSvc -->|AiExtractionClient (OpenFeign)| AISvc
+
+    %% DB Links
+    AuthSvc --> AuthDB
+    BackendSvc --> CoreDB
+
+    %% External APIs
+    AISvc --> GoogleGemini
+    AuthSvc --> OAuthProviders
 ```
 
 ---
 
-## 2. BACKEND DEPENDENCY GRAPH
+## 2. Frontend Component Hierarchy & Import Chains
 
-```
-EventAppTrackerApplication.java
- ├── security/SecurityConfig.java
- │    ├── security/JwtAuthenticationFilter.java
- │    │    └── security/JwtTokenProvider.java
- │    └── security/oauth/OAuth2LoginSuccessHandler.java
- ├── controller/AuthController.java ───────► service/UserService.java
- ├── controller/ApplicationController.java ─► service/ApplicationService.java
- ├── controller/PlacementController.java ──► service/PlacementService.java
- ├── controller/SkillController.java ──────► service/SkillService.java
- ├── controller/RoutineController.java ────► service/RoutineService.java
- ├── controller/AnalyticsController.java ──► service/AnalyticsService.java
- ├── controller/ImportController.java ─────► service/GeminiExtractionService.java
- └── controller/ProfileController.java ────► service/ProfileService.java
-                                                     │
-                                                     ▼
-                                      repository/* (JPA Interfaces)
-                                                     │
-                                                     ▼
-                                      entity/* (JPA Models) ──> DB
+```mermaid
+flowchart TD
+    App["App.tsx (Root Shell & Warmup)"]
+    App --> ErrorBoundary["ErrorBoundary.tsx"]
+    App --> ThemeProvider["ThemeContext.tsx"]
+    App --> AuthProvider["hooks/useAuth.tsx"]
+    App --> Router["Router (Wouter Switch)"]
+
+    Router --> LandingPage["pages/LandingPage.tsx"]
+    Router --> LoginPage["pages/LoginPage.tsx"]
+    Router --> OAuthSuccessPage["pages/OAuthSuccessPage.tsx"]
+    Router --> Home["pages/Home.tsx (Shell Container)"]
+    Router --> PlacementsPage["pages/PlacementsPage.tsx"]
+    Router --> AddEventPage["pages/AddEventPage.tsx"]
+
+    Home --> DashboardLayout["components/DashboardLayout.tsx"]
+    DashboardLayout --> ThemeSelector["components/ThemeSelector.tsx"]
+    DashboardLayout --> InstallAppDialog["components/InstallAppDialog.tsx"]
+
+    DashboardLayout --> DashboardView["views/DashboardView.tsx"]
+    DashboardLayout --> KanbanView["views/KanbanView.tsx"]
+    DashboardLayout --> CalendarView["views/CalendarView.tsx"]
+    DashboardLayout --> AnalyticsDashboard["components/AnalyticsDashboard.tsx"]
+    DashboardLayout --> SkillsPage["pages/SkillsPage.tsx"]
+    DashboardLayout --> RoutineView["views/RoutineView.tsx"]
+    DashboardLayout --> ApplicationProfileForm["components/ApplicationProfileForm.tsx"]
+
+    DashboardView --> AddAppModal["components/AddApplicationModal.tsx"]
+    DashboardView --> AddPlaceModal["components/AddPlacementModal.tsx"]
+    PlacementsPage --> PlacementTable["components/PlacementTable.tsx"]
+    PlacementTable --> EditPlacementModal["components/EditPlacementModal.tsx"]
+    SkillsPage --> SkillTable["components/SkillTable.tsx"]
+    SkillsPage --> AddSkillModal["components/AddSkillModal.tsx"]
+
+    %% Shared API Layer
+    AddAppModal --> applicationsApi["lib/api/applicationsApi.ts"]
+    AddPlaceModal --> placementsApi["lib/api/placementsApi.ts"]
+    RoutineView --> routineApi["lib/api/routineApi.ts"]
+    SkillsPage --> skillsApi["lib/api/skillsApi.ts"]
+    AnalyticsDashboard --> analyticsApi["lib/api/analyticsApi.ts"]
+
+    applicationsApi & placementsApi & routineApi & skillsApi & analyticsApi --> restClient["lib/restClient.ts (Axios)"]
+    restClient --> Gateway
 ```
 
 ---
 
-## 3. HIGH IMPACT & CRITICAL CODEBASE FILES
+## 3. High-Impact & Critical System Files
 
-The following files represent core foundational infrastructure. Any breaking modification or untested change in these files will cascade failures across multiple modules:
+These files constitute the core foundations of the application. **Modifying them requires extreme caution**:
 
-### 3.1 Backend Critical Files
+### 3.1 Backend Core Files
 
-1. **`apps/backend/src/main/java/com/eventtracker/security/SecurityConfig.java`**
-   - **Role**: Defines security filter chain, CORS policy, public/private route access rules, and JWT filter order.
-   - **Risk Level**: **CRITICAL**. Edits can expose protected endpoints or block authorized client requests.
-
-2. **`apps/backend/src/main/java/com/eventtracker/security/JwtTokenProvider.java`**
-   - **Role**: Handles JWT signature generation, expiration enforcement, and token decoding.
-   - **Risk Level**: **HIGH**. Key format or algorithm changes will immediately invalidate active user sessions.
-
-3. **`apps/backend/src/main/java/com/eventtracker/service/GeminiExtractionService.java`**
-   - **Role**: AI parsing engine extracting structured JSON from external web links.
-   - **Risk Level**: **HIGH**. Relies on prompt engineering and model availability (`gemini-2.5-flash`).
-
-4. **`apps/backend/src/main/resources/schema.sql`**
-   - **Role**: Database DDL defining tables, foreign keys, unique indices, and constraints.
-   - **Risk Level**: **HIGH**. Unchecked SQL migration edits can corrupt production databases or fail startup.
+| File Path | Criticality Level | Rationale / Architectural Impact |
+| :--- | :--- | :--- |
+| `apps/backend/src/main/resources/schema.sql` | 🔴 **CRITICAL** | Defines the entire PostgreSQL relational schema, column types, default values, and composite unique indices. Changing this breaks entity mapping and data idempotency. |
+| `apps/backend/src/main/java/com/eventtracker/security/JwtAuthenticationFilter.java` | 🔴 **CRITICAL** | Validates HS512 signatures on every incoming request. Any bug here locks out all authenticated users or introduces severe authorization bypass vulnerabilities. |
+| `apps/backend/src/main/java/com/eventtracker/security/SecurityConfig.java` | 🔴 **CRITICAL** | Configures stateless session policy, CORS origins, and public vs authenticated endpoint matcher rules. |
+| `apps/api-gateway/src/main/resources/application.yml` | 🔴 **CRITICAL** | Core routing matrix for Spring Cloud Gateway. Misconfigurations cause 404/502 routing failures across all frontend interactions. |
+| `apps/backend/src/main/java/com/eventtracker/client/AiExtractionClient.java` | 🟠 **HIGH** | OpenFeign bridge to the AI microservice. Signature changes or timeout mismatches break email parsing in both event and placement modals. |
+| `apps/auth-service/src/main/java/com/careeros/auth/security/oauth/OAuth2LoginSuccessHandler.java` | 🟠 **HIGH** | Manages OAuth redirect URLs, sanitization, user creation, and postMessage payload formulation. |
+| `apps/ai-extraction-service/src/main/java/com/careeros/ai/service/GeminiExtractionService.java` | 🟠 **HIGH** | Gemini prompt engineering, schema extraction, and fallback retry loops. |
 
 ---
 
-### 3.2 Frontend Critical Files
+### 3.2 Frontend Core Files
 
-1. **`apps/web/src/App.tsx`**
-   - **Role**: Core application router, route protection middleware, and backend server warm-up loader.
-   - **Risk Level**: **CRITICAL**. Errors break client routing or trap users in infinite redirect loops.
+| File Path | Criticality Level | Rationale / Architectural Impact |
+| :--- | :--- | :--- |
+| `apps/web/src/lib/restClient.ts` | 🔴 **CRITICAL** | Central Axios instance. Injects Bearer tokens, logs latency profiling, handles 401 redirects, and standardizes error formatting for the entire frontend. |
+| `apps/web/src/hooks/useAuth.tsx` | 🔴 **CRITICAL** | Owns session tokens, `meQuery`, backend health polling loops, and cold-start recovery state. Breaking this prevents users from signing in or causes infinite redirect loops. |
+| `apps/web/src/App.tsx` | 🔴 **CRITICAL** | Root router, authentication gatekeeper, and background backend health warm-up initiator. |
+| `apps/web/src/contexts/ThemeContext.tsx` | 🟡 **MEDIUM** | Manages CSS token switching across the 5 design system presets. |
 
-2. **`apps/web/src/hooks/useAuth.ts`**
-   - **Role**: Global authentication state, session validation, token storage, and backend health polling.
-   - **Risk Level**: **CRITICAL**. Any regression causes silent logouts or unauthenticated API access.
+---
 
-3. **`apps/web/src/lib/restClient.ts`**
-   - **Role**: Base Axios instance injecting `Authorization: Bearer <token>` into every API call.
-   - **Risk Level**: **CRITICAL**. Header misconfiguration breaks all REST backend communication.
+## 4. Failure Modes & Cascading Risk Analysis
 
-4. **`apps/web/src/components/DashboardLayout.tsx`**
-   - **Role**: Primary layout container housing side navigation, theme toggles, and view rendering.
-   - **Risk Level**: **MEDIUM-HIGH**. Structural edits affect desktop and mobile responsive viewports.
+| Failure Scenario | Immediate Consequence | Blast Radius | Automated Mitigation In Place |
+| :--- | :--- | :--- | :--- |
+| **Service Discovery (Eureka) Crashes** | Gateway cannot dynamically resolve downstream service instances via `lb://...`. | Complete API outage | Instances retain cached registries briefly; local Docker-compose restarts container automatically. |
+| **Auth Service (:8081) Down** | New logins, registrations, and OAuth flows fail. | Login & Profile only | **Core operations survive:** Already logged-in users continue accessing placements, applications, routines, and skills on Core Backend (:8085) because JWTs are validated locally. |
+| **AI Extraction Service (:8082) Down or Gemini Rate-Limited** | AI quick-entry buttons in modals return error alerts. | AI Parsing only | Manual entry forms in modals remain 100% functional. Core database transactions never block. |
+| **PostgreSQL Dormant (Cold-Start)** | Initial HTTP requests take 15-45s or return 503 while spinning up. | Temporary read delays | `useAuth.tsx` polls `/actuator/health` every 3s and keeps token stored, preventing session loss. |

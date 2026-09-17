@@ -39,13 +39,9 @@ public class RoutineController {
     @PostMapping
     @Operation(operationId = "createRoutineTask", summary = "Create a reusable daily routine task item")
     public ResponseEntity<?> create(@Valid @RequestBody RoutineDTO dto) {
-        try {
-            Long userId = getCurrentUserId();
-            RoutineTask task = routineService.createTask(userId, dto);
-            return ResponseEntity.status(HttpStatus.CREATED).body(routineService.convertToDTO(task, false));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
+        Long userId = getCurrentUserId();
+        RoutineTask task = routineService.createTask(userId, dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(routineService.convertToDTO(task, false));
     }
 
     @GetMapping
@@ -59,36 +55,24 @@ public class RoutineController {
     @Operation(operationId = "updateRoutineTask", summary = "Update routine details")
     public ResponseEntity<?> update(@PathVariable Long id, @RequestBody RoutineDTO dto) {
         Long userId = getCurrentUserId();
-        try {
-            RoutineTask task = routineService.updateTask(id, userId, dto);
-            return ResponseEntity.ok(routineService.convertToDTO(task, false));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
-        }
+        RoutineTask task = routineService.updateTask(id, userId, dto);
+        return ResponseEntity.ok(routineService.convertToDTO(task, false));
     }
 
     @PutMapping("/{id}/toggle")
     @Operation(operationId = "toggleRoutineTaskCompletion", summary = "Toggle routine completion status for today")
     public ResponseEntity<?> toggle(@PathVariable Long id) {
         Long userId = getCurrentUserId();
-        try {
-            RoutineCompletion comp = routineService.toggleCompletion(id, userId);
-            return ResponseEntity.ok(Map.of("completed", comp.isCompleted()));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
-        }
+        RoutineCompletion comp = routineService.toggleCompletion(id, userId);
+        return ResponseEntity.ok(Map.of("completed", comp.isCompleted()));
     }
 
     @DeleteMapping("/{id}")
     @Operation(operationId = "deleteRoutineTask", summary = "Delete routine item")
     public ResponseEntity<?> delete(@PathVariable Long id) {
         Long userId = getCurrentUserId();
-        try {
-            routineService.deleteTask(id, userId);
-            return ResponseEntity.ok(Map.of("message", "Task deleted successfully"));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
-        }
+        routineService.deleteTask(id, userId);
+        return ResponseEntity.ok(Map.of("message", "Task deleted successfully"));
     }
 
     @GetMapping("/reports")
